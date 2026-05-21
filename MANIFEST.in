@@ -1,0 +1,37 @@
+# MANIFEST.in — controls what goes into the source distribution (sdist).
+# The wheel uses the setup.py build hook; this file is for `python -m build --sdist`.
+
+# Python source
+recursive-include src *.py
+
+# Node definitions (JSON)
+recursive-include nodes *.json
+
+# Houdini plugin nodes and scripts
+recursive-include plugins *.json *.py *.xml *.shelf *.json
+
+# Example workflows
+recursive-include workflows *.json
+recursive-include vfx_workflows *.json
+recursive-include examples *.json *.py
+recursive-include node_examples *.json *.py
+recursive-include website_examples *.json
+
+# Documentation (HTML portal)
+recursive-include docs *.html *.css *.js *.png *.svg *.ico
+
+# Icons and images
+recursive-include icons *.png *.svg *.jpg *.ico
+include splash.png
+include logo.png
+
+# Licence and metadata
+include LICENSE
+include README.md
+include CHANGELOG.md
+
+# Build infrastructure (so maintainers can rebuild artifacts from the sdist)
+include setup.py
+include pyproject.toml
+include MANIFEST.in
+include linux/appimage/requirements-appimage.txt

@@ -16,7 +16,7 @@
 
 ## Known Nodes in Source
 
-Total: **176** node IDs
+Total: **177** node IDs
 
 ```
 Console Sink
@@ -87,6 +87,7 @@ houdini_action_set_frame_range
 houdini_get_action_result
 houdini_headless
 houdini_scene_snapshot
+http_request
 if_condition
 list_directory
 list_item_picker

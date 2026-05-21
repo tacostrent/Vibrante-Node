@@ -152,6 +152,33 @@ python src/main.py
 
 Pre-built Windows executables are available on the [Releases](https://github.com/KamalTD/Vibrante-Node/releases) page. No Python installation required. The `.exe` embeds a Windows `VERSIONINFO` resource so Properties → Details shows publisher metadata correctly.
 
+### Linux
+
+Three installation methods are available for Linux (Ubuntu, Rocky Linux, Fedora, Debian, and more). See **[linux/README.md](linux/README.md)** for full instructions and troubleshooting.
+
+**pip (recommended — works on any distro with Python 3.10+):**
+
+```bash
+pip install vibrante-node
+vibrante-node
+```
+
+**AppImage (no Python required — single self-contained file):**
+
+```bash
+chmod +x Vibrante-Node-2.3.0-x86_64.AppImage
+./Vibrante-Node-2.3.0-x86_64.AppImage
+```
+
+**Ubuntu/Debian .deb package:**
+
+```bash
+sudo dpkg -i vibrante-node_2.3.0_amd64.deb
+vibrante-node
+```
+
+> **Wayland note:** PyQt5's Wayland backend is fragile on some distros. If the app fails to start, run with `QT_QPA_PLATFORM=xcb vibrante-node`.
+
 ---
 
 ## Quick Start

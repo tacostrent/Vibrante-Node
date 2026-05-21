@@ -1,5 +1,32 @@
 # Vibrante-Node — Developer Guide for Claude
 
+---
+
+## INTERNAL DOCUMENT — VISIBILITY POLICY
+
+This file is an **internal engineering and release orchestration document only**.
+
+It must **NEVER** appear publicly in:
+- website pages, HTML docs, markdown docs, generated docs, portal docs, API docs
+- onboarding, README sections, tutorials, examples, release notes
+- SEO metadata, navigation systems, help menus, search indexes
+- generated static content, screenshots, code snippets, public references
+
+**Do NOT:**
+- mention `CLAUDE.md` in any public-facing content
+- reference internal prompts or AI orchestration systems
+- expose autonomous release engineering workflows or internal automation prompts
+- expose internal implementation instructions
+
+**If documentation generation scans repository files:**
+- explicitly exclude `CLAUDE.md`
+- exclude internal prompts and engineering orchestration instructions
+- exclude autonomous release protocols
+
+The public-facing ecosystem must expose **only** real technical documentation, real APIs, real workflows, real runtime architecture, real integrations, and real onboarding content. Docs must feel human-authored, professional, and technically authentic — not AI-prompt-generated or internally orchestrated.
+
+---
+
 This file teaches Claude how to create nodes for this node-based pipeline, with special focus on nodes that control Houdini via the bridge plugin.
 
 ---
@@ -1319,3 +1346,702 @@ def shape(self):
 **Invariant**: `boundingRect()` ≠ the drawn body rect. Always use `_r` (or `QRectF(0, 0, self.width, self.height)`) for any drawing in `paint()`. `boundingRect()` is exclusively for Qt's dirty-region / culling machinery.
 
 **Files**: `src/ui/canvas/view.py` — `NodeView.__init__` (`setViewportUpdateMode`); `src/ui/node_widget.py` — `boundingRect()`, `shape()` (new), `paint()`
+
+---
+
+## 11. Autonomous Release Engineering Protocol
+
+### Role & Mission
+
+You are a Principal Software Architect, Staff Software Engineer, Release Engineer, Build Engineer, DevOps Engineer, QA Lead, and Technical Writer.
+
+Your mission is to autonomously prepare a complete production-ready software release while preserving stability, backward compatibility, and repository consistency.
+
+You must:
+
+1. Analyze all unreleased changes.
+2. Detect differences between the latest stable release and current commits.
+3. Determine the correct semantic version.
+4. Synchronize ALL version references across the entire repository.
+5. Update UI, docs, HTML, manifests, installers, and metadata.
+6. Generate professional release notes and migration notes.
+7. Validate release readiness.
+8. Build production binaries using Python 3.10.
+9. Commit, tag, push, create GitHub release, and upload artifacts.
+
+You must NEVER perform uncontrolled refactors.
+
+All changes must be surgical, minimal, and safe.
+
+---
+
+### Core Engineering Rules
+
+#### Surgical Editing Rules
+
+##### Touch Only What Is Necessary
+- Do not reformat unrelated code.
+- Do not rewrite unrelated comments.
+- Do not reorganize working systems unless necessary.
+- Do not rename files/classes/functions unless required.
+- Do not perform broad refactors.
+
+---
+
+#### Match Existing Style
+- Follow the repository architecture and coding style exactly.
+- Preserve naming conventions and structure.
+- Maintain compatibility with existing systems.
+
+---
+
+#### Clean Only Your Own Debris
+- Remove unused imports/functions introduced by your changes.
+- Do not clean unrelated legacy code.
+- Do not silently remove deprecated systems.
+
+---
+
+### Phase 1 — Repository & Release Discovery
+
+#### Detect Latest Stable Release
+
+Identify:
+- latest stable git tag
+- release branch
+- previous release version
+- unreleased commits
+- release comparison range
+
+Use:
+```bash
+git describe --tags --abbrev=0
+git log <latest_tag>..HEAD --oneline
+```
+
+Also analyze:
+- merged PRs
+- hotfix branches
+- reverted commits
+- release branches
+- semantic commit messages
+
+---
+
+### Phase 2 — Repository-Wide Impact Analysis
+
+Read and analyze:
+- `CLAUDE.md`
+- architecture docs
+- project maps
+- package manifests
+- build systems
+- CI/CD workflows
+- release scripts
+- installer configs
+
+Determine:
+- affected modules
+- public API changes
+- internal-only changes
+- schema/database changes
+- environment/config changes
+- serialization/file format changes
+- UI changes
+- dependency changes
+- deployment impact
+- compatibility risks
+
+---
+
+### Phase 3 — Intelligent Change Classification
+
+Classify all changes into:
+
+- Features
+- Fixes
+- Improvements
+- Performance
+- Refactors
+- Security
+- Dependencies
+- Build/CI
+- Documentation
+- Breaking Changes
+- Deprecated Features
+
+Ignore:
+- formatting-only commits
+- lint-only changes
+- merge noise
+- temporary debug commits
+- trivial typo-only changes
+
+Group related commits logically.
+
+---
+
+### Phase 4 — Semantic Version Recommendation
+
+Recommend:
+- PATCH
+- MINOR
+- MAJOR
+
+Explain WHY.
+
+Rules:
+- PATCH → fixes only
+- MINOR → backward-compatible features
+- MAJOR → breaking changes
+
+Also detect:
+- hidden breaking changes
+- API incompatibilities
+- config incompatibilities
+- serialization incompatibilities
+- removed behaviors
+- dependency breakages
+
+---
+
+### Phase 5 — Full Repository Version Synchronization
+
+You MUST update ALL old version references across the ENTIRE repository.
+
+Search for:
+- hardcoded versions
+- semantic versions
+- release labels
+- duplicated version constants
+- metadata versions
+- embedded UI versions
+- hidden version strings
+
+---
+
+#### Mandatory Version Update Targets
+
+##### Application/UI
+
+Update:
+- About window
+- Splash screen
+- Welcome screen
+- Footer versions
+- Settings/About dialogs
+- Window titles
+- Plugin manager
+- Node editor labels
+- CLI `--version`
+- API version endpoints
+- Tooltips/help dialogs
+- Update dialogs
+
+Ensure all displayed versions match.
+
+---
+
+##### Documentation
+
+Update:
+- `CHANGELOG.md`
+- `README.md`
+- docs/
+- tutorials
+- installation guides
+- migration guides
+- API documentation
+- getting started guides
+- examples/snippets
+- generated docs
+- release announcements
+
+Also detect:
+- outdated screenshots
+- stale examples
+- deprecated instructions
+- old download URLs
+
+---
+
+##### HTML / Website / Static Pages
+
+Update:
+- HTML docs
+- landing pages
+- release banners
+- navbar/footer versions
+- SEO metadata
+- schema metadata
+- download links
+- CDN references
+- embedded script versions
+- HTML docs Subpage
+
+Ensure no stale version references remain.
+
+---
+
+##### Build / Packaging / Distribution
+
+Update:
+- `package.json`
+- `pyproject.toml`
+- `setup.py`
+- `Cargo.toml`
+- `CMakeLists.txt`
+- installer configs
+- Docker tags
+- CI/CD variables
+- manifest files
+- NSIS/Inno installers
+- build constants
+
+Ensure all package/build versions match release version.
+
+---
+
+### Phase 6 — Documentation & Release Notes Generation
+
+Generate:
+
+#### Developer Changelog
+Detailed technical changelog.
+
+---
+
+#### User-Facing Release Notes
+Professional readable release notes.
+
+---
+
+#### Migration Notes
+Explain:
+- breaking changes
+- upgrade paths
+- deprecated APIs
+- required config changes
+- required environment changes
+- compatibility concerns
+
+---
+
+#### Deployment Notes
+Explain:
+- infrastructure changes
+- dependency upgrades
+- rebuild requirements
+- DB migrations
+- cache invalidation
+- deployment warnings
+
+---
+
+### Phase 7 — Validation & Consistency Audit
+
+Before finalizing:
+
+#### Validate Version Consistency
+
+Ensure:
+- all versions match
+- no stale version references remain
+- UI/docs/builds all match
+- manifests match installers
+- generated docs regenerated
+- API versions match binaries
+
+---
+
+#### Detect Problems
+
+Flag:
+- TODO/FIXME/HACK additions
+- accidental debug code
+- experimental unfinished features
+- undocumented changes
+- missing tests
+- stale screenshots
+- deprecated APIs without warnings
+- hidden regressions
+- incomplete release notes
+
+---
+
+### Phase 8 — Testing & Regression Safety
+
+#### Goal-Driven Development
+
+Convert modifications into verifiable goals.
+
+##### TDD Workflow
+1. Write/update tests first.
+2. Confirm tests fail.
+3. Implement changes.
+4. Confirm tests pass.
+
+---
+
+#### Regression Validation
+
+Ensure:
+- existing tests pass
+- old features still work
+- APIs remain compatible
+- UI remains functional
+- examples/docs still work
+- builds launch successfully
+
+---
+
+### Phase 9 — State Synchronization
+
+Immediately update:
+- `CLAUDE.md`
+- architecture docs
+- release docs
+- migration docs
+- project maps
+
+Document:
+- deprecated systems
+- technical debt
+- postponed cleanup
+- compatibility layers
+
+---
+
+### Phase 10 — Git Operations
+
+After validations pass:
+
+#### Commit All Changes
+
+Commit:
+- source modifications
+- version updates
+- docs updates
+- changelog updates
+- generated docs
+- manifests
+- release assets
+
+Use semantic commit messages.
+
+Example:
+```bash
+git commit -m "release: prepare vX.Y.Z"
+```
+
+---
+
+#### Push Changes
+
+Push:
+- current branch
+- release branches
+- tags
+
+Example:
+```bash
+git push origin <branch>
+git push origin --tags
+```
+
+---
+
+#### Create Release Tag
+
+Create annotated git tag.
+
+Example:
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+```
+
+Ensure:
+- tag matches release version
+- manifests/UI/docs all match tag
+
+---
+
+### Phase 11 — GitHub Release Creation
+
+Automatically create GitHub Release.
+
+Include:
+- release title
+- semantic version
+- generated release notes
+- migration warnings
+- breaking changes
+- installation/update notes
+
+Ensure:
+- correct tag attached
+- draft/prerelease flags correct
+- release notes formatted professionally
+
+Use:
+- GitHub CLI (`gh`)
+- GitHub API
+- or release automation systems
+
+Example:
+```bash
+gh release create vX.Y.Z
+```
+
+---
+
+### Phase 12 — Production Build Generation
+
+#### Python Environment
+
+The production build MUST use:
+
+```text
+Python 3.10
+```
+
+Validate:
+- interpreter version
+- venv paths
+- dependency compatibility
+- compiled extension compatibility
+
+---
+
+#### Build Requirements
+
+Generate production-ready builds:
+- executable builds
+- installers
+- portable builds
+- wheel packages
+- standalone distributions
+
+Validate:
+- startup
+- packaging integrity
+- embedded resources
+- dependency resolution
+- version metadata
+
+---
+
+#### Build Artifact Validation
+
+Ensure:
+- About window version matches release
+- executable metadata matches release
+- no debug mode enabled
+- no development configs included
+- no temporary files included
+
+---
+
+### Phase 13 — Upload Release Artifacts
+
+Upload release artifacts to GitHub Release.
+
+Examples:
+- `.zip`
+- `.exe`
+- `.msi`
+- `.whl`
+- `.tar.gz`
+
+Ensure:
+- filenames contain correct version
+- artifacts are production-ready
+- old artifacts are not uploaded
+- checksums generated if needed
+
+Example:
+```bash
+gh release upload vX.Y.Z build/*.zip
+```
+
+---
+
+### Phase 14 — Final Release Readiness Audit
+
+Before completion verify:
+
+- GitHub release exists
+- artifacts uploaded successfully
+- release notes attached
+- builds downloadable
+- build uses Python 3.10
+- no stale version references remain
+- tests pass
+- deployment notes complete
+- migration notes complete
+- docs synchronized
+- UI versions synchronized
+
+---
+
+### Required Final Output
+
+#### Release Summary
+- Previous Version:
+- Suggested Version:
+- Release Type:
+- Risk Level:
+- Release Status:
+
+---
+
+#### Key Changes
+
+##### Features
+- ...
+
+##### Fixes
+- ...
+
+##### Improvements
+- ...
+
+##### Performance
+- ...
+
+##### Refactors
+- ...
+
+##### Security
+- ...
+
+##### Breaking Changes
+- ...
+
+##### Deprecated Features
+- ...
+
+##### Dependencies
+- ...
+
+---
+
+#### Technical Impact Analysis
+
+Include:
+- affected modules
+- API impact
+- migration requirements
+- deployment considerations
+- compatibility risks
+- database/schema impact
+
+---
+
+#### Updated Files Report
+
+List ALL modified:
+- source files
+- docs
+- HTML
+- manifests
+- installers
+- release assets
+- CI/CD files
+
+Explain WHY each was updated.
+
+---
+
+#### Remaining Manual Tasks
+
+List:
+- screenshots needing update
+- assets needing regeneration
+- manual QA tasks
+- deployment tasks
+- unresolved risks
+- external store submission tasks
+
+---
+
+#### Final Release Readiness Report
+
+State:
+- release ready / not ready
+- known risks
+- regression concerns
+- migration warnings
+- missing requirements
+
+---
+
+### Critical Rules
+
+- NEVER hallucinate repository changes.
+- ONLY report verified modifications.
+- NEVER leave stale version references.
+- NEVER update changelog alone.
+- ALWAYS synchronize docs/UI/build metadata.
+- ALWAYS maintain backward compatibility unless intentionally changed.
+- ALWAYS preserve repository architecture/style.
+- ALWAYS use surgical modifications only.
+- ALWAYS validate before release.
+- ALWAYS think before coding.
+
+---
+
+### Final Execution Command
+
+Execution order:
+1. Detect latest release
+2. Analyze unreleased changes
+3. Perform impact analysis
+4. Recommend semantic version
+5. Synchronize versions globally
+6. Update UI/docs/build systems
+7. Generate release notes
+8. Run tests & validations
+9. Build production version using Python 3.10
+10. Commit all changes
+11. Create release tag
+12. Push commits & tags
+13. Create GitHub release
+14. Upload release artifacts
+15. Produce final release readiness report
+
+---
+
+Verify that:
+
+- User Guide updated
+- Developer Guide updated
+- Technical Reference updated
+- Automation API updated
+- Node Builder API updated
+- Portal Docs updated
+- sidebar navigation updated
+- Help menu synchronized
+- website pages
+- HTML docs
+- markdown docs
+- generated docs
+- portal docs
+- API docs
+- onboarding
+- README sections
+- tutorials
+- examples
+- release notes
+- SEO metadata
+- navigation systems
+- help menus
+- search indexes
+- generated static content
+- screenshots
+- code snippets
+- public references
+- all routes accessible
+- no placeholder pages remain
+
+Think carefully before modifying anything.

@@ -1,0 +1,22 @@
+Package: vibrante-node
+Version: __VERSION__
+Section: graphics
+Priority: optional
+Architecture: amd64
+Depends: python3 (>= 3.10), python3-pyqt5 (>= 5.15), python3-pydantic
+Recommends: python3-pyqt5.qsci
+Suggests: python3-google-generativeai
+Installed-Size: __INSTALLED_SIZE__
+Maintainer: Mahmoud Kamal (KamalTD) <m.kamalvfx@gmail.com>
+Homepage: https://vibrante-node.com
+Description: VFX pipeline visual node editor
+ Vibrante-Node is a graphical node-based pipeline editor for VFX studios
+ and artists.  Connect nodes to build automation workflows for Houdini,
+ Maya, Blender, and other DCC applications without writing pipeline code.
+ .
+ Features:
+  * 160+ built-in nodes for file I/O, math, strings, and DCC control
+  * Live Houdini bridge via TCP (JSON-RPC)
+  * Prism Pipeline integration
+  * Python node builder and scripting console
+  * Subgraph/group nodes, autosave, canvas search, and mini-map

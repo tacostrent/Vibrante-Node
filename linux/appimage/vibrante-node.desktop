@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Vibrante-Node
+GenericName=VFX Node Editor
+Comment=Build, connect, and run VFX pipeline workflows without writing pipeline code
+Exec=vibrante-node %F
+Icon=vibrante-node
+Categories=Graphics;Development;
+Keywords=vfx;pipeline;houdini;maya;blender;nodes;automation;
+Terminal=false
+StartupWMClass=Vibrante-Node
+MimeType=application/json;

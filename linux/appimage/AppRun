@@ -1,0 +1,44 @@
+#!/bin/bash
+# AppRun — Vibrante-Node AppImage entry point
+#
+# Sets up the Qt5 environment from the bundled PyQt5 pip wheel and launches
+# the app.  Qt5 platform plugins and shared libraries are bundled inside
+# the PyQt5 wheel — we expose them here so they are found at runtime.
+#
+# Environment variables the user may override before launching the AppImage:
+#   QT_QPA_PLATFORM      Defaults to "xcb" (X11).  Set to "wayland" if you
+#                        have a working PyQt5 Wayland plugin.
+#   XDG_DATA_HOME        User data directory (default: ~/.local/share).
+#                        Vibrante-Node stores user nodes/workflows under
+#                        ${XDG_DATA_HOME}/vibrante-node/.
+
+set -e
+
+export APPDIR
+APPDIR="$(dirname "$(readlink -f "$0")")"
+
+PYTHON="${APPDIR}/usr/bin/python3.10"
+SITE_PACKAGES="${APPDIR}/usr/lib/python3.10/site-packages"
+
+# Qt5 bundled inside the PyQt5 pip wheel
+QT5_LIB="${SITE_PACKAGES}/PyQt5/Qt5/lib"
+QT5_PLUGINS="${SITE_PACKAGES}/PyQt5/Qt5/plugins"
+
+# Add Qt5 libraries to the dynamic linker search path.
+# Prepend so they take precedence over any system Qt5.
+export LD_LIBRARY_PATH="${QT5_LIB}:${APPDIR}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
+# Tell Qt where the platform plugins (xcb, wayland, etc.) live.
+export QT_PLUGIN_PATH="${QT5_PLUGINS}"
+
+# Default to xcb (X11 / XCB) to avoid fragile PyQt5 Wayland support on
+# mixed-compositor systems.  The user can still force Wayland by setting
+# QT_QPA_PLATFORM=wayland before launching.
+if [ -z "${QT_QPA_PLATFORM:-}" ]; then
+    export QT_QPA_PLATFORM=xcb
+fi
+
+# XDG data home — used by app_dir() in the pip-installed resource shim
+export XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
+
+exec "${PYTHON}" -c "from vibrante_node.app import main; main()" "$@"

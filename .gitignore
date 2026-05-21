@@ -22,6 +22,7 @@ website/next-env.d.ts
 .coverage
 htmlcov/
 website/
+video_assets/
 # Local configuration
 .env
 .vscode/
@@ -35,6 +36,15 @@ Thumbs.db
 dist/
 build/
 *.spec.bak
+
+# Linux distribution artifacts
+*.AppImage
+*.deb
+linux/build/
+
+# Python packaging artifacts
+*.egg-info/
+*.egg
 
 # Runtime logs
 crash.log
