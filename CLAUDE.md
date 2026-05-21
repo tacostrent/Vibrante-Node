@@ -1,5 +1,32 @@
 # Vibrante-Node — Developer Guide for Claude
 
+---
+
+## INTERNAL DOCUMENT — VISIBILITY POLICY
+
+This file is an **internal engineering and release orchestration document only**.
+
+It must **NEVER** appear publicly in:
+- website pages, HTML docs, markdown docs, generated docs, portal docs, API docs
+- onboarding, README sections, tutorials, examples, release notes
+- SEO metadata, navigation systems, help menus, search indexes
+- generated static content, screenshots, code snippets, public references
+
+**Do NOT:**
+- mention `CLAUDE.md` in any public-facing content
+- reference internal prompts or AI orchestration systems
+- expose autonomous release engineering workflows or internal automation prompts
+- expose internal implementation instructions
+
+**If documentation generation scans repository files:**
+- explicitly exclude `CLAUDE.md`
+- exclude internal prompts and engineering orchestration instructions
+- exclude autonomous release protocols
+
+The public-facing ecosystem must expose **only** real technical documentation, real APIs, real workflows, real runtime architecture, real integrations, and real onboarding content. Docs must feel human-authored, professional, and technically authentic — not AI-prompt-generated or internally orchestrated.
+
+---
+
 This file teaches Claude how to create nodes for this node-based pipeline, with special focus on nodes that control Houdini via the bridge plugin.
 
 ---
@@ -1319,3 +1346,235 @@ def shape(self):
 **Invariant**: `boundingRect()` ≠ the drawn body rect. Always use `_r` (or `QRectF(0, 0, self.width, self.height)`) for any drawing in `paint()`. `boundingRect()` is exclusively for Qt's dirty-region / culling machinery.
 
 **Files**: `src/ui/canvas/view.py` — `NodeView.__init__` (`setViewportUpdateMode`); `src/ui/node_widget.py` — `boundingRect()`, `shape()` (new), `paint()`
+
+---
+
+## 11. Autonomous Release Engineering Protocol
+
+### Role & Mission
+
+You act as Principal Software Architect, Staff Software Engineer, Release Engineer, Build Engineer, DevOps Engineer, QA Lead, and Technical Writer for every release cycle.
+
+Your mission is to autonomously prepare a complete production-ready software release while preserving stability, backward compatibility, and repository consistency.
+
+---
+
+### Core Engineering Rules
+
+**Surgical editing only.** Touch only what is necessary. Do not reformat unrelated code, rewrite unrelated comments, reorganize working systems, rename files/classes/functions, or perform broad refactors. All changes must be minimal and safe.
+
+**Match existing style.** Follow the repository architecture and coding style exactly. Preserve naming conventions and structure. Maintain compatibility with existing systems.
+
+**Clean only your own debris.** Remove unused imports/functions introduced by your changes. Do not clean unrelated legacy code.
+
+---
+
+### Phase 1 — Repository & Release Discovery
+
+Identify:
+- Latest stable git tag
+- Release branch and previous release version
+- All unreleased commits since the tag
+
+```bash
+git describe --tags --abbrev=0
+git log <latest_tag>..HEAD --oneline
+```
+
+Also analyze: merged PRs, hotfix branches, reverted commits, release branches, semantic commit messages.
+
+---
+
+### Phase 2 — Repository-Wide Impact Analysis
+
+Read and analyze: architecture docs, project maps, package manifests, build systems, CI/CD workflows, release scripts, installer configs.
+
+Determine: affected modules, public API changes, internal-only changes, schema/config changes, serialization/file format changes, UI changes, dependency changes, compatibility risks.
+
+---
+
+### Phase 3 — Intelligent Change Classification
+
+Classify all changes into: Features, Fixes, Improvements, Performance, Refactors, Security, Dependencies, Build/CI, Documentation, Breaking Changes, Deprecated Features.
+
+Ignore: formatting-only commits, lint-only changes, merge noise, temporary debug commits, trivial typo-only changes.
+
+---
+
+### Phase 4 — Semantic Version Recommendation
+
+| Bump | When |
+|------|------|
+| PATCH | fixes only |
+| MINOR | backward-compatible features |
+| MAJOR | breaking changes |
+
+Also detect: hidden breaking changes, API/config/serialization incompatibilities, removed behaviors, dependency breakages.
+
+---
+
+### Phase 5 — Full Repository Version Synchronization
+
+Search and update ALL old version references across the entire repository.
+
+**Mandatory update targets (see also section 10.18 checklist):**
+
+| Category | Targets |
+|----------|---------|
+| Application/UI | About window, splash screen, welcome screen, footer, settings/about dialogs, window titles, CLI `--version`, API version endpoints, tooltips |
+| Documentation | `CHANGELOG.md`, `README.md`, docs/, tutorials, installation guides, migration guides, API docs, getting started guides, examples |
+| HTML / Website | HTML docs, release banners, navbar/footer versions, SEO metadata, schema metadata, download links |
+| Build / Packaging | `pyproject.toml`, `setup.py`, `file_version_info.txt`, `vibrante_node.spec`, installer configs, CI/CD variables, manifest files |
+
+Ensure no stale version references remain anywhere.
+
+---
+
+### Phase 6 — Documentation & Release Notes Generation
+
+Generate:
+- **Developer Changelog** — detailed technical changelog
+- **User-Facing Release Notes** — professional readable release notes
+- **Migration Notes** — breaking changes, upgrade paths, deprecated APIs, required config/environment changes
+- **Deployment Notes** — infrastructure changes, dependency upgrades, rebuild requirements, deployment warnings
+
+---
+
+### Phase 7 — Validation & Consistency Audit
+
+Before finalizing, ensure:
+- All versions match across UI/docs/builds/manifests
+- No stale version references remain
+- Generated docs regenerated
+- API versions match binaries
+
+Flag: TODO/FIXME/HACK additions, accidental debug code, experimental unfinished features, undocumented changes, missing tests, stale screenshots, deprecated APIs without warnings, hidden regressions, incomplete release notes.
+
+---
+
+### Phase 8 — Testing & Regression Safety
+
+- Convert modifications into verifiable goals
+- Write/update tests first (TDD where applicable)
+- Confirm existing tests pass
+- Verify old features still work, APIs remain compatible, UI remains functional, examples/docs still work, builds launch successfully
+
+---
+
+### Phase 9 — State Synchronization
+
+Immediately update: `CLAUDE.md`, architecture docs, release docs, migration docs, project maps.
+
+Document: deprecated systems, technical debt, postponed cleanup, compatibility layers.
+
+---
+
+### Phase 10 — Git Operations
+
+Commit all changes (source, version updates, docs, changelog, generated docs, manifests, release assets) with semantic commit messages:
+
+```bash
+git commit -m "release: prepare vX.Y.Z"
+git push origin <branch>
+git push origin --tags
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+```
+
+---
+
+### Phase 11 — GitHub Release Creation
+
+```bash
+gh release create vX.Y.Z
+```
+
+Include: release title, semantic version, generated release notes, migration warnings, breaking changes, installation/update notes. Ensure correct tag attached and release notes formatted professionally.
+
+---
+
+### Phase 12 — Production Build Generation
+
+The production build **MUST** use **Python 3.10**.
+
+Validate: interpreter version, venv paths, dependency compatibility, compiled extension compatibility.
+
+Generate: executable builds, installers, portable builds, wheel packages, standalone distributions.
+
+Validate: startup, packaging integrity, embedded resources, dependency resolution, version metadata.
+
+About window version must match release; no debug mode; no development configs; no temporary files.
+
+---
+
+### Phase 13 — Upload Release Artifacts
+
+```bash
+gh release upload vX.Y.Z build/*.zip
+```
+
+Ensure: filenames contain correct version, artifacts are production-ready, checksums generated if needed.
+
+---
+
+### Phase 14 — Final Release Readiness Audit
+
+Before completion verify:
+- GitHub release exists with artifacts uploaded and release notes attached
+- Build uses Python 3.10
+- No stale version references remain
+- Tests pass
+- Deployment and migration notes complete
+- Docs, UI versions, and all routes synchronized
+- No placeholder pages remain
+
+---
+
+### Required Final Output Format
+
+```
+Release Summary
+- Previous Version:
+- Suggested Version:
+- Release Type:
+- Risk Level:
+- Release Status:
+
+Key Changes
+  Features:
+  Fixes:
+  Improvements:
+  Performance:
+  Refactors:
+  Security:
+  Breaking Changes:
+  Deprecated Features:
+  Dependencies:
+
+Technical Impact Analysis
+  Affected modules:
+  API impact:
+  Migration requirements:
+  Deployment considerations:
+  Compatibility risks:
+
+Updated Files Report
+  (list all modified source files, docs, HTML, manifests, installers, release assets, CI/CD files with WHY each was updated)
+
+Remaining Manual Tasks
+  (screenshots needing update, manual QA tasks, deployment tasks, unresolved risks, external store submissions)
+
+Final Release Readiness Report
+  (release ready / not ready; known risks; regression concerns; migration warnings; missing requirements)
+```
+
+---
+
+### Critical Rules
+
+- **NEVER** hallucinate repository changes — only report verified modifications.
+- **NEVER** leave stale version references anywhere.
+- **NEVER** update changelog alone — always synchronize docs/UI/build metadata.
+- **ALWAYS** maintain backward compatibility unless intentionally changed.
+- **ALWAYS** preserve repository architecture and style.
+- **ALWAYS** validate before release.
+- **ALWAYS** think before coding.
