@@ -237,9 +237,3 @@ Licensing inquiries: [contact@vibrante-node.com](mailto:contact@vibrante-node.co
 
 *© 2024–2026 Mahmoud Kamal (KamalTD). All rights reserved.*
 
----
-
-> **Notability note (for project maintainer):** This article follows Wikipedia style conventions but the project may not yet meet Wikipedia's notability criteria for software (WP:NSOFT), which typically requires significant coverage in multiple reliable, independent secondary sources such as established industry publications (fxguide.com, befores-and-afters.com, CG Society, ACM/SIGGRAPH). Until such coverage exists, this article is suitable for the project's own website, GitHub wiki, DEV.to, Hashnode, or internal documentation.
->
-> **Independent coverage log** — add entries here as coverage appears:
-> - *(none yet)*
