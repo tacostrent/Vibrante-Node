@@ -116,7 +116,7 @@ pytest
 |---------|---------|
 | `PyQt5` | UI framework |
 | `pydantic>=2.0` | Data models and validation |
-| `aiohttp` | Async HTTP for HTTP Request node |
+| `urllib.request` | HTTP (stdlib, no install required) |
 | `Pillow` | PIL image processing node |
 | `pytest` | Test runner |
 | `pytest-qt` | Qt widget testing |

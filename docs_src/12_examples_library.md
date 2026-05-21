@@ -96,7 +96,7 @@ def register_node():
 
 ## Example 2: HTTP API Request Node
 
-**Description:** Makes an async HTTP GET or POST request, handles JSON or text responses, and outputs the parsed data. Uses `aiohttp` for non-blocking I/O.
+**Description:** Makes an async HTTP GET or POST request, handles JSON or text responses, and outputs the parsed data. Uses `urllib.request` in a thread executor (`loop.run_in_executor`) for non-blocking I/O — compatible with Vibrante-Node's QTimer-stepped asyncio event loop.
 
 ### Node JSON
 
@@ -134,12 +134,6 @@ import json
 import asyncio
 from src.nodes.base import BaseNode
 
-try:
-    import aiohttp
-    _AIOHTTP_AVAILABLE = True
-except ImportError:
-    _AIOHTTP_AVAILABLE = False
-
 
 class Http_Request(BaseNode):
     name = "http_request"
@@ -151,7 +145,7 @@ class Http_Request(BaseNode):
         self.add_input("method",  "string", widget_type="text", default="GET")
         self.add_input("headers", "any",    default=None)
         self.add_input("body",    "any",    default=None)
-        self.add_input("timeout", "int",    widget_type="int", default=30)
+        self.add_input("timeout", "int",    widget_type="int",  default=30)
         self.add_output("response_data",  "any")
         self.add_output("status_code",    "int")
         self.add_output("response_text",  "string")
@@ -159,9 +153,12 @@ class Http_Request(BaseNode):
         # [AUTO-GENERATED-PORTS-END]
 
     async def execute(self, inputs: dict) -> dict:
+        import urllib.request
+        import urllib.error
+
         url     = inputs.get("url", "")
         method  = (inputs.get("method") or "GET").upper()
-        headers = inputs.get("headers") or {}
+        headers = dict(inputs.get("headers") or {})
         body    = inputs.get("body")
         timeout = int(inputs.get("timeout") or 30)
 
@@ -170,46 +167,6 @@ class Http_Request(BaseNode):
             return {"response_data": None, "status_code": 0,
                     "response_text": "", "success": False, "exec_out": True}
 
-        # Fallback to urllib if aiohttp is unavailable
-        if not _AIOHTTP_AVAILABLE:
-            return await self._urllib_request(url, method, headers, body, timeout)
-
-        try:
-            timeout_obj = aiohttp.ClientTimeout(total=timeout)
-            async with aiohttp.ClientSession(headers=headers, timeout=timeout_obj) as session:
-                kwargs = {}
-                if body is not None:
-                    if isinstance(body, (dict, list)):
-                        kwargs["json"] = body
-                    else:
-                        kwargs["data"] = str(body)
-
-                async with session.request(method, url, **kwargs) as response:
-                    text = await response.text()
-                    status = response.status
-
-                    # Try JSON parse; fall back to raw text
-                    try:
-                        data = json.loads(text)
-                    except (json.JSONDecodeError, ValueError):
-                        data = text
-
-                    return {
-                        "response_data":  data,
-                        "status_code":    status,
-                        "response_text":  text,
-                        "success":        200 <= status < 300,
-                        "exec_out":       True,
-                    }
-        except Exception as e:
-            self.log_error(f"HTTP request failed: {e}")
-            return {"response_data": None, "status_code": 0,
-                    "response_text": str(e), "success": False, "exec_out": True}
-
-    async def _urllib_request(self, url, method, headers, body, timeout):
-        import urllib.request
-        import urllib.error
-
         body_bytes = None
         if body is not None:
             body_str = json.dumps(body) if isinstance(body, (dict, list)) else str(body)
@@ -217,21 +174,28 @@ class Http_Request(BaseNode):
             headers.setdefault("Content-Type", "application/json")
 
         req = urllib.request.Request(url, data=body_bytes, headers=headers, method=method)
-        try:
-            def _do_request():
+
+        def _sync_do():
+            try:
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
                     return resp.status, resp.read().decode("utf-8")
+            except urllib.error.HTTPError as e:
+                return e.code, e.read().decode("utf-8", errors="replace")
 
-            status, text = await asyncio.to_thread(_do_request)
+        loop = asyncio.get_running_loop()
+        try:
+            status, text = await loop.run_in_executor(None, _sync_do)
             try:
                 data = json.loads(text)
             except (json.JSONDecodeError, ValueError):
                 data = text
-            return {"response_data": data, "status_code": status,
-                    "response_text": text, "success": 200 <= status < 300, "exec_out": True}
-        except urllib.error.HTTPError as e:
-            return {"response_data": None, "status_code": e.code,
-                    "response_text": str(e), "success": False, "exec_out": True}
+            return {
+                "response_data":  data,
+                "status_code":    status,
+                "response_text":  text,
+                "success":        200 <= status < 300,
+                "exec_out":       True,
+            }
         except Exception as e:
             self.log_error(f"HTTP request failed: {e}")
             return {"response_data": None, "status_code": 0,
