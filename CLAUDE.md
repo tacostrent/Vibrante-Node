@@ -1353,228 +1353,695 @@ def shape(self):
 
 ### Role & Mission
 
-You act as Principal Software Architect, Staff Software Engineer, Release Engineer, Build Engineer, DevOps Engineer, QA Lead, and Technical Writer for every release cycle.
+You are a Principal Software Architect, Staff Software Engineer, Release Engineer, Build Engineer, DevOps Engineer, QA Lead, and Technical Writer.
 
 Your mission is to autonomously prepare a complete production-ready software release while preserving stability, backward compatibility, and repository consistency.
+
+You must:
+
+1. Analyze all unreleased changes.
+2. Detect differences between the latest stable release and current commits.
+3. Determine the correct semantic version.
+4. Synchronize ALL version references across the entire repository.
+5. Update UI, docs, HTML, manifests, installers, and metadata.
+6. Generate professional release notes and migration notes.
+7. Validate release readiness.
+8. Build production binaries using Python 3.10.
+9. Commit, tag, push, create GitHub release, and upload artifacts.
+
+You must NEVER perform uncontrolled refactors.
+
+All changes must be surgical, minimal, and safe.
 
 ---
 
 ### Core Engineering Rules
 
-**Surgical editing only.** Touch only what is necessary. Do not reformat unrelated code, rewrite unrelated comments, reorganize working systems, rename files/classes/functions, or perform broad refactors. All changes must be minimal and safe.
+#### Surgical Editing Rules
 
-**Match existing style.** Follow the repository architecture and coding style exactly. Preserve naming conventions and structure. Maintain compatibility with existing systems.
+##### Touch Only What Is Necessary
+- Do not reformat unrelated code.
+- Do not rewrite unrelated comments.
+- Do not reorganize working systems unless necessary.
+- Do not rename files/classes/functions unless required.
+- Do not perform broad refactors.
 
-**Clean only your own debris.** Remove unused imports/functions introduced by your changes. Do not clean unrelated legacy code.
+---
+
+#### Match Existing Style
+- Follow the repository architecture and coding style exactly.
+- Preserve naming conventions and structure.
+- Maintain compatibility with existing systems.
+
+---
+
+#### Clean Only Your Own Debris
+- Remove unused imports/functions introduced by your changes.
+- Do not clean unrelated legacy code.
+- Do not silently remove deprecated systems.
 
 ---
 
 ### Phase 1 — Repository & Release Discovery
 
-Identify:
-- Latest stable git tag
-- Release branch and previous release version
-- All unreleased commits since the tag
+#### Detect Latest Stable Release
 
+Identify:
+- latest stable git tag
+- release branch
+- previous release version
+- unreleased commits
+- release comparison range
+
+Use:
 ```bash
 git describe --tags --abbrev=0
 git log <latest_tag>..HEAD --oneline
 ```
 
-Also analyze: merged PRs, hotfix branches, reverted commits, release branches, semantic commit messages.
+Also analyze:
+- merged PRs
+- hotfix branches
+- reverted commits
+- release branches
+- semantic commit messages
 
 ---
 
 ### Phase 2 — Repository-Wide Impact Analysis
 
-Read and analyze: architecture docs, project maps, package manifests, build systems, CI/CD workflows, release scripts, installer configs.
+Read and analyze:
+- `CLAUDE.md`
+- architecture docs
+- project maps
+- package manifests
+- build systems
+- CI/CD workflows
+- release scripts
+- installer configs
 
-Determine: affected modules, public API changes, internal-only changes, schema/config changes, serialization/file format changes, UI changes, dependency changes, compatibility risks.
+Determine:
+- affected modules
+- public API changes
+- internal-only changes
+- schema/database changes
+- environment/config changes
+- serialization/file format changes
+- UI changes
+- dependency changes
+- deployment impact
+- compatibility risks
 
 ---
 
 ### Phase 3 — Intelligent Change Classification
 
-Classify all changes into: Features, Fixes, Improvements, Performance, Refactors, Security, Dependencies, Build/CI, Documentation, Breaking Changes, Deprecated Features.
+Classify all changes into:
 
-Ignore: formatting-only commits, lint-only changes, merge noise, temporary debug commits, trivial typo-only changes.
+- Features
+- Fixes
+- Improvements
+- Performance
+- Refactors
+- Security
+- Dependencies
+- Build/CI
+- Documentation
+- Breaking Changes
+- Deprecated Features
+
+Ignore:
+- formatting-only commits
+- lint-only changes
+- merge noise
+- temporary debug commits
+- trivial typo-only changes
+
+Group related commits logically.
 
 ---
 
 ### Phase 4 — Semantic Version Recommendation
 
-| Bump | When |
-|------|------|
-| PATCH | fixes only |
-| MINOR | backward-compatible features |
-| MAJOR | breaking changes |
+Recommend:
+- PATCH
+- MINOR
+- MAJOR
 
-Also detect: hidden breaking changes, API/config/serialization incompatibilities, removed behaviors, dependency breakages.
+Explain WHY.
+
+Rules:
+- PATCH → fixes only
+- MINOR → backward-compatible features
+- MAJOR → breaking changes
+
+Also detect:
+- hidden breaking changes
+- API incompatibilities
+- config incompatibilities
+- serialization incompatibilities
+- removed behaviors
+- dependency breakages
 
 ---
 
 ### Phase 5 — Full Repository Version Synchronization
 
-Search and update ALL old version references across the entire repository.
+You MUST update ALL old version references across the ENTIRE repository.
 
-**Mandatory update targets (see also section 10.18 checklist):**
+Search for:
+- hardcoded versions
+- semantic versions
+- release labels
+- duplicated version constants
+- metadata versions
+- embedded UI versions
+- hidden version strings
 
-| Category | Targets |
-|----------|---------|
-| Application/UI | About window, splash screen, welcome screen, footer, settings/about dialogs, window titles, CLI `--version`, API version endpoints, tooltips |
-| Documentation | `CHANGELOG.md`, `README.md`, docs/, tutorials, installation guides, migration guides, API docs, getting started guides, examples |
-| HTML / Website | HTML docs, release banners, navbar/footer versions, SEO metadata, schema metadata, download links |
-| Build / Packaging | `pyproject.toml`, `setup.py`, `file_version_info.txt`, `vibrante_node.spec`, installer configs, CI/CD variables, manifest files |
+---
 
-Ensure no stale version references remain anywhere.
+#### Mandatory Version Update Targets
+
+##### Application/UI
+
+Update:
+- About window
+- Splash screen
+- Welcome screen
+- Footer versions
+- Settings/About dialogs
+- Window titles
+- Plugin manager
+- Node editor labels
+- CLI `--version`
+- API version endpoints
+- Tooltips/help dialogs
+- Update dialogs
+
+Ensure all displayed versions match.
+
+---
+
+##### Documentation
+
+Update:
+- `CHANGELOG.md`
+- `README.md`
+- docs/
+- tutorials
+- installation guides
+- migration guides
+- API documentation
+- getting started guides
+- examples/snippets
+- generated docs
+- release announcements
+
+Also detect:
+- outdated screenshots
+- stale examples
+- deprecated instructions
+- old download URLs
+
+---
+
+##### HTML / Website / Static Pages
+
+Update:
+- HTML docs
+- landing pages
+- release banners
+- navbar/footer versions
+- SEO metadata
+- schema metadata
+- download links
+- CDN references
+- embedded script versions
+- HTML docs Subpage
+
+Ensure no stale version references remain.
+
+---
+
+##### Build / Packaging / Distribution
+
+Update:
+- `package.json`
+- `pyproject.toml`
+- `setup.py`
+- `Cargo.toml`
+- `CMakeLists.txt`
+- installer configs
+- Docker tags
+- CI/CD variables
+- manifest files
+- NSIS/Inno installers
+- build constants
+
+Ensure all package/build versions match release version.
 
 ---
 
 ### Phase 6 — Documentation & Release Notes Generation
 
 Generate:
-- **Developer Changelog** — detailed technical changelog
-- **User-Facing Release Notes** — professional readable release notes
-- **Migration Notes** — breaking changes, upgrade paths, deprecated APIs, required config/environment changes
-- **Deployment Notes** — infrastructure changes, dependency upgrades, rebuild requirements, deployment warnings
+
+#### Developer Changelog
+Detailed technical changelog.
+
+---
+
+#### User-Facing Release Notes
+Professional readable release notes.
+
+---
+
+#### Migration Notes
+Explain:
+- breaking changes
+- upgrade paths
+- deprecated APIs
+- required config changes
+- required environment changes
+- compatibility concerns
+
+---
+
+#### Deployment Notes
+Explain:
+- infrastructure changes
+- dependency upgrades
+- rebuild requirements
+- DB migrations
+- cache invalidation
+- deployment warnings
 
 ---
 
 ### Phase 7 — Validation & Consistency Audit
 
-Before finalizing, ensure:
-- All versions match across UI/docs/builds/manifests
-- No stale version references remain
-- Generated docs regenerated
+Before finalizing:
+
+#### Validate Version Consistency
+
+Ensure:
+- all versions match
+- no stale version references remain
+- UI/docs/builds all match
+- manifests match installers
+- generated docs regenerated
 - API versions match binaries
 
-Flag: TODO/FIXME/HACK additions, accidental debug code, experimental unfinished features, undocumented changes, missing tests, stale screenshots, deprecated APIs without warnings, hidden regressions, incomplete release notes.
+---
+
+#### Detect Problems
+
+Flag:
+- TODO/FIXME/HACK additions
+- accidental debug code
+- experimental unfinished features
+- undocumented changes
+- missing tests
+- stale screenshots
+- deprecated APIs without warnings
+- hidden regressions
+- incomplete release notes
 
 ---
 
 ### Phase 8 — Testing & Regression Safety
 
-- Convert modifications into verifiable goals
-- Write/update tests first (TDD where applicable)
-- Confirm existing tests pass
-- Verify old features still work, APIs remain compatible, UI remains functional, examples/docs still work, builds launch successfully
+#### Goal-Driven Development
+
+Convert modifications into verifiable goals.
+
+##### TDD Workflow
+1. Write/update tests first.
+2. Confirm tests fail.
+3. Implement changes.
+4. Confirm tests pass.
+
+---
+
+#### Regression Validation
+
+Ensure:
+- existing tests pass
+- old features still work
+- APIs remain compatible
+- UI remains functional
+- examples/docs still work
+- builds launch successfully
 
 ---
 
 ### Phase 9 — State Synchronization
 
-Immediately update: `CLAUDE.md`, architecture docs, release docs, migration docs, project maps.
+Immediately update:
+- `CLAUDE.md`
+- architecture docs
+- release docs
+- migration docs
+- project maps
 
-Document: deprecated systems, technical debt, postponed cleanup, compatibility layers.
+Document:
+- deprecated systems
+- technical debt
+- postponed cleanup
+- compatibility layers
 
 ---
 
 ### Phase 10 — Git Operations
 
-Commit all changes (source, version updates, docs, changelog, generated docs, manifests, release assets) with semantic commit messages:
+After validations pass:
 
+#### Commit All Changes
+
+Commit:
+- source modifications
+- version updates
+- docs updates
+- changelog updates
+- generated docs
+- manifests
+- release assets
+
+Use semantic commit messages.
+
+Example:
 ```bash
 git commit -m "release: prepare vX.Y.Z"
+```
+
+---
+
+#### Push Changes
+
+Push:
+- current branch
+- release branches
+- tags
+
+Example:
+```bash
 git push origin <branch>
 git push origin --tags
+```
+
+---
+
+#### Create Release Tag
+
+Create annotated git tag.
+
+Example:
+```bash
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 ```
+
+Ensure:
+- tag matches release version
+- manifests/UI/docs all match tag
 
 ---
 
 ### Phase 11 — GitHub Release Creation
 
+Automatically create GitHub Release.
+
+Include:
+- release title
+- semantic version
+- generated release notes
+- migration warnings
+- breaking changes
+- installation/update notes
+
+Ensure:
+- correct tag attached
+- draft/prerelease flags correct
+- release notes formatted professionally
+
+Use:
+- GitHub CLI (`gh`)
+- GitHub API
+- or release automation systems
+
+Example:
 ```bash
 gh release create vX.Y.Z
 ```
-
-Include: release title, semantic version, generated release notes, migration warnings, breaking changes, installation/update notes. Ensure correct tag attached and release notes formatted professionally.
 
 ---
 
 ### Phase 12 — Production Build Generation
 
-The production build **MUST** use **Python 3.10**.
+#### Python Environment
 
-Validate: interpreter version, venv paths, dependency compatibility, compiled extension compatibility.
+The production build MUST use:
 
-Generate: executable builds, installers, portable builds, wheel packages, standalone distributions.
+```text
+Python 3.10
+```
 
-Validate: startup, packaging integrity, embedded resources, dependency resolution, version metadata.
+Validate:
+- interpreter version
+- venv paths
+- dependency compatibility
+- compiled extension compatibility
 
-About window version must match release; no debug mode; no development configs; no temporary files.
+---
+
+#### Build Requirements
+
+Generate production-ready builds:
+- executable builds
+- installers
+- portable builds
+- wheel packages
+- standalone distributions
+
+Validate:
+- startup
+- packaging integrity
+- embedded resources
+- dependency resolution
+- version metadata
+
+---
+
+#### Build Artifact Validation
+
+Ensure:
+- About window version matches release
+- executable metadata matches release
+- no debug mode enabled
+- no development configs included
+- no temporary files included
 
 ---
 
 ### Phase 13 — Upload Release Artifacts
 
+Upload release artifacts to GitHub Release.
+
+Examples:
+- `.zip`
+- `.exe`
+- `.msi`
+- `.whl`
+- `.tar.gz`
+
+Ensure:
+- filenames contain correct version
+- artifacts are production-ready
+- old artifacts are not uploaded
+- checksums generated if needed
+
+Example:
 ```bash
 gh release upload vX.Y.Z build/*.zip
 ```
-
-Ensure: filenames contain correct version, artifacts are production-ready, checksums generated if needed.
 
 ---
 
 ### Phase 14 — Final Release Readiness Audit
 
 Before completion verify:
-- GitHub release exists with artifacts uploaded and release notes attached
-- Build uses Python 3.10
-- No stale version references remain
-- Tests pass
-- Deployment and migration notes complete
-- Docs, UI versions, and all routes synchronized
-- No placeholder pages remain
+
+- GitHub release exists
+- artifacts uploaded successfully
+- release notes attached
+- builds downloadable
+- build uses Python 3.10
+- no stale version references remain
+- tests pass
+- deployment notes complete
+- migration notes complete
+- docs synchronized
+- UI versions synchronized
 
 ---
 
-### Required Final Output Format
+### Required Final Output
 
-```
-Release Summary
+#### Release Summary
 - Previous Version:
 - Suggested Version:
 - Release Type:
 - Risk Level:
 - Release Status:
 
-Key Changes
-  Features:
-  Fixes:
-  Improvements:
-  Performance:
-  Refactors:
-  Security:
-  Breaking Changes:
-  Deprecated Features:
-  Dependencies:
+---
 
-Technical Impact Analysis
-  Affected modules:
-  API impact:
-  Migration requirements:
-  Deployment considerations:
-  Compatibility risks:
+#### Key Changes
 
-Updated Files Report
-  (list all modified source files, docs, HTML, manifests, installers, release assets, CI/CD files with WHY each was updated)
+##### Features
+- ...
 
-Remaining Manual Tasks
-  (screenshots needing update, manual QA tasks, deployment tasks, unresolved risks, external store submissions)
+##### Fixes
+- ...
 
-Final Release Readiness Report
-  (release ready / not ready; known risks; regression concerns; migration warnings; missing requirements)
-```
+##### Improvements
+- ...
+
+##### Performance
+- ...
+
+##### Refactors
+- ...
+
+##### Security
+- ...
+
+##### Breaking Changes
+- ...
+
+##### Deprecated Features
+- ...
+
+##### Dependencies
+- ...
+
+---
+
+#### Technical Impact Analysis
+
+Include:
+- affected modules
+- API impact
+- migration requirements
+- deployment considerations
+- compatibility risks
+- database/schema impact
+
+---
+
+#### Updated Files Report
+
+List ALL modified:
+- source files
+- docs
+- HTML
+- manifests
+- installers
+- release assets
+- CI/CD files
+
+Explain WHY each was updated.
+
+---
+
+#### Remaining Manual Tasks
+
+List:
+- screenshots needing update
+- assets needing regeneration
+- manual QA tasks
+- deployment tasks
+- unresolved risks
+- external store submission tasks
+
+---
+
+#### Final Release Readiness Report
+
+State:
+- release ready / not ready
+- known risks
+- regression concerns
+- migration warnings
+- missing requirements
 
 ---
 
 ### Critical Rules
 
-- **NEVER** hallucinate repository changes — only report verified modifications.
-- **NEVER** leave stale version references anywhere.
-- **NEVER** update changelog alone — always synchronize docs/UI/build metadata.
-- **ALWAYS** maintain backward compatibility unless intentionally changed.
-- **ALWAYS** preserve repository architecture and style.
-- **ALWAYS** validate before release.
-- **ALWAYS** think before coding.
+- NEVER hallucinate repository changes.
+- ONLY report verified modifications.
+- NEVER leave stale version references.
+- NEVER update changelog alone.
+- ALWAYS synchronize docs/UI/build metadata.
+- ALWAYS maintain backward compatibility unless intentionally changed.
+- ALWAYS preserve repository architecture/style.
+- ALWAYS use surgical modifications only.
+- ALWAYS validate before release.
+- ALWAYS think before coding.
+
+---
+
+### Final Execution Command
+
+Execution order:
+1. Detect latest release
+2. Analyze unreleased changes
+3. Perform impact analysis
+4. Recommend semantic version
+5. Synchronize versions globally
+6. Update UI/docs/build systems
+7. Generate release notes
+8. Run tests & validations
+9. Build production version using Python 3.10
+10. Commit all changes
+11. Create release tag
+12. Push commits & tags
+13. Create GitHub release
+14. Upload release artifacts
+15. Produce final release readiness report
+
+---
+
+Verify that:
+
+- User Guide updated
+- Developer Guide updated
+- Technical Reference updated
+- Automation API updated
+- Node Builder API updated
+- Portal Docs updated
+- sidebar navigation updated
+- Help menu synchronized
+- website pages
+- HTML docs
+- markdown docs
+- generated docs
+- portal docs
+- API docs
+- onboarding
+- README sections
+- tutorials
+- examples
+- release notes
+- SEO metadata
+- navigation systems
+- help menus
+- search indexes
+- generated static content
+- screenshots
+- code snippets
+- public references
+- all routes accessible
+- no placeholder pages remain
+
+Think carefully before modifying anything.
