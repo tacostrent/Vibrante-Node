@@ -1,0 +1,23 @@
+#!/bin/bash
+# postinst — Vibrante-Node post-installation script
+#
+# Runs after dpkg unpacks the package.  Refreshes XDG desktop caches so the
+# application appears in the desktop environment's application launcher.
+
+set -e
+
+case "$1" in
+    configure)
+        # Refresh icon cache (GNOME, KDE, etc.)
+        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+        fi
+
+        # Refresh desktop database (makes the app searchable in launchers)
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database /usr/share/applications || true
+        fi
+        ;;
+esac
+
+exit 0

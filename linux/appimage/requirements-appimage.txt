@@ -1,0 +1,28 @@
+# Vibrante-Node AppImage requirements
+# ---------------------------------------------------------------------------
+# These are the MINIMUM version bounds used when building the AppImage.
+# The build script installs the vibrante-node wheel first (which brings in
+# PyQt5, pydantic, toposort), then installs the extras listed below.
+#
+# For a bit-for-bit reproducible rebuild, capture the post-install state:
+#   pip freeze > requirements-appimage.lock
+# and substitute this file with the .lock file in build_appimage.sh.
+# ---------------------------------------------------------------------------
+
+# Core GUI toolkit — pinned to the 5.15 LTS series
+PyQt5>=5.15,<6
+PyQt5-sip>=12.12
+
+# Data validation
+pydantic>=2.0
+
+# Topological sort for execution ordering
+toposort>=1.5
+
+# Optional: full code editor with Python syntax highlighting + autocomplete
+# Comment this line out to reduce the AppImage size by ~5 MB.
+QScintilla>=2.13
+
+# Note: google-generativeai (AI features) is deliberately excluded from the
+# AppImage to keep the download size manageable (~50 MB vs ~200 MB with grpc).
+# Users who need AI features should install via pip instead.

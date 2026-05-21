@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vibrante-node"
+dynamic = ["version"]
+description = "VFX pipeline visual node editor — build, connect, and run DCC workflows without writing pipeline code"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "Mahmoud Kamal (KamalTD)", email = "m.kamalvfx@gmail.com" },
+]
+keywords = ["vfx", "pipeline", "node-editor", "houdini", "maya", "blender", "automation"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Environment :: X11 Applications :: Qt",
+]
+
+# Core runtime dependencies (no QScintilla, no AI — those are extras)
+dependencies = [
+    "PyQt5>=5.15,<6",
+    "pydantic>=2.0",
+    "toposort>=1.5",
+]
+
+[project.optional-dependencies]
+# Full code editor with syntax highlighting and autocomplete
+editor = [
+    "QScintilla>=2.13",
+]
+# Gemini AI chat integration
+ai = [
+    "google-generativeai>=0.5",
+]
+# Everything
+all = [
+    "QScintilla>=2.13",
+    "google-generativeai>=0.5",
+]
+
+[project.scripts]
+vibrante-node = "vibrante_node.app:main"
+
+[project.urls]
+Homepage = "https://vibrante-node.com"
+Repository = "https://github.com/KamalTDev/vibrante-node"
+"Bug Tracker" = "https://github.com/KamalTDev/vibrante-node/issues"
+
+# ---------------------------------------------------------------------------
+# setuptools configuration
+# ---------------------------------------------------------------------------
+
+[tool.setuptools.dynamic]
+version = { attr = "src.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["vibrante_node*", "src*"]
+
+# The data files (nodes/, icons/, docs/, etc.) are NOT in the source
+# vibrante_node/ directory in the git repo.  They are copied there at
+# wheel-build time by the custom build_py hook in setup.py.
+# The wildcard below ensures setuptools includes whatever the hook copied.
+[tool.setuptools.package-data]
+vibrante_node = ["*", "**/*"]
