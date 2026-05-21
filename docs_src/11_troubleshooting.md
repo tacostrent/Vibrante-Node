@@ -559,10 +559,9 @@ async def execute(self, inputs):
     response = requests.get(url)
 
     # Correct: async HTTP
-    import aiohttp
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            data = await response.json()
+    import urllib.request, asyncio
+    loop = asyncio.get_running_loop()
+    text = await loop.run_in_executor(None, lambda: urllib.request.urlopen(url).read().decode())
 
     # Wrong: blocking subprocess
     import subprocess

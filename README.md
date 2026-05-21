@@ -86,14 +86,14 @@ The project focuses on flexibility, extensibility, and developer productivity, m
 - **Node Execution Timing** — log panel reports elapsed time for each node (e.g. `Node 'Get Asset' finished in 0.34s`)
 - **Init-First Ordering** — `init_priority` ensures authentication or server-connect nodes are fully wired before downstream consumers are instantiated
 
-### Node Library (167+ Bundled Nodes)
+### Node Library (177+ Bundled Nodes)
 
 | Category | Count | Examples |
 |---|---|---|
 | Prism Pipeline | 62 | entities, assets, shots, products, USD, configs |
-| Maya | 25 | open/save scene, import/export, render, MEL/Python |
-| Blender | 21 | Alembic, FBX, glTF, OBJ, USD, render |
-| Houdini | 18 | create nodes, set parms, cook, VEX/Python, SOP chains |
+| Maya | 24 | open/save scene, import/export, render, custom Python |
+| Blender | 20 | Alembic, FBX, glTF, OBJ, USD, render |
+| Houdini (headless) | 17 | open/save HIP, Alembic/FBX import-export, headless executor |
 | Network | 1 | `http_request` — async GET/POST with JSON body, headers, timeout |
 | Control Flow | — | `if_condition`, `for_loop`, `while_loop`, `loop_body`, `branch` |
 | Data Structures | — | `create_list`, `create_dictionary`, `get_dict_value`, `set_dict_value` |
@@ -231,11 +231,11 @@ Vibrante-Node/
 │   │   └── qt_compat.py    # Qt5/Qt6 compatibility layer
 │   └── main.py             # Application entry point
 │
-├── nodes/                  # 166+ bundled node JSON definitions
+├── nodes/                  # 177+ bundled node definitions
 │   ├── prism_*/            # 62 Prism Pipeline nodes
-│   ├── maya_*/             # 25 Maya headless action nodes
-│   ├── blender_*/          # 21 Blender headless action nodes
-│   └── houdini_*/          # 18 Houdini live bridge nodes
+│   ├── maya_*/             # 24 Maya headless action nodes
+│   ├── blender_*/          # 20 Blender headless action nodes
+│   └── houdini_*/          # 17 Houdini headless action nodes
 │
 ├── plugins/
 │   └── houdini/            # Houdini integration plugin (package, server, shelf, menu)

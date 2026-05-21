@@ -28,7 +28,7 @@ Vibrante-Node adopts the Unreal Engine Blueprint model of **exec pins** alongsid
 
 ### Why Async?
 
-DCC operations — cooking a Houdini geometry, rendering a Maya scene, querying a Prism Pipeline project database — can take seconds or minutes. A synchronous engine would freeze the UI and prevent you from monitoring progress, reading log output, or stopping a runaway task. Vibrante-Node runs the execution engine on an asyncio event loop that shares the Qt event loop via `qasync`. Every node's `execute()` method is a Python coroutine (`async def`). This means:
+DCC operations — cooking a Houdini geometry, rendering a Maya scene, querying a Prism Pipeline project database — can take seconds or minutes. A synchronous engine would freeze the UI and prevent you from monitoring progress, reading log output, or stopping a runaway task. Vibrante-Node runs the execution engine on a dedicated asyncio event loop driven by a zero-interval `QTimer` on the Qt main thread (`_EventLoopRunner` in `src/ui/window.py`). Every node's `execute()` method is a Python coroutine (`async def`). This means:
 
 - The UI stays responsive during execution.
 - Long-running nodes can `await` external results without blocking.

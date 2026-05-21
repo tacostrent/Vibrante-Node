@@ -752,16 +752,21 @@ async def execute(self, inputs):
     return {"data": data, "exec_out": True}
 ```
 
-For HTTP requests, use an async library like `aiohttp` or `httpx`:
+For HTTP requests, use `urllib.request` in a thread executor. Vibrante-Node's event loop is QTimer-stepped, not continuously running, so `aiohttp` and `httpx` are not compatible. Use the thread pool pattern instead:
 
 ```python
-import aiohttp
+import asyncio
+import urllib.request
 
 async def execute(self, inputs):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(inputs.get("url")) as resp:
-            data = await resp.json()
-    return {"response": data, "exec_out": True}
+    url = inputs.get("url", "")
+    loop = asyncio.get_running_loop()
+
+    def _sync_request():
+        with urllib.request.urlopen(url, timeout=30) as resp:
+            return resp.read().decode("utf-8")
+
+    text = await loop.run_in_executor(None, _sync_request)
 ```
 
 ### Yielding inside loops
@@ -917,7 +922,7 @@ Key patterns in this example:
 ## 21. Complete Example: HTTP API Request Node
 
 This node makes an async HTTP GET request and returns the JSON body. It uses
-`aiohttp` for non-blocking I/O.
+`urllib.request` in a thread executor (`loop.run_in_executor`) for non-blocking I/O.
 
 ```python
 # nodes/http_get.py
@@ -956,50 +961,38 @@ class Http_Get(BaseNode):
                 "exec_out": False, "exec_fail": True,
             }
 
-        try:
-            import aiohttp
-        except ImportError:
-            self.log_error("aiohttp is not installed. Run: pip install aiohttp")
-            await self.set_output("exec_fail", True)
-            return {
-                "response_json": {}, "status_code": 0,
-                "error_message": "aiohttp not installed",
-                "exec_out": False, "exec_fail": True,
-            }
+        import urllib.request
+        import urllib.error
 
+        # HTTP requests must use run_in_executor — aiohttp is not compatible
+        # with Vibrante-Node's QTimer-stepped event loop
         self.log_info(f"GET {url} (timeout={timeout}s)")
 
+        def _sync_do():
+            req = urllib.request.Request(url, headers=headers or {}, method="GET")
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    return resp.status, resp.read().decode("utf-8")
+            except urllib.error.HTTPError as e:
+                return e.code, e.read().decode("utf-8", errors="replace")
+
+        loop = asyncio.get_running_loop()
         try:
-            conn_timeout = aiohttp.ClientTimeout(total=timeout)
-            async with aiohttp.ClientSession(timeout=conn_timeout) as session:
-                async with session.get(url, headers=headers) as resp:
-                    status = resp.status
-                    await self.set_output("status_code", status)
+            status, text = await loop.run_in_executor(None, _sync_do)
+            import json as _json
+            try:
+                body = _json.loads(text)
+            except (_json.JSONDecodeError, ValueError):
+                body = {"text": text}
 
-                    if resp.content_type == "application/json":
-                        body = await resp.json()
-                    else:
-                        text = await resp.text()
-                        body = {"text": text}
-
-            self.log_success(f"Response {status}: {len(str(body))} chars")
+            self.log_info(f"Response {status}: {len(text)} chars")
             await self.set_output("response_json", body)
+            await self.set_output("status_code", status)
             await self.set_output("exec_out", True)
             return {
                 "response_json": body, "status_code": status,
                 "error_message": "",
                 "exec_out": True, "exec_fail": False,
-            }
-
-        except asyncio.TimeoutError:
-            msg = f"Request timed out after {timeout}s"
-            self.log_error(msg)
-            await self.set_output("error_message", msg)
-            await self.set_output("exec_fail", True)
-            return {
-                "response_json": {}, "status_code": 0,
-                "error_message": msg,
-                "exec_out": False, "exec_fail": True,
             }
 
         except Exception as e:
@@ -1018,7 +1011,7 @@ def register_node():
 ```
 
 Key patterns in this example:
-- Dependency check (`import aiohttp` inside execute) with a clear error message.
+- Use `loop.run_in_executor(None, sync_fn)` for any blocking I/O — HTTP, database, subprocess.
 - `asyncio.TimeoutError` caught separately from generic exceptions.
 - `await self.set_output("status_code", status)` pushes partial data before the
   rest of the response is read, so the wire value inspector shows it even if
