@@ -9,7 +9,8 @@
     <a href="examples/">Examples</a> ·
     <a href="workflows/">Workflows</a> ·
     <a href="https://github.com/KamalTD/Vibrante-Node/releases">Releases</a> ·
-    <a href="https://github.com/KamalTD/Vibrante-Node/discussions">Discussions</a>
+    <a href="https://github.com/KamalTD/Vibrante-Node/discussions">Discussions</a> ·
+    <a href="https://discord.gg/YzqtJgHkgH">Discord</a>
   </p>
 
   <p>
@@ -36,6 +37,9 @@
     </a>
     <a href="https://vibrante-node.com/docs">
       <img src="https://img.shields.io/badge/docs-online-0288d1?style=flat-square" alt="Documentation">
+    </a>
+    <a href="https://discord.gg/YzqtJgHkgH">
+      <img src="https://img.shields.io/badge/discord-join%20server-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord">
     </a>
   </p>
 </div>
