@@ -41,6 +41,9 @@
     <a href="https://discord.gg/YzqtJgHkgH">
       <img src="https://img.shields.io/badge/discord-join%20server-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord">
     </a>
+    <a href="https://www.youtube.com/@Vibrante-Node">
+      <img src="https://img.shields.io/badge/youtube-%40Vibrante--Node-FF0000?style=flat-square&logo=youtube&logoColor=white" alt="YouTube">
+    </a>
   </p>
 </div>
 
