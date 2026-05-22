@@ -9,6 +9,7 @@ main/
 venv/
 ENV/
 env/
+/data
 .claude/
 .gemini/
 .specify/
