@@ -6,105 +6,271 @@
     },
     "nodes": [
         {
-            "instance_id": "n_init",
+            "instance_id": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
             "node_id": "prism_core_init",
-            "position": [-600, 0],
+            "position": [
+                -600,
+                0
+            ],
             "parameters": {
                 "prism_scripts_path": "C:/Program Files/Prism2/Scripts",
                 "load_project": true,
                 "show_ui": false
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_create_project",
+            "instance_id": "08704f65-1a1a-45fc-a190-d1b7a1702b26",
             "node_id": "prism_create_project",
-            "position": [-300, -100],
+            "position": [
+                -300,
+                -100
+            ],
             "parameters": {
                 "name": "MyShow",
                 "path": "D:/Projects/MyShow",
                 "preset": "Default"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_change_project",
+            "instance_id": "00811930-7793-4fed-a996-7a30faa9a18e",
             "node_id": "prism_change_project",
-            "position": [0, -100],
+            "position": [
+                0,
+                -100
+            ],
             "parameters": {
                 "project_path": "D:/Projects/MyShow"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_build_entity",
+            "instance_id": "990f3554-f125-4e34-927d-8549203dd5f5",
             "node_id": "prism_build_entity",
-            "position": [-300, 100],
+            "position": [
+                -300,
+                100
+            ],
             "parameters": {
                 "entity_type": "asset",
                 "asset_path": "chars/dog"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_create_entity",
+            "instance_id": "8d8aa531-8994-4623-a3af-5fdd9174206b",
             "node_id": "prism_create_entity",
-            "position": [300, 0],
+            "position": [
+                300,
+                0
+            ],
             "parameters": {
                 "entity_type": "asset",
                 "asset_path": "chars/dog"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_create_category",
+            "instance_id": "0c92b670-02bc-4ea1-8492-83e8f5c58389",
             "node_id": "prism_create_category",
-            "position": [600, 0],
+            "position": [
+                600,
+                0
+            ],
             "parameters": {
                 "department": "mod",
                 "task": "baseGeo"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_get_presets",
+            "instance_id": "a0bb888b-f085-402a-85ea-b65b5d865679",
             "node_id": "prism_get_preset_scenes",
-            "position": [600, 200],
+            "position": [
+                600,
+                200
+            ],
             "parameters": {
                 "extension_filter": ".hip"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_create_scene",
+            "instance_id": "1a490388-7517-43db-a044-9bbef5c3f75f",
             "node_id": "prism_create_scene_from_preset",
-            "position": [900, 100],
+            "position": [
+                900,
+                100
+            ],
             "parameters": {
                 "department": "mod",
                 "task": "baseGeo",
                 "comment": "initial geometry"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         },
         {
-            "instance_id": "n_popup",
+            "instance_id": "168440fb-0662-485c-a94b-d7bc54fc2939",
             "node_id": "prism_popup",
-            "position": [1200, 100],
+            "position": [
+                1200,
+                100
+            ],
             "parameters": {
                 "message": "Vibrante: Prism workflow finished.",
                 "title": "Vibrante \u00d7 Prism"
-            }
+            },
+            "state": "idle",
+            "bypassed": false
         }
     ],
     "connections": [
-        {"from_node": "n_init",            "from_port": "exec_out",   "to_node": "n_create_project",     "to_port": "exec_in",      "is_exec": true},
-        {"from_node": "n_init",            "from_port": "core",       "to_node": "n_create_project",     "to_port": "core",         "is_exec": false},
-        {"from_node": "n_create_project",  "from_port": "exec_out",   "to_node": "n_change_project",     "to_port": "exec_in",      "is_exec": true},
-        {"from_node": "n_init",            "from_port": "core",       "to_node": "n_change_project",     "to_port": "core",         "is_exec": false},
-        {"from_node": "n_change_project",  "from_port": "exec_out",   "to_node": "n_create_entity",      "to_port": "exec_in",      "is_exec": true},
-        {"from_node": "n_init",            "from_port": "core",       "to_node": "n_create_entity",      "to_port": "core",         "is_exec": false},
-        {"from_node": "n_create_entity",   "from_port": "exec_out",   "to_node": "n_create_category",    "to_port": "exec_in",      "is_exec": true},
-        {"from_node": "n_init",            "from_port": "core",       "to_node": "n_create_category",    "to_port": "core",         "is_exec": false},
-        {"from_node": "n_build_entity",    "from_port": "entity",     "to_node": "n_create_category",    "to_port": "entity",       "is_exec": false},
-        {"from_node": "n_create_category", "from_port": "exec_out",   "to_node": "n_get_presets",        "to_port": "exec_in",      "is_exec": true},
-        {"from_node": "n_init",            "from_port": "core",       "to_node": "n_get_presets",        "to_port": "core",         "is_exec": false},
-        {"from_node": "n_get_presets",     "from_port": "exec_out",   "to_node": "n_create_scene",       "to_port": "exec_in",      "is_exec": true},
-        {"from_node": "n_init",            "from_port": "core",       "to_node": "n_create_scene",       "to_port": "core",         "is_exec": false},
-        {"from_node": "n_build_entity",    "from_port": "entity",     "to_node": "n_create_scene",       "to_port": "entity",       "is_exec": false},
-        {"from_node": "n_get_presets",     "from_port": "first_preset","to_node": "n_create_scene",      "to_port": "preset_file",  "is_exec": false},
-        {"from_node": "n_create_scene",    "from_port": "exec_out",   "to_node": "n_popup",              "to_port": "exec_in",      "is_exec": true},
-        {"from_node": "n_init",            "from_port": "core",       "to_node": "n_popup",              "to_port": "core",         "is_exec": false}
-    ]
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "exec_out",
+            "to_node": "08704f65-1a1a-45fc-a190-d1b7a1702b26",
+            "to_port": "exec_in",
+            "is_exec": true,
+            "id": "7d956e42-1c44-4aa0-8ec2-7d36cd3d2811"
+        },
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "core",
+            "to_node": "08704f65-1a1a-45fc-a190-d1b7a1702b26",
+            "to_port": "core",
+            "is_exec": false,
+            "id": "6c2f67a7-f388-493d-92c6-b50f45e5c2bf"
+        },
+        {
+            "from_node": "08704f65-1a1a-45fc-a190-d1b7a1702b26",
+            "from_port": "exec_out",
+            "to_node": "00811930-7793-4fed-a996-7a30faa9a18e",
+            "to_port": "exec_in",
+            "is_exec": true,
+            "id": "ee8c3a2c-1cf6-464d-9583-ca373e5c4451"
+        },
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "core",
+            "to_node": "00811930-7793-4fed-a996-7a30faa9a18e",
+            "to_port": "core",
+            "is_exec": false,
+            "id": "dfc574a2-70f7-43c5-a8fc-4f7054d54470"
+        },
+        {
+            "from_node": "00811930-7793-4fed-a996-7a30faa9a18e",
+            "from_port": "exec_out",
+            "to_node": "8d8aa531-8994-4623-a3af-5fdd9174206b",
+            "to_port": "exec_in",
+            "is_exec": true,
+            "id": "09117f56-a34f-41cb-864d-8fda160b2dc9"
+        },
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "core",
+            "to_node": "8d8aa531-8994-4623-a3af-5fdd9174206b",
+            "to_port": "core",
+            "is_exec": false,
+            "id": "8eb4a091-4442-423e-89f3-7d1b19c8a606"
+        },
+        {
+            "from_node": "8d8aa531-8994-4623-a3af-5fdd9174206b",
+            "from_port": "exec_out",
+            "to_node": "0c92b670-02bc-4ea1-8492-83e8f5c58389",
+            "to_port": "exec_in",
+            "is_exec": true,
+            "id": "d06487c7-1517-4b28-9fe3-c18c88f1822e"
+        },
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "core",
+            "to_node": "0c92b670-02bc-4ea1-8492-83e8f5c58389",
+            "to_port": "core",
+            "is_exec": false,
+            "id": "b5bb4bf7-7445-42a8-9c72-bdfc987b8d0a"
+        },
+        {
+            "from_node": "990f3554-f125-4e34-927d-8549203dd5f5",
+            "from_port": "entity",
+            "to_node": "0c92b670-02bc-4ea1-8492-83e8f5c58389",
+            "to_port": "entity",
+            "is_exec": false,
+            "id": "e40ac765-1415-48f2-87f2-d83d9efebb33"
+        },
+        {
+            "from_node": "0c92b670-02bc-4ea1-8492-83e8f5c58389",
+            "from_port": "exec_out",
+            "to_node": "a0bb888b-f085-402a-85ea-b65b5d865679",
+            "to_port": "exec_in",
+            "is_exec": true,
+            "id": "86b7e0b4-bc3e-4a1e-b277-3a66f8e70a64"
+        },
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "core",
+            "to_node": "a0bb888b-f085-402a-85ea-b65b5d865679",
+            "to_port": "core",
+            "is_exec": false,
+            "id": "17a2ef80-bd2c-4b98-844b-4a1f551e0209"
+        },
+        {
+            "from_node": "a0bb888b-f085-402a-85ea-b65b5d865679",
+            "from_port": "exec_out",
+            "to_node": "1a490388-7517-43db-a044-9bbef5c3f75f",
+            "to_port": "exec_in",
+            "is_exec": true,
+            "id": "ab155c4a-690c-4f44-9172-e15d42772842"
+        },
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "core",
+            "to_node": "1a490388-7517-43db-a044-9bbef5c3f75f",
+            "to_port": "core",
+            "is_exec": false,
+            "id": "0226f4dd-2c0e-461c-8a3f-3f4bff2a9abc"
+        },
+        {
+            "from_node": "990f3554-f125-4e34-927d-8549203dd5f5",
+            "from_port": "entity",
+            "to_node": "1a490388-7517-43db-a044-9bbef5c3f75f",
+            "to_port": "entity",
+            "is_exec": false,
+            "id": "4dbf645a-198f-4655-8366-bba689348c48"
+        },
+        {
+            "from_node": "a0bb888b-f085-402a-85ea-b65b5d865679",
+            "from_port": "first_preset",
+            "to_node": "1a490388-7517-43db-a044-9bbef5c3f75f",
+            "to_port": "preset_file",
+            "is_exec": false,
+            "id": "43712ad3-eecb-487b-a882-34ed2b1775ca"
+        },
+        {
+            "from_node": "1a490388-7517-43db-a044-9bbef5c3f75f",
+            "from_port": "exec_out",
+            "to_node": "168440fb-0662-485c-a94b-d7bc54fc2939",
+            "to_port": "exec_in",
+            "is_exec": true,
+            "id": "74af3163-f9ac-4f07-80d9-210f3e12dad7"
+        },
+        {
+            "from_node": "694455cb-1f14-46c5-b0a8-efff0a1c83b7",
+            "from_port": "core",
+            "to_node": "168440fb-0662-485c-a94b-d7bc54fc2939",
+            "to_port": "core",
+            "is_exec": false,
+            "id": "a438a442-d190-4eda-9c6e-8d19b4d3cd05"
+        }
+    ],
+    "sticky_notes": [],
+    "backdrops": []
 }
