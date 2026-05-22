@@ -1,0 +1,41 @@
+{
+    "node_id": "list_images_recursive",
+    "name": "List Images Recursive",
+    "description": "Lists image files in a folder. Optionally recurses into sub-folders.",
+    "category": "Files",
+    "icon_path": null,
+    "use_exec": true,
+    "inputs": [
+        {
+            "name": "folder_path",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "recursive",
+            "type": "bool",
+            "widget_type": "bool",
+            "options": null,
+            "default": false
+        }
+    ],
+    "outputs": [
+        {
+            "name": "image_paths",
+            "type": "list",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "count",
+            "type": "int",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nimport os\n\n_IMAGE_EXTS = {\".png\", \".jpg\", \".jpeg\", \".gif\", \".bmp\", \".tiff\", \".tif\", \".webp\", \".exr\", \".hdr\"}\n\nclass List_Images_RecursiveNode(BaseNode):\n    name = \"list_images_recursive\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"folder_path\", \"string\", widget_type=\"text\")\n        self.add_input(\"recursive\", \"bool\", widget_type=\"bool\", default=False)\n        self.add_output(\"image_paths\", \"list\")\n        self.add_output(\"count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        folder_path = inputs.get(\"folder_path\", \"\")\n        recursive = inputs.get(\"recursive\", False)\n\n        if not folder_path or not os.path.isdir(folder_path):\n            self.log_error(f\"Invalid folder path: {folder_path!r}\")\n            return {\"image_paths\": [], \"count\": 0, \"exec_out\": True}\n\n        paths = []\n        if recursive:\n            for root, _, files in os.walk(folder_path):\n                for fname in sorted(files):\n                    if os.path.splitext(fname)[1].lower() in _IMAGE_EXTS:\n                        paths.append(os.path.join(root, fname))\n        else:\n            for fname in sorted(os.listdir(folder_path)):\n                if os.path.splitext(fname)[1].lower() in _IMAGE_EXTS:\n                    full = os.path.join(folder_path, fname)\n                    if os.path.isfile(full):\n                        paths.append(full)\n\n        return {\"image_paths\": paths, \"count\": len(paths), \"exec_out\": True}\n\ndef register_node():\n    return List_Images_RecursiveNode\n"
+}

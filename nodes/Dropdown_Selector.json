@@ -4,7 +4,7 @@
     "description": "",
     "category": "General",
     "icon_path": null,
-    "use_exec": true,
+    "use_exec": false,
     "inputs": [
         {
             "name": "selection",
@@ -23,5 +23,5 @@
             "default": null
         }
     ],
-    "python_code": "from src.nodes.base import BaseNode\n\nclass Dropdown_SelectorNode(BaseNode):\n    name = \"Dropdown_Selector\"\n    category = \"Examples\"\n    description = \"Demonstrates a dropdown widget. Returns the selected item on execute and reactively on change.\"\n\n    def __init__(self):\n        super().__init__(use_exec=False)        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"selection\", \"string\", widget_type=\"dropdown\")\n        self.add_output(\"selected_item\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_input(\n            \"selection\",\n            \"string\",\n            widget_type=\"dropdown\",\n            options=[\"Option A\", \"Option B\", \"Option C\"],\n            default=\"Option A\",\n        )\n        self.add_output(\"selected_item\", \"string\")\n\n    async def execute(self, inputs):\n        selected = inputs.get(\"selection\", \"\")\n        self.log_info(f\"Selected: {selected}\")\n        return {\"selected_item\": selected}\n\n    async def on_parameter_changed(self, name, value):\n        if name == \"selection\":\n            await self.set_output(\"selected_item\", value)\n\ndef register_node():\n    return Dropdown_SelectorNode\n"
+    "python_code": "from src.nodes.base import BaseNode\n\nclass Dropdown_SelectorNode(BaseNode):\n    name = \"Dropdown_Selector\"\n    category = \"Examples\"\n    description = \"Demonstrates a dropdown widget. Returns the selected item on execute and reactively on change.\"\n\n    def __init__(self):\n        super().__init__(use_exec=False)\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"selection\", \"string\", widget_type=\"dropdown\", options=[\"Option A\", \"Option B\", \"Option C\"], default=\"Option A\")\n        self.add_output(\"selected_item\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        selected = inputs.get(\"selection\", \"\")\n        self.log_info(f\"Selected: {selected}\")\n        return {\"selected_item\": selected}\n\n    async def on_parameter_changed(self, name, value):\n        if name == \"selection\":\n            await self.set_output(\"selected_item\", value)\n\ndef register_node():\n    return Dropdown_SelectorNode\n"
 }
