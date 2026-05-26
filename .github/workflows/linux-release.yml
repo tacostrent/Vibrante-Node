@@ -1,0 +1,69 @@
+name: Linux Release Artifacts
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-linux:
+    name: Build AppImage + .deb
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build setuptools wheel
+
+      - name: Install app dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build Python wheel
+        run: python -m build --wheel --no-isolation
+
+      - name: Install AppImage + .deb prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y wget fuse libfuse2 dpkg-dev
+
+      - name: Build AppImage
+        run: |
+          bash linux/appimage/build_appimage.sh \
+            --wheel dist/vibrante_node-*.whl
+
+      - name: Build .deb package
+        run: |
+          bash linux/deb/build_deb.sh \
+            --wheel dist/vibrante_node-*.whl
+
+      - name: Upload AppImage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            linux/build/Vibrante-Node-*-x86_64.AppImage \
+            --clobber
+
+      - name: Upload .deb
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            linux/build/vibrante-node_*.deb \
+            --clobber
+
+      - name: Upload wheel (if not already present)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/vibrante_node-*.whl \
+            --clobber
