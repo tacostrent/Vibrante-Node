@@ -1,0 +1,67 @@
+{
+    "nodes": [
+        {
+            "instance_id": "d538ca27-24a2-4786-b480-a88328ed5306",
+            "node_id": "hou_mcp_scene_context",
+            "position": [-280.0, -80.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "include_selection": true,
+                "include_assets": true,
+                "include_render": true,
+                "force_refresh": false,
+                "context": {},
+                "context_json": "",
+                "scene": {},
+                "networks": {},
+                "selection": []
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "ce864ced-6172-4611-b522-0409084628ba",
+            "node_id": "console_print",
+            "position": [220.0, -80.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "data": "",
+                "out": ""
+            },
+            "state": "idle"
+        }
+    ],
+    "connections": [
+        {
+            "id": "ecc29f87-2a4d-476c-a69d-54d2ca541999",
+            "from_node": "d538ca27-24a2-4786-b480-a88328ed5306",
+            "from_port": "exec_out",
+            "to_node": "ce864ced-6172-4611-b522-0409084628ba",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "8b2f1c32-98f3-4a01-aa71-4166aa31786d",
+            "from_node": "d538ca27-24a2-4786-b480-a88328ed5306",
+            "from_port": "context_json",
+            "to_node": "ce864ced-6172-4611-b522-0409084628ba",
+            "to_port": "data",
+            "is_exec": false
+        }
+    ],
+    "sticky_notes": [
+        {
+            "id": "d86cbc0b-8fd2-4d8c-babd-be6fbae395e2",
+            "position": [-280.0, -210.0],
+            "size": [680.0, 110.0],
+            "text": "Demo: aggregate the live Houdini scene state via the runtime layer and print the JSON-serialised context.\n\nPrereqs: Vibrante-Node was launched from Houdini (the bridge is reachable). The output is shape-stable JSON — feed it directly into an LLM prompt.\n\nToggle force_refresh on the scene_context node to bypass the 5-second cache.",
+            "color": "#ffffcc"
+        }
+    ],
+    "backdrops": [],
+    "metadata": {
+        "name": "Houdini MCP: Scene Context Demo",
+        "description": "Tier 1 smoke graph for the AI-oriented scene context node."
+    }
+}
