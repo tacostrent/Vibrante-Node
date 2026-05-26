@@ -100,7 +100,7 @@ SOURCE_DATE_EPOCH=0 bash linux/appimage/build_appimage.sh
 ### What the script does
 
 1. Downloads `appimagetool` into `linux/build/cache/` (if not cached).
-2. Downloads `python3.10.14-cp310-cp310-manylinux2014_x86_64.AppImage`
+2. Downloads `python3.10.19-cp310-cp310-manylinux2014_x86_64.AppImage`
    from the [python-appimage](https://github.com/niess/python-appimage)
    project (if not cached).
 3. Extracts the Python AppImage to a temporary `AppDir`.
