@@ -3,6 +3,12 @@ name: Linux Release Artifacts
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to upload artifacts to (e.g. v2.4.0)"
+        required: true
+        default: "v2.4.0"
 
 jobs:
   build-linux:
@@ -44,11 +50,20 @@ jobs:
           bash linux/deb/build_deb.sh \
             --wheel dist/vibrante_node-*.whl
 
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.release_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload AppImage
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
+          gh release upload "${{ steps.tag.outputs.value }}" \
             linux/build/Vibrante-Node-*-x86_64.AppImage \
             --clobber
 
@@ -56,14 +71,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
+          gh release upload "${{ steps.tag.outputs.value }}" \
             linux/build/vibrante-node_*.deb \
             --clobber
 
-      - name: Upload wheel (if not already present)
+      - name: Upload wheel
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
+          gh release upload "${{ steps.tag.outputs.value }}" \
             dist/vibrante_node-*.whl \
             --clobber
