@@ -41,6 +41,7 @@ Vibrante-Node was first released in 2024 under the GitHub username [KamalTD](htt
 | v2.2.0 | 2026-05-15 | Minor | Settings dialog (Preferences), EnvManager, reactive propagation thread-safety fix |
 | v2.2.1 | 2026-05-15 | Patch | About dialog crash fix, LICENSE file bundled in Windows exe |
 | v2.3.0 | 2026-05-18 | Minor | HTTP Request node, Authenticode signing scripts, Node Builder correctness fixes, canvas drag-trail fix |
+| v2.4.0 | 2026-05-26 | Minor | Complete AI orchestration MCP runtime (Tiers 1–6), 26 new nodes, MCP server entry point, query_node_parameters tool, node ID cleanup |
 
 ---
 

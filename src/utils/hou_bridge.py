@@ -207,6 +207,26 @@ class HouBridge:
         """Fetch auto-complete suggestions from Houdini."""
         return self._send("get_completions", {"prefix": prefix})
 
+    def get_selection(self):
+        """Return the list of currently selected node paths.
+
+        In headless / batch Houdini there is no UI selection, so this always
+        returns []. Used by the runtime layer's scene_context aggregator.
+        """
+        result = self._send("get_selection", {})
+        if isinstance(result, dict):
+            return list(result.get("paths") or [])
+        return list(result or [])
+
+    def network_summary(self, path):
+        """Return children of `path` with name + type + path + category in one call.
+
+        Cheaper than calling children() and then node_info() per child, because
+        category lookup happens server-side. Used by the runtime layer to build
+        per-network listings for scene_context.
+        """
+        return self._send("network_summary", {"path": path})
+
     def call(self, path, *args, **kwargs):
         """Call any Houdini API method dynamically.
         

@@ -293,7 +293,7 @@ def test_builtin_has_execute_method(cls):
 def test_total_node_count():
     """
     Smoke-check: the nodes/ directory must contain at least 166 JSON files
-    (the known bundled count as of v2.3.0, excluding the 11 Python builtins).
+    (the known bundled count as of v2.4.0, excluding the 11 Python builtins).
     Fail loudly if nodes are accidentally deleted.
     """
     count = len(_ALL_NODES)

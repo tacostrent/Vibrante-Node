@@ -1,4 +1,4 @@
-# Full API Reference — Vibrante-Node v2.3.0
+# Full API Reference — Vibrante-Node v2.4.0
 
 This document is the complete public API reference for all classes, signals,
 and utilities available to node authors, workflow automation scripts, and

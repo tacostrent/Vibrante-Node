@@ -1,6 +1,6 @@
 # Vibrante-Node — Developer Guide
 
-**Version:** v2.3.0 | [User Guide](USER_GUIDE.md) | [Node Builder API](NODE_BUILDER_API.md) | [Automation API](AUTOMATION_API.md) | [Technical Reference](DOCUMENTATION.md)
+**Version:** v2.4.0 | [User Guide](USER_GUIDE.md) | [Node Builder API](NODE_BUILDER_API.md) | [Automation API](AUTOMATION_API.md) | [Technical Reference](DOCUMENTATION.md)
 
 This guide describes the internal architecture of Vibrante-Node: the execution engine, node registry, serialization system, Qt threading model, environment management, and plugin architecture. It is written for contributors, pipeline TDs, and developers who need to understand what happens between the user pressing Run and the last node completing.
 

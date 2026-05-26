@@ -1,6 +1,6 @@
 # Vibrante-Node — Automation & Scripting API
 
-**Version:** v2.3.0 | [User Guide](USER_GUIDE.md) | [Node Builder API](NODE_BUILDER_API.md) | [Developer Guide](DEVELOPER.md) | [Technical Reference](DOCUMENTATION.md)
+**Version:** v2.4.0 | [User Guide](USER_GUIDE.md) | [Node Builder API](NODE_BUILDER_API.md) | [Developer Guide](DEVELOPER.md) | [Technical Reference](DOCUMENTATION.md)
 
 The Scripting Console and Python automation API give programmatic access to every part of the application — graph construction, execution control, parameter updates, node registry management, and environment configuration.
 

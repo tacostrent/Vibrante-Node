@@ -1,0 +1,26 @@
+{
+    "node_id": "hou_mcp_predictive_execution",
+    "name": "hou_mcp_predictive_execution",
+    "description": "Predict execution risk and likely failure points for a batch of operations BEFORE executing them. Heuristic-based, explainable, and deterministic. Never executes anything — purely predictive and advisory.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "operations_json",       "type": "string", "widget_type": "text",     "options": null, "default": "[]" },
+        { "name": "context_json",          "type": "string", "widget_type": "text",     "options": null, "default": "{}" },
+        { "name": "include_resource_pred", "type": "bool",   "widget_type": "checkbox", "options": null, "default": true },
+        { "name": "queue_depth",           "type": "int",    "widget_type": "int",      "options": null, "default": 0 },
+        { "name": "exec_in",               "type": "any",    "widget_type": null,       "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "predicted_risk",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "failure_probability", "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "risk_factors",        "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "recommendations",     "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "resource_pressure",   "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "scheduler_status",    "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "prediction_json",     "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",            "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\n\nclass Hou_Mcp_Predictive_Execution(BaseNode):\n    name = \"hou_mcp_predictive_execution\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"operations_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"context_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"include_resource_pred\", \"bool\", widget_type=\"checkbox\", default=True)\n        self.add_input(\"queue_depth\", \"int\", widget_type=\"int\", default=0)\n        self.add_output(\"predicted_risk\", \"string\")\n        self.add_output(\"failure_probability\", \"float\")\n        self.add_output(\"risk_factors\", \"any\")\n        self.add_output(\"recommendations\", \"any\")\n        self.add_output(\"resource_pressure\", \"any\")\n        self.add_output(\"scheduler_status\", \"any\")\n        self.add_output(\"prediction_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            from src.runtime.predictive_execution import get_predictive_engine\n            engine = get_predictive_engine()\n\n            ops_raw = inputs.get(\"operations_json\") or \"[]\"\n            ctx_raw = inputs.get(\"context_json\") or \"{}\"\n            try:\n                operations = json.loads(ops_raw) if isinstance(ops_raw, str) else ops_raw\n            except json.JSONDecodeError:\n                operations = []\n            try:\n                context = json.loads(ctx_raw) if isinstance(ctx_raw, str) else ctx_raw\n            except json.JSONDecodeError:\n                context = {}\n\n            prediction = engine.predict(operations, context)\n            resource_pressure = {}\n            if inputs.get(\"include_resource_pred\", True):\n                resource_pressure = engine.predict_resource_pressure(operations)\n\n            queue_depth = int(inputs.get(\"queue_depth\") or 0)\n            scheduler_status = engine.predict_scheduler_congestion(queue_depth)\n\n            full = {**prediction, \"resource_pressure\": resource_pressure, \"scheduler_status\": scheduler_status}\n            return {\n                \"predicted_risk\":      prediction[\"predicted_risk\"],\n                \"failure_probability\": prediction[\"failure_probability\"],\n                \"risk_factors\":        prediction[\"risk_factors\"],\n                \"recommendations\":     prediction[\"recommendations\"],\n                \"resource_pressure\":   resource_pressure,\n                \"scheduler_status\":    scheduler_status,\n                \"prediction_json\":     json.dumps(full),\n                \"exec_out\": True,\n            }\n        except Exception as e:\n            self.log_error(f\"Predictive execution error: {e}\")\n            return {\"predicted_risk\": \"unknown\", \"failure_probability\": 0.0, \"risk_factors\": [], \"recommendations\": [], \"resource_pressure\": {}, \"scheduler_status\": {}, \"prediction_json\": \"{}\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Predictive_Execution\n"
+}

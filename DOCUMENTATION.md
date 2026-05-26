@@ -1,6 +1,6 @@
 # Vibrante-Node — Technical Reference
 
-**Version:** v2.3.0 | [User Guide](USER_GUIDE.md) | [Node Builder API](NODE_BUILDER_API.md) | [Automation API](AUTOMATION_API.md) | [Developer Guide](DEVELOPER.md)
+**Version:** v2.4.0 | [User Guide](USER_GUIDE.md) | [Node Builder API](NODE_BUILDER_API.md) | [Automation API](AUTOMATION_API.md) | [Developer Guide](DEVELOPER.md)
 
 This is the complete technical reference for Vibrante-Node. Use it as a quick-lookup companion to the other guides. For narrative explanations and examples, refer to the guide documents linked above.
 

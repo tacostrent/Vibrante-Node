@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Release Notes v2.4.0 — Vibrante-Node v2.4.0</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+       background: #1e1e2e; color: #cdd6f4; line-height: 1.7; }
+.sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh;
+           background: #181825; overflow-y: auto; padding: 20px 0; z-index: 100; }
+.sidebar h2 { font-size: 13px; color: #6c7086; text-transform: uppercase;
+              letter-spacing: .08em; padding: 0 18px 10px; }
+.sidebar a  { display: block; padding: 6px 18px; color: #a6adc8; text-decoration: none;
+              font-size: 13px; border-left: 3px solid transparent; transition: all .15s; }
+.sidebar a:hover, .sidebar a.active { color: #cba6f7; border-left-color: #cba6f7;
+                                       background: #1e1e2e; }
+.sidebar .nav-release { font-size: 12px; padding: 4px 18px; }
+.content { margin-left: 220px; max-width: 920px; padding: 40px 48px; }
+h1 { font-size: 2em; color: #cba6f7; border-bottom: 2px solid #313244; padding-bottom: 10px; margin: 28px 0 16px; }
+h2 { font-size: 1.45em; color: #89b4fa; margin: 32px 0 12px; }
+h3 { font-size: 1.15em; color: #94e2d5; margin: 22px 0 8px; }
+h4 { font-size: 1em; color: #f5c2e7; margin: 16px 0 6px; }
+p  { margin-bottom: 14px; color: #cdd6f4; }
+a  { color: #89b4fa; }
+ul, ol { margin: 10px 0 14px 22px; }
+li { margin-bottom: 5px; }
+code { background: #313244; color: #f38ba8; padding: 2px 6px; border-radius: 4px; font-size: .88em; font-family: 'Consolas','Courier New',monospace; }
+pre  { background: #181825; border: 1px solid #313244; border-radius: 8px;
+       padding: 18px 20px; overflow-x: auto; margin: 14px 0 20px; }
+pre code { background: none; color: #a6e3a1; padding: 0; font-size: .9em; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0 20px; font-size: .92em; }
+th { background: #313244; color: #cba6f7; padding: 9px 14px; text-align: left; }
+td { border-top: 1px solid #313244; padding: 8px 14px; }
+tr:nth-child(even) td { background: #1e1e2e; }
+hr { border: none; border-top: 1px solid #313244; margin: 28px 0; }
+blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8; margin: 14px 0; }
+@media (max-width: 700px) { .sidebar { display: none; } .content { margin-left: 0; padding: 24px 18px; } }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <h2>Vibrante-Node</h2>
+  <a href="USER_GUIDE.html">User Guide</a>
+<a href="NODE_BUILDER_API.html">Node Builder API</a>
+<a href="AUTOMATION_API.html">Automation API</a>
+<a href="DEVELOPER.html">Developer Documentation</a>
+<a href="DOCUMENTATION.html">Technical Feature List</a>
+  <hr style="border-color:#313244;margin:10px 18px">
+  <h2 style="margin-top:8px">Release Notes</h2>
+  <a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
+<a class="nav-release" href="RELEASE_v2.3.0.html">Release Notes v2.3.0</a>
+<a class="nav-release" href="RELEASE_v2.2.1.html">Release Notes v2.2.1</a>
+<a class="nav-release" href="RELEASE_v2.2.0.html">Release Notes v2.2.0</a>
+<a class="nav-release" href="RELEASE_v2.1.1.html">Release Notes v2.1.1</a>
+<a class="nav-release" href="RELEASE_v2.1.0.html">Release Notes v2.1.0</a>
+<a class="nav-release" href="RELEASE_v2.0.0.html">Release Notes v2.0.0</a>
+<a class="nav-release" href="RELEASE_v1.8.5.html">Release Notes v1.8.5</a>
+<a class="nav-release" href="RELEASE_v1.8.4.html">Release Notes v1.8.4</a>
+<a class="nav-release" href="RELEASE_v1.8.3.html">Release Notes v1.8.3</a>
+<a class="nav-release" href="RELEASE_v1.8.2.html">Release Notes v1.8.2</a>
+<a class="nav-release" href="RELEASE_v1.8.1.html">Release Notes v1.8.1</a>
+<a class="nav-release" href="RELEASE_v1.8.0.html">Release Notes v1.8.0</a>
+<a class="nav-release" href="RELEASE_v1.7.0.html">Release Notes v1.7.0</a>
+<a class="nav-release" href="RELEASE_v1.6.1.html">Release Notes v1.6.1</a>
+<a class="nav-release" href="RELEASE_v1.6.0.html">Release Notes v1.6.0</a>
+<a class="nav-release" href="RELEASE_v1.5.0.html">Release Notes v1.5.0</a>
+<a class="nav-release" href="RELEASE_v1.4.0.html">Release Notes v1.4.0</a>
+<a class="nav-release" href="RELEASE_v1.3.0.html">Release Notes v1.3.0</a>
+<a class="nav-release" href="RELEASE_v1.2.0.html">Release Notes v1.2.0</a>
+<a class="nav-release" href="RELEASE_v1.1.5.html">Release Notes v1.1.5</a>
+<a class="nav-release" href="RELEASE_v1.1.0.html">Release Notes v1.1.0</a>
+<a class="nav-release" href="RELEASE_v1.0.5.html">Release Notes v1.0.5</a>
+  <hr style="border-color:#313244;margin:10px 18px">
+  <h2 style="margin-top:8px">On this page</h2>
+  <a href="#release-notes-vibrante-node-v240" style="padding-left:18px">Release Notes — Vibrante-Node v2.4.0</a>
+<a href="#highlights" style="padding-left:18px">Highlights</a>
+<a href="#new-features" style="padding-left:18px">New Features</a>
+<a href="#mcp-operational-runtime-tier-6" style="padding-left:32px">MCP Operational Runtime (Tier 6)</a>
+<a href="#ai-orchestration-tiers-15" style="padding-left:32px">AI Orchestration Tiers 1–5</a>
+<a href="#new-nodes" style="padding-left:32px">New Nodes</a>
+<a href="#new-bridge-methods-srcutilshou_bridgepy" style="padding-left:32px">New Bridge Methods (src/utils/hou_bridge.py)</a>
+<a href="#subprocess-crash-logging" style="padding-left:32px">Subprocess Crash Logging</a>
+<a href="#mcp-shutdown-safety" style="padding-left:32px">MCP Shutdown Safety</a>
+<a href="#bug-fixes" style="padding-left:18px">Bug Fixes</a>
+<a href="#node-id-cleanup" style="padding-left:18px">Node ID Cleanup</a>
+<a href="#test-coverage" style="padding-left:18px">Test Coverage</a>
+<a href="#migration-notes" style="padding-left:18px">Migration Notes</a>
+<a href="#upgrading-from-v230" style="padding-left:32px">Upgrading from v2.3.0</a>
+<a href="#mcp-server-setup-optional" style="padding-left:32px">MCP Server Setup (optional)</a>
+<a href="#dependency-changes" style="padding-left:18px">Dependency Changes</a>
+<a href="#full-documentation" style="padding-left:18px">Full Documentation</a>
+</nav>
+<main class="content">
+<h1 id="release-notes-vibrante-node-v240">Release Notes — Vibrante-Node v2.4.0</h1>
+<p><strong>Released:</strong> 2026-05-26<br />
+<strong>Type:</strong> Minor — New features, backward-compatible</p>
+<hr />
+<h2 id="highlights">Highlights</h2>
+<p>v2.4.0 is the largest feature release in Vibrante-Node's history. It introduces a complete <strong>AI-native orchestration runtime</strong> — six tiers of deterministic, validated, transactional infrastructure that enables AI agents (Claude, Codex, GPT) to plan, preview, execute, and review Houdini operations through a structured MCP server interface. Every mutation still goes through the full validation + constraint + transaction pipeline — no arbitrary execution, no autonomous mutation.</p>
+<hr />
+<h2 id="new-features">New Features</h2>
+<h3 id="mcp-operational-runtime-tier-6">MCP Operational Runtime (Tier 6)</h3>
+<p>Vibrante-Node is now a <strong>full MCP server</strong>. Run <code>scripts/run_vibrante_mcp.py</code> to start the server, then add it to Claude Desktop, Codex CLI, or Cursor. External AI clients get 12 structured semantic tools — planning, preview, execution, review — with no raw Houdini API exposure.</p>
+<p><strong>Claude Desktop</strong> (<code>~/.claude/settings.json</code>):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;vibrante&quot;: {
+      &quot;command&quot;: &quot;python&quot;,
+      &quot;args&quot;: [&quot;D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py&quot;]
+    }
+  }
+}
+</code></pre>
+<p>The 12 MCP tools (organized into Runtime / Knowledge / Planning / Execution categories):<br />
+- <code>initialize_runtime_context</code> — call first; returns bootstrap data + system prompt<br />
+- <code>query_runtime_state</code> — live metrics and module status<br />
+- <code>query_scene_context</code> — structured Houdini scene snapshot<br />
+- <code>query_capabilities</code> — enumerate available operations<br />
+- <code>query_workflow_templates</code> — browse 7 built-in templates (pyro, karma, USD export, etc.)<br />
+- <code>query_examples</code> — execution examples for a named intent<br />
+- <code>query_node_parameters</code> — <strong>new</strong> — list all parameter names + values for any Houdini node<br />
+- <code>plan_scene</code> — NL prompt → AI plan (no execution)<br />
+- <code>preview_execution</code> — validate + risk-predict operations without executing<br />
+- <code>validate_execution_plan</code> — structural + constraint pass only<br />
+- <code>execute_workflow_transaction</code> — execute via transaction system with optional dry-run + approval gate<br />
+- <code>review_execution</code> — post-execution intent-match review</p>
+<h3 id="ai-orchestration-tiers-15">AI Orchestration Tiers 1–5</h3>
+<p>The <code>src/runtime/</code> module contains 40+ deterministic runtime modules spanning six tiers:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Modules</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>mcp_runtime</code>, <code>houdini_runtime</code>, <code>scene_cache</code></td>
+<td>MCP client sessions, semantic Houdini ops, TTL cache</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>transaction_manager</code>, <code>scene_cache</code> (extended)</td>
+<td>Transaction lifecycle, rollback, graph diff</td>
+</tr>
+<tr>
+<td>2.5</td>
+<td><code>dependency_graph</code>, <code>validation_engine</code>, <code>audit_store</code>, <code>execution_scheduler</code></td>
+<td>Pre-execution validation, audit trail, serialized execution</td>
+</tr>
+<tr>
+<td>2.75</td>
+<td><code>semantic_registry</code>, <code>semantic_execution</code>, <code>capability_registry</code>, <code>workflow_templates</code>, <code>resource_estimator</code>, <code>runtime_constraints</code></td>
+<td>Named semantic operations, policy gate, template system</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>ai_planner</code>, <code>intent_parser</code>, <code>contextual_reasoning</code>, <code>plan_validator</code>, <code>execution_explainer</code>, <code>approval_pipeline</code>, <code>planning_memory</code>, <code>llm_provider</code></td>
+<td>AI planning pipeline (deterministic-first, LLM-enhanced)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>distributed_runtime</code>, <code>agent_runtime</code>, <code>multi_dcc_runtime</code>, <code>knowledge_graph</code>, <code>semantic_memory</code>, <code>worker_runtime</code>, <code>workflow_federation</code>, <code>runtime_federation_api</code>, <code>mcp_server_runtime</code></td>
+<td>Distributed execution, supervised agents, multi-DCC routing</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>workflow_optimizer</code>, <code>runtime_analytics</code>, <code>predictive_execution</code>, <code>orchestration_heuristics</code>, <code>recommendation_engine</code>, <code>resource_optimizer</code>, <code>failure_intelligence</code>, <code>execution_quality</code>, <code>studio_knowledge</code></td>
+<td>Advisory intelligence — no execution authority</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-nodes">New Nodes</h3>
+<p><strong>Generic MCP nodes</strong> (bundled with every install, <code>category: "MCP"</code>):<br />
+- <code>mcp_server_init</code> — configure and open an MCP session<br />
+- <code>mcp_list_tools</code> — enumerate tools on a registered server<br />
+- <code>mcp_call_tool</code> — invoke a tool with JSON arguments</p>
+<p><strong>Houdini AI nodes</strong> (Houdini plugin only, <code>plugins/houdini/v_nodes_houdini/</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hou_mcp_scene_context</code></td>
+<td>Structured scene snapshot for AI agents (linchpin node)</td>
+</tr>
+<tr>
+<td><code>hou_mcp_build_node_chain</code></td>
+<td>Build a Houdini network from a JSON spec</td>
+</tr>
+<tr>
+<td><code>hou_mcp_transaction</code></td>
+<td>Wrap mutations in a begin/commit/rollback boundary</td>
+</tr>
+<tr>
+<td><code>hou_mcp_graph_diff</code></td>
+<td>Read the scene dirty-state ledger after a transaction</td>
+</tr>
+<tr>
+<td><code>hou_mcp_execution_preview</code></td>
+<td>Preview operations without executing (no bridge calls)</td>
+</tr>
+<tr>
+<td><code>hou_mcp_replay_transaction</code></td>
+<td>Deterministically replay a recorded transaction</td>
+</tr>
+<tr>
+<td><code>hou_mcp_semantic_execute</code></td>
+<td>Translate + execute a named semantic intent</td>
+</tr>
+<tr>
+<td><code>hou_mcp_runtime_capabilities</code></td>
+<td>Query the capability registry</td>
+</tr>
+<tr>
+<td><code>hou_mcp_workflow_templates</code></td>
+<td>Browse templates and resolve to op lists</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_plan</code></td>
+<td>Parse NL prompt → validated execution plan</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_preview</code></td>
+<td>Validate an AI plan without executing</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_execute</code></td>
+<td>Execute a validated AI plan with approval gate</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_review</code></td>
+<td>Post-execution intent-match review</td>
+</tr>
+<tr>
+<td><code>hou_mcp_runtime_analytics</code></td>
+<td>Runtime execution metrics and trends</td>
+</tr>
+<tr>
+<td><code>hou_mcp_predictive_execution</code></td>
+<td>Heuristic failure prediction before execution</td>
+</tr>
+<tr>
+<td><code>hou_mcp_workflow_optimizer</code></td>
+<td>Advisory plan analysis and optimization tips</td>
+</tr>
+<tr>
+<td><code>hou_mcp_recommendation_engine</code></td>
+<td>Workflow / template / strategy recommendations</td>
+</tr>
+<tr>
+<td><code>hou_mcp_execution_quality</code></td>
+<td>Post-execution orchestration quality scoring</td>
+</tr>
+<tr>
+<td><code>hou_mcp_runtime_federation</code></td>
+<td>Register / discover peer runtimes</td>
+</tr>
+<tr>
+<td><code>hou_mcp_distributed_execute</code></td>
+<td>Execute on a distributed worker pool</td>
+</tr>
+<tr>
+<td><code>hou_mcp_agent_plan</code></td>
+<td>Submit a supervised agent proposal (no direct execution)</td>
+</tr>
+<tr>
+<td><code>hou_mcp_remote_worker</code></td>
+<td>Register / heartbeat / acquire remote workers</td>
+</tr>
+<tr>
+<td><code>hou_mcp_knowledge_query</code></td>
+<td>Query the production knowledge graph</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Utility nodes:</strong><br />
+- <code>list_images_recursive</code> — recursively list image files in a directory with filtering</p>
+<h3 id="new-bridge-methods-srcutilshou_bridgepy">New Bridge Methods (<code>src/utils/hou_bridge.py</code>)</h3>
+<ul>
+<li><code>bridge.get_selection()</code> — returns currently selected node paths; <code>[]</code> in headless Houdini</li>
+<li><code>bridge.network_summary(path)</code> — returns children with <code>{name, type, path, category}</code> in one round-trip</li>
+</ul>
+<h3 id="subprocess-crash-logging">Subprocess Crash Logging</h3>
+<p>The Houdini plugin now writes all subprocess stdout/stderr to <code>~/.vibrante_node_subprocess.log</code>. The file is auto-rotated at 5 MB. Each launch session is delimited by a timestamp header, making crash diagnostics possible without a Python debugger.</p>
+<h3 id="mcp-shutdown-safety">MCP Shutdown Safety</h3>
+<p><code>MainWindow.closeEvent</code> now calls <code>mcp_runtime.shutdown_all_sync()</code>, cleanly tearing down any stdio MCP server subprocesses and SSE connections when the application exits. Without this, stdio servers would leak as zombie processes.</p>
+<hr />
+<h2 id="bug-fixes">Bug Fixes</h2>
+<ul>
+<li>
+<p><strong><code>build_node_chain</code> parent ordering</strong> — specs containing both a geo container and its children previously failed with <code>"parent node does not exist"</code>. The executor now topologically sorts nodes so parents are always created before their children. Also tracks Houdini name-collision remapping (when Houdini appends a suffix to avoid conflicts).</p>
+</li>
+<li>
+<p><strong><code>review_execution</code> always scored 0%</strong> — The plan-dict execution path in <code>execute_workflow_transaction</code> did not include <code>operations_executed</code> in its return dict, causing the reviewer's <code>_score_from_ops([])</code> to always return <code>0.0</code>. Fixed: op results are now tracked and included in the execution result. Secondary fix: if <code>operations_executed</code> is absent but <code>status == "committed"</code>, the reviewer now correctly treats <code>match_score</code> as <code>1.0</code>.</p>
+</li>
+<li>
+<p><strong><code>preview_execution</code> ImportError</strong> — The <code>preview_execution</code> tool handler imported <code>get_predictive_execution</code> (which does not exist) instead of <code>get_predictive_engine</code>. Fixed.</p>
+</li>
+</ul>
+<hr />
+<h2 id="node-id-cleanup">Node ID Cleanup</h2>
+<p>Several bundled nodes were renamed to consistent prefixed IDs. Saved workflows that reference the old node IDs will fail to load those nodes. Affected renames:</p>
+<table>
+<thead>
+<tr>
+<th>Old ID / file</th>
+<th>New ID / file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>add</code> / <code>add.json</code></td>
+<td><code>math_add</code> / <code>math_add.json</code></td>
+</tr>
+<tr>
+<td><code>subtract</code> / <code>subtract.json</code></td>
+<td><code>math_subtract</code> / <code>math_subtract.json</code></td>
+</tr>
+<tr>
+<td><code>divide</code> / <code>divide.json</code></td>
+<td><code>math_divide</code> / <code>math_divide.json</code></td>
+</tr>
+<tr>
+<td><code>modulo</code> / <code>modulo.json</code></td>
+<td><code>math_modulo</code> / <code>math_modulo.json</code></td>
+</tr>
+<tr>
+<td><code>lowercase</code> / <code>lowercase.json</code></td>
+<td><code>string_lowercase</code> / <code>string_lowercase.json</code></td>
+</tr>
+<tr>
+<td><code>uppercase</code> / <code>uppercase.json</code></td>
+<td><code>string_uppercase</code> / <code>string_uppercase.json</code></td>
+</tr>
+<tr>
+<td><code>replace</code> / <code>replace.json</code></td>
+<td><code>string_replace</code> / <code>string_replace.json</code></td>
+</tr>
+<tr>
+<td><code>split</code> / <code>split.json</code></td>
+<td><code>string_split</code> / <code>string_split.json</code></td>
+</tr>
+<tr>
+<td><code>append_file</code> / <code>append_file.json</code></td>
+<td><code>file_append</code> / <code>file_append.json</code></td>
+</tr>
+<tr>
+<td><code>write_file</code> / <code>write_file.json</code></td>
+<td><code>file_write</code> / <code>file_write.json</code></td>
+</tr>
+<tr>
+<td><code>random_float</code> / <code>random_float.json</code></td>
+<td><code>example_random_float</code> / <code>example_random_float.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>Removed nodes (no direct replacement):<br />
+- <code>concat</code> — use <code>string_replace</code> or Python expression nodes<br />
+- <code>multiply</code> — use <code>math_add</code> chain or a wrangle node</p>
+<hr />
+<h2 id="test-coverage">Test Coverage</h2>
+<p>70+ new unit test files covering every runtime module (Tiers 1–6). Key additions:</p>
+<ul>
+<li><code>test_mcp_runtime.py</code>, <code>test_houdini_runtime.py</code>, <code>test_houdini_mcp_nodes.py</code></li>
+<li><code>test_transaction_manager.py</code>, <code>test_graph_diff.py</code></li>
+<li><code>test_dependency_graph.py</code>, <code>test_validation_engine.py</code>, <code>test_audit_store.py</code>, <code>test_scheduler.py</code></li>
+<li><code>test_capability_registry.py</code>, <code>test_semantic_registry.py</code>, <code>test_semantic_execution.py</code></li>
+<li><code>test_ai_planner.py</code>, <code>test_intent_parser.py</code>, <code>test_plan_validator.py</code>, <code>test_execution_review.py</code>, <code>test_approval_pipeline.py</code></li>
+<li><code>test_mcp_tool_registry.py</code>, <code>test_mcp_transport.py</code>, <code>test_runtime_bootstrap.py</code>, <code>test_runtime_prompt_context.py</code></li>
+<li><code>test_workflow_optimizer.py</code>, <code>test_predictive_execution.py</code>, <code>test_execution_quality.py</code> (and 40+ more)</li>
+</ul>
+<p><code>test_all_workflows.py</code> now auto-discovers all plugin node directories (<code>plugins/*/v_nodes_*</code>) so adding a new DCC plugin requires zero test changes.</p>
+<p><code>test_settings_persistence.py</code> now properly isolates config writes to a per-test temp path, preventing leakage into the user's live <code>~/.vibrante_node_config.json</code>.</p>
+<hr />
+<h2 id="migration-notes">Migration Notes</h2>
+<h3 id="upgrading-from-v230">Upgrading from v2.3.0</h3>
+<ol>
+<li><strong>Install new dependency</strong>: <code>pip install "mcp&gt;=1.0.0"</code></li>
+<li><strong>Node ID renames</strong>: If you have saved workflows using the old node IDs listed in the "Node ID Cleanup" section above, you must update those workflow JSON files to use the new node IDs.</li>
+<li><strong>Removed nodes</strong>: <code>concat</code> and <code>multiply</code> have been removed. Replace with equivalent logic using available nodes.</li>
+<li><strong>New capabilities are additive</strong> — no existing node API has changed.</li>
+</ol>
+<h3 id="mcp-server-setup-optional">MCP Server Setup (optional)</h3>
+<p>To use Vibrante as an MCP server for Claude Desktop or Cursor:<br />
+1. Ensure <code>mcp&gt;=1.0.0</code> is installed.<br />
+2. Start Houdini with the Vibrante-Node plugin (for scene operations).<br />
+3. Add the entry point to your AI client config (see Highlights section above).</p>
+<hr />
+<h2 id="dependency-changes">Dependency Changes</h2>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp&gt;=1.0.0</code></td>
+<td><strong>New</strong> — required for MCP client/server transport</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="full-documentation">Full Documentation</h2>
+<ul>
+<li>Full HTML documentation regenerated to v2.4.0</li>
+<li><code>CLAUDE.md</code> expanded with complete Tier 1–6 architecture documentation (§12–§19)</li>
+<li><code>ABOUT.md</code> added (Wikipedia-style project overview)</li>
+<li>Linux packaging guide: <code>linux/README.md</code> and <code>linux/BUILDING.md</code></li>
+</ul>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var links = document.querySelectorAll('.sidebar a');
+    var headings = document.querySelectorAll('h1,h2,h3');
+    window.addEventListener('scroll', function() {
+        var cur = '';
+        headings.forEach(function(h) { if (h.offsetTop <= window.scrollY + 80) cur = h.id; });
+        links.forEach(function(a) {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + cur);
+        });
+    });
+});
+</script>
+</body>
+</html>

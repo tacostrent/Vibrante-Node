@@ -16,7 +16,7 @@
 
 ## Known Nodes in Source
 
-Total: **177** node IDs
+Total: **181** node IDs
 
 ```
 Console Sink
@@ -90,6 +90,7 @@ houdini_scene_snapshot
 http_request
 if_condition
 list_directory
+list_images_recursive
 list_item_picker
 list_length
 logical_gate
@@ -123,6 +124,9 @@ maya_action_set_frame_range
 maya_action_set_render_settings
 maya_get_action_result
 maya_headless
+mcp_call_tool
+mcp_list_tools
+mcp_server_init
 message_node
 prism_add_integration
 prism_build_entity

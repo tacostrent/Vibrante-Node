@@ -1,4 +1,4 @@
-# Vibrante-Node v2.3.0 — Getting Started
+# Vibrante-Node v2.4.0 — Getting Started
 
 This guide takes you from a fresh machine to running your first workflow. It covers installation, the project layout, a complete first-workflow tutorial, and a detailed explanation of what happens when you press F5.
 
@@ -281,7 +281,7 @@ When Vibrante-Node starts for the first time, the main window is divided into fo
 |           |                                     |                |
 +-----------+-------------------------------------+----------------+
 |  Log Panel                                                       |
-|  [info]  Welcome to Vibrante-Node v2.3.0                        |
+|  [info]  Welcome to Vibrante-Node v2.4.0                        |
 +------------------------------------------------------------------+
 ```
 
@@ -604,4 +604,4 @@ The autosave file is never used as a substitute for an explicit Save — it only
 
 ---
 
-*Vibrante-Node v2.3.0 — Released 2026-05-18*
+*Vibrante-Node v2.4.0 — Released 2026-05-26*

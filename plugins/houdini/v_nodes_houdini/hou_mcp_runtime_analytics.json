@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_runtime_analytics",
+    "name": "hou_mcp_runtime_analytics",
+    "description": "Query runtime execution analytics and performance metrics. Returns aggregated metrics covering execution success rates, rollback frequency, worker utilisation, and orchestration bottlenecks. Advisory read-only — never executes operations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "report_type",   "type": "string", "widget_type": "text",     "options": null, "default": "full" },
+        { "name": "window_sec",    "type": "float",  "widget_type": "float",    "options": null, "default": 300.0 },
+        { "name": "exec_in",       "type": "any",    "widget_type": null,       "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "execution_metrics",   "type": "any", "widget_type": null, "options": null, "default": null },
+        { "name": "failure_metrics",     "type": "any", "widget_type": null, "options": null, "default": null },
+        { "name": "resource_metrics",    "type": "any", "widget_type": null, "options": null, "default": null },
+        { "name": "workflow_statistics", "type": "any", "widget_type": null, "options": null, "default": null },
+        { "name": "trends",              "type": "any", "widget_type": null, "options": null, "default": null },
+        { "name": "report_json",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",            "type": "any", "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\n\nclass Hou_Mcp_Runtime_Analytics(BaseNode):\n    name = \"hou_mcp_runtime_analytics\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"report_type\", \"string\", widget_type=\"text\", default=\"full\")\n        self.add_input(\"window_sec\", \"float\", widget_type=\"float\", default=300.0)\n        self.add_output(\"execution_metrics\", \"any\")\n        self.add_output(\"failure_metrics\", \"any\")\n        self.add_output(\"resource_metrics\", \"any\")\n        self.add_output(\"workflow_statistics\", \"any\")\n        self.add_output(\"trends\", \"any\")\n        self.add_output(\"report_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            from src.runtime.runtime_analytics import get_runtime_analytics\n            analytics = get_runtime_analytics()\n            window_sec = float(inputs.get(\"window_sec\") or 300.0)\n            report = analytics.get_report()\n            trends = analytics.get_execution_trends(window_sec=window_sec)\n            return {\n                \"execution_metrics\":   report[\"execution_metrics\"],\n                \"failure_metrics\":     report[\"failure_metrics\"],\n                \"resource_metrics\":    report[\"resource_metrics\"],\n                \"workflow_statistics\": report[\"workflow_statistics\"],\n                \"trends\":              trends,\n                \"report_json\":         json.dumps(report),\n                \"exec_out\": True,\n            }\n        except Exception as e:\n            self.log_error(f\"Runtime analytics error: {e}\")\n            return {\"execution_metrics\": {}, \"failure_metrics\": {}, \"resource_metrics\": {}, \"workflow_statistics\": {}, \"trends\": {}, \"report_json\": \"{}\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Runtime_Analytics\n"
+}

@@ -214,6 +214,12 @@ class MainWindow(QMainWindow):
                 os.remove(self._autosave_path)
         except OSError:
             pass
+        # Tear down any long-lived MCP client sessions (stdio subprocesses, SSE streams)
+        try:
+            from src.runtime import mcp_runtime
+            mcp_runtime.shutdown_all_sync()
+        except Exception:
+            pass
         super().closeEvent(event)
 
     def _init_statusbar(self):
@@ -625,7 +631,8 @@ class MainWindow(QMainWindow):
 
         release_menu = community_menu.addMenu('Release Notes')
         for ver in [
-            ("v2.3.0  (Current)", "RELEASE_v2.3.0.md"),
+            ("v2.4.0  (Current)", "RELEASE_v2.4.0.md"),
+            ("v2.3.0", "RELEASE_v2.3.0.md"),
             ("v2.2.1", "RELEASE_v2.2.1.md"),
             ("v2.2.0", "RELEASE_v2.2.0.md"),
             ("v2.1.1", "RELEASE_v2.1.1.md"),
@@ -733,7 +740,7 @@ class MainWindow(QMainWindow):
 
         # --- header ---
         header = QLabel(
-            "<h3 style='margin:0'>Vibrante-Node v2.3.0</h3>"
+            "<h3 style='margin:0'>Vibrante-Node v2.4.0</h3>"
             "<p style='margin:4px 0'>A Python-node-based visual framework for building modular systems "
             "through connected nodes and data flows.</p>"
             "<p style='margin:4px 0'>"

@@ -21,24 +21,29 @@ from src.utils.env_manager import env_manager
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def _isolate(monkeypatch):
+def _isolate(monkeypatch, tmp_path):
+    # Redirect the config file to a per-test temp path. Without this, any test
+    # that goes through env_manager.set_*() / config.set() writes to the user's
+    # real ~/.vibrante_node_config.json, leaving stale temp paths in their live
+    # config after the suite runs.
+    original_path = config._config_path
     original_data = {k: v for k, v in config._data.items()}
     original_env_nodes  = os.environ.get('v_nodes_dir', None)
     original_env_scripts = os.environ.get('v_scripts_path', None)
     original_init = env_manager._initialized
 
-    config._data.pop('env.v_nodes_dir', None)
-    config._data.pop('env.v_scripts_path', None)
-    config._data.pop('env.vibrante_pythonpath', None)
-    config._data.pop('env.custom_variables', None)
+    monkeypatch.setattr(config, "_config_path", str(tmp_path / "vibrante_node_config.json"))
+    config._data.clear()
     for k in ('v_nodes_dir', 'v_scripts_path'):
         os.environ.pop(k, None)
     env_manager._initialized = False
 
     yield
 
+    # Restore in-memory state; on-disk state stays in tmp_path and is cleaned by pytest.
     config._data.clear()
     config._data.update(original_data)
+    config._config_path = original_path
     if original_env_nodes is None:
         os.environ.pop('v_nodes_dir', None)
     else:
