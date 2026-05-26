@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Vibrante-Node v2.3.0 — Introduction">
+<meta name="description" content="Vibrante-Node v2.4.0 — Introduction">
 <title>Introduction — Vibrante-Node Docs</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
 <style>
@@ -391,7 +391,7 @@ td code { font-size: .85em; }
 <!-- ── Header ─────────────────────────────────────────────────────────── -->
 <header class="header">
   <a class="header-logo" href="index.html">Vibrante-Node</a>
-  <span class="header-version">v2.3.0</span>
+  <span class="header-version">v2.4.0</span>
   <div class="header-spacer"></div>
   <div class="search-wrap">
     <span class="search-icon">&#128269;</span>
@@ -442,7 +442,7 @@ td code { font-size: .85em; }
   <div class="content-inner">
     <nav class="breadcrumb"><a href="index.html">Docs</a><span class="breadcrumb-sep">›</span><span>Introduction</span></nav>
     <div class="val-badge val-badge-ok" title="Verified against source code">&#10003; Verified</div>
-<h1 id="vibrante-node-v230-introduction">Vibrante-Node v2.3.0 — Introduction</h1>
+<h1 id="vibrante-node-v240-introduction">Vibrante-Node v2.4.0 — Introduction</h1>
 <p><strong>Vibrante-Node</strong> is a Python-based visual node graph automation platform that lets you build, run, and maintain complex multi-step workflows by wiring together reusable node blocks on an interactive canvas. It ships with a PyQt5 graphical interface, an asyncio-based execution engine, and a growing library of nodes covering general-purpose automation, filesystem operations, DCC application control (Maya, Houdini, Blender), studio pipeline management (Prism Pipeline), and render farm submission (Deadline). Every node is a self-contained unit of logic defined in a single JSON file paired with Python code, making the platform trivially extensible by any Python developer without requiring modifications to the core application.</p>
 <hr />
 <h2 id="table-of-contents">Table of Contents</h2>
@@ -807,7 +807,12 @@ td code { font-size: .85em; }
 <tr>
 <td><strong>v2.3.0</strong></td>
 <td>2026-05-18</td>
-<td>HTTP Request node (bundled). Authenticode signing tools. Node Builder exec-port corruption fix. Node Builder default-value round-trip fix. Icon-path field isolation fix. Load-node/load-workflow cross-detection. Canvas drag trail fix. http_request UI freeze fix (run_in_executor).</td>
+<td>HTTP Request node (bundled). Authenticode signing tools. Node Builder exec-port corruption fix. Node Builder default-value round-trip fix. Icon-path field isolation fix. Load-node/load-workflow cross-detection. Canvas drag trail fix. http_request UI freeze fix (run_in_executor). Linux packaging (pip, AppImage, .deb).</td>
+</tr>
+<tr>
+<td><strong>v2.4.0</strong></td>
+<td>2026-05-26</td>
+<td>Complete AI orchestration MCP runtime (Tiers 1–6): transaction system, AI planning pipeline, distributed execution, Tier 5 analytics, Tier 6 MCP server. 26 new nodes (3 generic MCP + 23 Houdini AI). query_node_parameters tool. Node ID cleanup. Subprocess crash log. Bug fixes: build_node_chain ordering, review_execution scoring, preview_execution ImportError.</td>
 </tr>
 </tbody>
 </table>
@@ -928,6 +933,11 @@ td code { font-size: .85em; }
 </thead>
 <tbody>
 <tr>
+<td>v2.4.0</td>
+<td>Minor</td>
+<td><a href="../RELEASE_v2.4.0.md">RELEASE_v2.4.0.md</a></td>
+</tr>
+<tr>
 <td>v2.3.0</td>
 <td>Minor</td>
 <td><a href="../RELEASE_v2.3.0.md">RELEASE_v2.3.0.md</a></td>
@@ -965,7 +975,7 @@ td code { font-size: .85em; }
 </tbody>
 </table>
 <hr />
-<p><em>Vibrante-Node v2.3.0 — Released 2026-05-18</em></p>
+<p><em>Vibrante-Node v2.4.0 — Released 2026-05-26</em></p>
     <nav class="page-nav">
       
       <a class="page-nav-link next" href="02_getting_started.html"><span class="page-nav-label">Next</span><span class="page-nav-title">Getting Started</span></a>

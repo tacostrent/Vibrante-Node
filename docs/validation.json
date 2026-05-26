@@ -10,22 +10,7 @@
     "skip": 106
   },
   "per_page": {
-    "04_workflow_tutorials.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "08_api_reference.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "07_frontend_architecture.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "14_custom_nodes_api.md": {
+    "12_examples_library.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -35,12 +20,7 @@
       "errors": 0,
       "warnings": 0
     },
-    "09_advanced_topics.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "06_backend_architecture.md": {
+    "08_api_reference.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -50,12 +30,12 @@
       "errors": 0,
       "warnings": 0
     },
-    "05_node_development.md": {
+    "14_custom_nodes_api.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
     },
-    "03_user_guide.md": {
+    "06_backend_architecture.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -70,12 +50,32 @@
       "errors": 0,
       "warnings": 0
     },
+    "03_user_guide.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "07_frontend_architecture.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "09_advanced_topics.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "04_workflow_tutorials.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
     "13_general_purpose_automation.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
     },
-    "12_examples_library.md": {
+    "05_node_development.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -154,6 +154,7 @@
     "http_request",
     "if_condition",
     "list_directory",
+    "list_images_recursive",
     "list_item_picker",
     "list_length",
     "logical_gate",
@@ -187,6 +188,9 @@
     "maya_action_set_render_settings",
     "maya_get_action_result",
     "maya_headless",
+    "mcp_call_tool",
+    "mcp_list_tools",
+    "mcp_server_init",
     "message_node",
     "prism_add_integration",
     "prism_build_entity",
