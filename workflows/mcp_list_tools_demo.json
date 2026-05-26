@@ -1,0 +1,90 @@
+{
+    "nodes": [
+        {
+            "instance_id": "2ee17392-cacb-4e57-92ab-d2817996c8a6",
+            "node_id": "mcp_server_init",
+            "position": [-360.0, -80.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "server_name": "everything",
+                "transport_type": "stdio",
+                "command": "npx",
+                "args": "-y, @modelcontextprotocol/server-everything",
+                "env_json": "",
+                "url": "",
+                "connected": false,
+                "server_info": {},
+                "capabilities": {}
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "8ed659c6-c027-431a-942b-f7e1f0459d6a",
+            "node_id": "mcp_list_tools",
+            "position": [40.0, -80.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "server_name": "everything",
+                "tools": [],
+                "names": [],
+                "schemas": [],
+                "count": 0
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "12f93d2e-59c7-482c-ae5b-f3fa7305a33c",
+            "node_id": "console_print",
+            "position": [400.0, -80.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "data": "",
+                "out": ""
+            },
+            "state": "idle"
+        }
+    ],
+    "connections": [
+        {
+            "id": "dc90adad-04a3-492a-9360-cd7f42b08697",
+            "from_node": "2ee17392-cacb-4e57-92ab-d2817996c8a6",
+            "from_port": "exec_out",
+            "to_node": "8ed659c6-c027-431a-942b-f7e1f0459d6a",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "32b30ae5-c747-4f24-adb7-70f159ba08c6",
+            "from_node": "8ed659c6-c027-431a-942b-f7e1f0459d6a",
+            "from_port": "exec_out",
+            "to_node": "12f93d2e-59c7-482c-ae5b-f3fa7305a33c",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "9cbfd9da-6465-4d8d-9e70-80782509dd96",
+            "from_node": "8ed659c6-c027-431a-942b-f7e1f0459d6a",
+            "from_port": "names",
+            "to_node": "12f93d2e-59c7-482c-ae5b-f3fa7305a33c",
+            "to_port": "data",
+            "is_exec": false
+        }
+    ],
+    "sticky_notes": [
+        {
+            "id": "6a8b449a-2dd5-4393-96db-5ec3dbf91a9c",
+            "position": [-360.0, -200.0],
+            "size": [820.0, 90.0],
+            "text": "Demo: connect to the reference MCP server (npx @modelcontextprotocol/server-everything), list its tools, then print their names.\n\nPrereqs: Node.js with npx on PATH, mcp Python package installed (pip install mcp). The first run will download the server package on demand.",
+            "color": "#ffffcc"
+        }
+    ],
+    "backdrops": [],
+    "metadata": {
+        "name": "MCP: List Tools Demo",
+        "description": "Tier 1 smoke graph for the generic MCP client nodes."
+    }
+}

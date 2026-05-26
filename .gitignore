@@ -50,3 +50,9 @@ linux/build/
 # Runtime logs
 crash.log
 upload_result.json
+
+# Cached MCP / package dependencies (local dev only)
+.mcp_deps/
+
+# Temporary orchestration run reports
+tmp/
