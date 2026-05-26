@@ -4,6 +4,8 @@
 
 This document describes the Qt5 widget hierarchy, rendering pipeline, event model, history system, and all supporting UI subsystems. It targets contributors who need to understand the canvas, add new UI panels, create custom graphics items, or modify how nodes and edges are drawn.
 
+> **Architecture note:** The UI Layer described in this document is the primary interface for Vibrante-Node users. The execution engine (`src/core/engine.py`) and Runtime Layer (`src/runtime/`) are designed to be fully decoupled from Qt — they can additionally be used headlessly from `scripts/run_vibrante_mcp.py` for advanced automation without a display server. The frontend and backend are decoupled at the `NetworkExecutor` boundary: the executor calls node `execute()` coroutines; the UI listens to its Qt signals. Nothing in `src/runtime/` or `src/core/engine.py` imports from `src/ui/`.
+
 ---
 
 ## Table of Contents

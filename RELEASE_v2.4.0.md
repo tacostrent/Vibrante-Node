@@ -7,7 +7,7 @@
 
 ## Highlights
 
-v2.4.0 is the largest feature release in Vibrante-Node's history. It introduces a complete **AI-native orchestration runtime** — six tiers of deterministic, validated, transactional infrastructure that enables AI agents (Claude, Codex, GPT) to plan, preview, execute, and review Houdini operations through a structured MCP server interface. Every mutation still goes through the full validation + constraint + transaction pipeline — no arbitrary execution, no autonomous mutation.
+v2.4.0 is the largest feature release in Vibrante-Node's history. It introduces a complete **AI-assisted orchestration runtime layer** — six tiers of deterministic, validated, transactional infrastructure that enables AI agents (Claude, Codex, GPT) to plan, preview, execute, and review Houdini operations through a structured MCP server interface. Every mutation still goes through the full validation + constraint + transaction pipeline — no arbitrary execution, no autonomous mutation.
 
 ---
 

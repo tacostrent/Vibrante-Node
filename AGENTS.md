@@ -1,6 +1,13 @@
-# Vibrante-Node — Developer Guide for Codex
+# Vibrante-Node — Developer Guide for Codex / Claude
 
-This file teaches Codex how to create nodes for this node-based pipeline, with special focus on nodes that control Houdini via the bridge plugin.
+This file teaches Codex and Claude how to create nodes for this node-based visual workflow platform and how to interact with the runtime directly.
+
+**Vibrante-Node** is a Python node-based visual framework for building modular systems through connected nodes and data flows. It provides an intuitive graph interface, an extensible node system, multi-DCC integration (Houdini, Maya, Blender, Prism), and an optional AI runtime layer.
+
+The primary interface is the visual canvas — workflows are built by connecting nodes, executed via F5, and inspected through the log panel and live wire inspector. Advanced automation can also be done programmatically or via MCP:
+
+1. **Visual Workflow Orchestration** — build graphs on the canvas and run via F5.
+2. **Direct Runtime Orchestration** *(advanced)* — Claude, Codex, or Cursor connects to `scripts/run_vibrante_mcp.py` via MCP stdio and uses 12 semantic tools to inspect, plan, and execute Houdini scene operations.
 
 ---
 
@@ -330,6 +337,115 @@ async def execute(self, inputs):
 | Adding ports twice (once in AUTO block, once below it) | Add each port exactly once inside the AUTO block |
 
 ---
+
+## 6. Runtime Layer — MCP Integration (v2.4.0+)
+
+Vibrante-Node has a `src/runtime/` module that is the seam between nodes and DCCs. All AI-facing nodes (`hou_mcp_*`, `mcp_*`) call this layer rather than calling the bridge directly. The Runtime Layer is also accessible to Claude/Codex as a **standalone MCP server** without the visual canvas.
+
+### 6.1 Direct connection (Claude/Codex without canvas)
+
+```bash
+# 1. Install dependencies
+pip install "mcp>=1.0.0" pydantic toposort
+
+# 2. Optional: start Houdini with the Vibrante plugin loaded and bridge running (port 18811)
+
+# 3. Start the MCP server
+python scripts/run_vibrante_mcp.py
+```
+
+Configure Claude Desktop (`~/.claude/settings.json`):
+```json
+{
+  "mcpServers": {
+    "vibrante": {
+      "command": "python",
+      "args": ["/path/to/scripts/run_vibrante_mcp.py"]
+    }
+  }
+}
+```
+
+### 6.2 Recommended AI workflow (canonical order)
+
+```
+initialize_runtime_context  →  query_scene_context
+    →  plan_scene("build a pyro sim in /obj")
+    →  preview_execution(operations)           # check risk before executing
+    →  execute_workflow_transaction(plan_json) # requires approval for high-risk
+    →  review_execution(plan, result)
+```
+
+**Never** skip `preview_execution` before `execute_workflow_transaction` for high-risk plans.
+
+### 6.3 Runtime Layer design rules (non-negotiable)
+
+1. **MCP is transport only** — never delegate scene understanding to MCP. Intelligence stays in `src/runtime/`.
+2. **No arbitrary Python execution** — do not expose `run_python`/`execute_code` as tools. Use structured, validated ops.
+3. **Validation before mutation** — all ops go through `ValidationEngine` + `RuntimeConstraints` before any bridge call.
+4. **Approval gate** — plans with `requires_approval=True` block until `approver` is supplied.
+5. **Cache invalidation** — every `houdini_runtime` function that mutates Houdini must call `get_scene_cache().invalidate("scene_context::")`.
+
+### 6.4 Writing a node that uses the Runtime Layer
+
+Nodes that use `houdini_runtime` or `mcp_runtime` (e.g. all `hou_mcp_*` nodes):
+
+```python
+from src.nodes.base import BaseNode
+from src.runtime import houdini_runtime
+
+class Hou_Mcp_My_Node(BaseNode):
+    name = "hou_mcp_my_node"
+
+    def __init__(self):
+        super().__init__()
+        # [AUTO-GENERATED-PORTS-START]
+        self.add_input("spec_json", "string", widget_type="text_area")
+        self.add_output("ok", "bool")
+        self.add_output("result_json", "string")
+        # [AUTO-GENERATED-PORTS-END]
+
+    async def execute(self, inputs):
+        import json
+        try:
+            spec = json.loads(inputs.get("spec_json") or "{}")
+        except json.JSONDecodeError as e:
+            self.log_error(f"Invalid JSON: {e}")
+            return {"ok": False, "result_json": "{}", "exec_out": True}
+
+        try:
+            result = await houdini_runtime.build_node_chain(spec)
+            return {
+                "ok": result.get("ok", False),
+                "result_json": json.dumps(result),
+                "exec_out": True,
+            }
+        except Exception as e:
+            self.log_error(f"Runtime error: {e}")
+            return {"ok": False, "result_json": "{}", "exec_out": True}
+
+def register_node():
+    return Hou_Mcp_My_Node
+```
+
+**Placement rules for new nodes:**
+- DCC-agnostic nodes (e.g. generic MCP client) → `nodes/` (bundled)
+- Houdini-specific AI nodes → `plugins/houdini/v_nodes_houdini/`
+
+### 6.5 Forbidden MCP tool names
+
+Never register these as MCP tools (the test suite enforces this):
+
+`create_node`, `set_parm`, `set_parms`, `run_python`, `run_code`, `delete_node`, `raw_houdini_execute`, `connect_nodes`, `cook_node`
+
+### 6.6 New bridge methods (v2.4.0+)
+
+Two new methods added for the Runtime Layer:
+
+```python
+bridge.get_selection()          # → {"paths": [str, ...]}
+bridge.network_summary(path)    # → [{"name", "type", "path", "category"}, ...]
+```
 
 ---
 

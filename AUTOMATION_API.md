@@ -18,6 +18,7 @@ The Scripting Console and Python automation API give programmatic access to ever
 8. [Python Runtime and Environment](#8-python-runtime-and-environment)
 9. [Headless and Subprocess Execution](#9-headless-and-subprocess-execution)
 10. [Automation Script Examples](#10-automation-script-examples)
+11. [MCP Runtime API — Direct Orchestration](#11-mcp-runtime-api)
 
 ---
 
@@ -394,6 +395,41 @@ result = bridge.run_code(
 print(result["result"])
 ```
 
+### Houdini — Runtime Layer (Direct Python Access)
+
+The `src.runtime` module can be called directly from Python scripts without going through the visual canvas. This is useful for pipeline automation tools that embed Vibrante's orchestration logic.
+
+```python
+import asyncio
+from src.runtime import houdini_runtime, transaction_manager
+
+async def build_pyro_scene():
+    # Get structured scene snapshot
+    ctx = await houdini_runtime.scene_context()
+    print(ctx["scene"]["hip_file"])
+
+    # Execute with automatic rollback on failure
+    mgr = transaction_manager.get_transaction_manager()
+    txn_id = mgr.begin_transaction("build_pyro")
+
+    op = await houdini_runtime.execute_operation({
+        "op": "create_node",
+        "parent": "/obj",
+        "type": "geo",
+        "name": "pyro_geo",
+    })
+
+    if op["status"] == "ok":
+        mgr.record_operation(txn_id, op)
+        mgr.commit_transaction(txn_id)
+        print("Created:", op["result"]["path"])
+    else:
+        mgr.rollback_transaction(txn_id)
+        print("Failed:", op["error"])
+
+asyncio.run(build_pyro_scene())
+```
+
 ---
 
 ## 10. Automation Script Examples
@@ -548,11 +584,154 @@ print(json.dumps(report, indent=2))
 
 ---
 
+## 11. MCP Runtime API — Direct Orchestration
+
+Vibrante Runtime exposes a full MCP server that external AI clients (Claude Desktop, Codex CLI, Cursor, and any MCP-compatible tool) can connect to **without the visual canvas**. The runtime is fully headless — no Qt dependency, no display required.
+
+### Starting the MCP Server
+
+```bash
+# From the repo root
+pip install "mcp>=1.0.0" pydantic toposort
+
+python scripts/run_vibrante_mcp.py
+```
+
+The server starts on stdio and blocks until the client disconnects. All 12 semantic tools are immediately available. Houdini-dependent tools (`query_scene_context`, `execute_workflow_transaction`) connect to the live bridge automatically when a Houdini session is running.
+
+### AI Client Configuration
+
+**Claude Desktop** (`~/.claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "vibrante": {
+      "command": "python",
+      "args": ["D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py"],
+      "env": { "VIBRANTE_HOU_PORT": "18811" }
+    }
+  }
+}
+```
+
+**Codex CLI** (`~/.config/codex/config.toml`):
+
+```toml
+[mcp_servers.vibrante]
+command     = "python"
+args        = ["D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py"]
+trust_level = "trusted"
+```
+
+**Cursor** (`.cursor/mcp.json` in workspace root):
+
+```json
+{
+  "mcpServers": {
+    "vibrante": {
+      "command": "python",
+      "args": ["D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py"]
+    }
+  }
+}
+```
+
+### Python Client via `mcp_runtime`
+
+From within Vibrante's event loop you can also call external MCP servers as a client:
+
+```python
+from src.runtime import mcp_runtime
+
+# Register an MCP server (stdio transport — launches a subprocess)
+await mcp_runtime.register_server(
+    "my_server", "stdio",
+    {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-everything"]}
+)
+
+# List available tools
+tools = await mcp_runtime.list_tools("my_server")
+for t in tools:
+    print(t["name"], "-", t["description"])
+
+# Call a tool
+result = await mcp_runtime.call_tool("my_server", "echo", {"message": "hello"})
+print(result["result_json"])
+```
+
+### Semantic Execution from Python
+
+The full semantic pipeline is available without the canvas or MCP:
+
+```python
+from src.runtime.semantic_execution import get_semantic_executor
+from src.runtime.runtime_bootstrap import initialize_runtime
+
+# Initialize all runtime singletons
+initialize_runtime()
+
+executor = get_semantic_executor()
+
+# Translate a named intent to an execution plan (no execution)
+plan = await executor.translate("build_pyro_source", {
+    "parent": "/obj",
+    "name": "fire_sim",
+    "style": "smoke",
+})
+print(plan["operations"])
+
+# Execute end-to-end with automatic rollback on failure
+result = await executor.execute("build_pyro_source", {
+    "parent": "/obj",
+    "name": "fire_sim",
+}, dry_run=False, auto_commit=True, rollback_on_error=True)
+
+print(result["status"])       # "committed" | "rolled_back" | "failed"
+print(result["graph_diff"])   # what changed in the scene
+```
+
+### MCP Tool Registry from Python
+
+Register custom tools that the MCP server exposes to AI clients:
+
+```python
+from src.runtime.mcp_tool_registry import get_mcp_tool_registry, ToolDefinition
+
+registry = get_mcp_tool_registry()
+
+async def my_handler(arguments):
+    return {"ok": True, "result": f"custom: {arguments.get('name', '')}"}
+
+registry.register_tool(ToolDefinition(
+    name="my_studio_tool",
+    description="Studio-specific operation",
+    inputSchema={"type": "object", "properties": {"name": {"type": "string"}}},
+    handler=my_handler,
+    category="custom",
+))
+```
+
+> **Forbidden names:** `create_node`, `set_parm`, `set_parms`, `run_python`, `run_code`, `delete_node`, `raw_houdini_execute`, `connect_nodes`, `cook_node` — registering any of these will raise `ValueError`. These are never exposed as MCP tools.
+
+### Execution Safety Invariants
+
+All mutations routed through the runtime respect these invariants regardless of how they are triggered (canvas node, Python API, or MCP tool):
+
+1. `ValidationEngine` and `RuntimeConstraints` run before every transaction.
+2. Plans with `ok=False` are rejected before any bridge call.
+3. Plans with `requires_approval=True` block until an `approver` is supplied.
+4. Rollback handlers never raise — failures are captured and reported.
+5. `scene_cache.invalidate("scene_context::")` is called after every mutation.
+
+---
+
 **See also:**
 
 - [User Guide](USER_GUIDE.md) — Scripting Console location and basic usage
 - [Node Builder API](NODE_BUILDER_API.md) — building nodes that expose scriptable parameters
-- [Developer Guide](DEVELOPER.md) — engine internals, signal architecture, NodeRegistry internals
-- [Technical Reference](DOCUMENTATION.md) — complete method signatures, type annotations
+- [Developer Guide](DEVELOPER.md) — engine internals, Runtime Layer architecture (Tiers 1–6)
+- [Technical Reference](DOCUMENTATION.md) — Runtime Layer API reference, MCP Semantic Tools reference
 - `examples/automation/` — full collection of automation scripts
 - `examples/nodes/` — custom node Python source examples
+- `scripts/run_vibrante_mcp.py` — MCP server entry point

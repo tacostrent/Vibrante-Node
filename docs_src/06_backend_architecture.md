@@ -724,3 +724,54 @@ For graphs with 100+ nodes, the topological sort (`toposort` library) and connec
 ### Memory
 
 `node_results` stores every output value of every node. For nodes that output large data structures (big lists, numpy arrays, large strings), this can accumulate significant memory during a run. Values are discarded when `node_results` is reset at the next run's start. If memory is a concern, avoid storing large objects in `node_results` across the run — produce them, consume them, and release references.
+
+---
+
+## 21. Runtime Layer — AI Orchestration (v2.4.0+)
+
+`src/runtime/` is the seam between graph nodes (Layer 3) and DCC bridges / external MCP servers (Layer 5). Houdini AI nodes call this layer rather than calling the bridge directly. The Runtime Layer also operates **fully headless** as a standalone MCP server for Claude, Codex, and Cursor.
+
+### Architecture position
+
+```
+NetworkExecutor → hou_mcp_* nodes → Runtime Layer → HouBridge → Houdini
+External AI → MCP stdio transport → Runtime Layer → HouBridge → Houdini
+```
+
+Both paths use the same `houdini_runtime`, `transaction_manager`, `validation_engine`, and `runtime_constraints`. Mutations are identical regardless of trigger source.
+
+### Key modules
+
+| Module | Tier | Responsibility |
+|--------|------|----------------|
+| `mcp_runtime.py` | 1 | MCP client session registry (stdio + SSE) |
+| `houdini_runtime.py` | 1–2 | `scene_context()`, `build_node_chain()`, `execute_operation()` |
+| `scene_cache.py` | 1 | TTL cache + dirty tracking + visualization data |
+| `transaction_manager.py` | 2 | `begin/record/commit/rollback` + rollback handler registry |
+| `validation_engine.py` | 2.5 | Structural + constraint pre-execution validator |
+| `runtime_constraints.py` | 2.75 | Policy-based gate (protected paths, forbidden ops, max ops) |
+| `semantic_execution.py` | 2.75 | `SemanticRegistry → Constraints → ValidationEngine → Transaction` |
+| `ai_planner.py` | 3 | Intent + context → validated execution plan |
+| `approval_pipeline.py` | 3 | Synchronous human-approval state machine |
+| `mcp_tool_registry.py` | 6 | All 12 semantic tool handlers |
+| `mcp_transport.py` | 6 | MCP stdio server (uses `mcp` SDK) |
+
+### Execution safety invariants
+
+Every path through the Runtime Layer enforces:
+
+1. `ValidationEngine.validate_operations()` runs before any transaction begins.
+2. `RuntimeConstraints.validate_transaction()` enforces policy gates (protected paths, max ops).
+3. Plans with `ok=False` are rejected before any bridge call.
+4. Plans with `requires_approval=True` block until `approver` is supplied.
+5. `scene_cache.invalidate("scene_context::")` is called after every mutation.
+6. Rollback handlers never raise — exceptions are captured in `rollback_errors`.
+
+### Running the MCP server (standalone)
+
+```bash
+pip install "mcp>=1.0.0"
+python scripts/run_vibrante_mcp.py
+```
+
+The server blocks on stdio until the client disconnects. All 12 semantic tools are available. Houdini-dependent tools connect to the live bridge automatically when port 18811 is reachable.

@@ -42,6 +42,7 @@ This guide takes you from a fresh machine to running your first workflow. It cov
 | Prism Pipeline | Prism 2.x installed, `PrismCore` importable from Python |
 | Deadline | Thinkbox Deadline 10.x client installed |
 | Gemini AI | `google-generativeai` Python package, valid API key |
+| MCP Runtime (Claude/Codex/Cursor) | `mcp>=1.0.0` Python package (`pip install "mcp>=1.0.0"`) |
 
 ---
 
@@ -601,6 +602,67 @@ Every 2 minutes, Vibrante-Node silently writes all non-empty open tabs to:
 If the application exits cleanly, this file is deleted. If the application crashes or is force-closed, the file remains. On the next launch, a dialog offers to restore the last session. Accepting restores all tabs; declining discards the autosave and opens fresh.
 
 The autosave file is never used as a substitute for an explicit Save — it only appears after an unexpected exit.
+
+---
+
+## 11. Direct Runtime Orchestration — MCP Quick Start *(Advanced)*
+
+Vibrante-Node includes a headless MCP server that lets Claude Desktop, Codex CLI, Cursor, and any MCP-compatible AI client orchestrate Houdini scenes without the visual canvas.
+
+### Prerequisites
+
+```bash
+pip install "mcp>=1.0.0" pydantic toposort
+```
+
+### Optional: Start the Houdini bridge
+
+1. Open Houdini with the Vibrante plugin installed.
+2. Click **Vibrante-Node → Launch Vibrante-Node** in the Houdini menu bar. This starts the TCP bridge on port 18811.
+3. The bridge must be running for scene-interaction tools. Planning and knowledge tools work without it.
+
+### Start the MCP server
+
+```bash
+# From the repo root
+python scripts/run_vibrante_mcp.py
+```
+
+The server starts on stdio and stays running until the client disconnects.
+
+### Configure your AI client
+
+**Claude Desktop** (`~/.claude/settings.json`):
+```json
+{
+  "mcpServers": {
+    "vibrante": {
+      "command": "python",
+      "args": ["/path/to/vibrante-node/scripts/run_vibrante_mcp.py"],
+      "env": { "VIBRANTE_HOU_PORT": "18811" }
+    }
+  }
+}
+```
+
+**Codex CLI** (`~/.config/codex/config.toml`):
+```toml
+[mcp_servers.vibrante]
+command     = "python"
+args        = ["/path/to/vibrante-node/scripts/run_vibrante_mcp.py"]
+trust_level = "trusted"
+```
+
+### First session with Claude
+
+Once connected, follow this sequence:
+
+1. **Initialize:** ask Claude to call `initialize_runtime_context` — receives the system prompt and bootstrap data.
+2. **Inspect:** ask Claude to call `query_scene_context` — returns structured scene state.
+3. **Plan:** ask Claude "build a pyro smoke simulation in /obj" → calls `plan_scene` → returns a plan.
+4. **Preview:** Claude calls `preview_execution(plan.operations)` → returns risk level and warnings.
+5. **Execute:** Claude calls `execute_workflow_transaction(plan_json=...)` → commits or rolls back atomically.
+6. **Review:** Claude calls `review_execution(...)` → reports outcome and match score.
 
 ---
 

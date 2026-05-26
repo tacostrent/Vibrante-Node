@@ -17,9 +17,10 @@
 9. [Node Library and Canvas Search](#9-node-library-and-canvas-search)
 10. [Prism Pipeline Integration](#10-prism-pipeline-integration)
 11. [Houdini Integration](#11-houdini-integration)
-12. [Settings and Environment](#12-settings-and-environment)
-13. [Keyboard Shortcuts Reference](#13-keyboard-shortcuts-reference)
-14. [Troubleshooting](#14-troubleshooting)
+12. [AI Orchestration — MCP Runtime](#12-ai-orchestration)
+13. [Settings and Environment](#13-settings-and-environment)
+14. [Keyboard Shortcuts Reference](#14-keyboard-shortcuts-reference)
+15. [Troubleshooting](#15-troubleshooting)
 
 ---
 
@@ -420,20 +421,23 @@ Use **Nodes → Load Node From JSON** to install a `.json` node definition file.
 
 ### Library Categories
 
-The Library panel organizes all 166+ bundled nodes into categories:
+The Library panel organizes all 200+ bundled nodes into categories:
 
 | Category | Description |
 |----------|-------------|
 | General / IO | Console, file reader/writer, HTTP request, delay |
 | Control Flow | `if_condition`, `for_loop`, `while_loop`, `loop_body`, `branch` |
 | Data | `create_list`, `create_dictionary`, JSON parser |
-| String | `concat`, `split`, `replace`, `lowercase`, `uppercase` |
-| Math | `add`, `compare`, `math_abs` |
+| String | `string_concat`, `string_split`, `string_lowercase`, `string_uppercase` |
+| Math | `math_add`, `compare`, `math_abs` |
 | Logic | `logic_and`, `logic_compare` |
-| Houdini | Live bridge nodes for open Houdini sessions |
+| MCP | `mcp_server_init`, `mcp_list_tools`, `mcp_call_tool` — generic MCP client nodes |
+| Houdini | Live bridge nodes + AI orchestration nodes (`hou_mcp_*`) |
 | Maya | Headless action-list nodes |
 | Blender | Headless action-list nodes |
 | Prism | 62 Prism Pipeline v2 nodes |
+
+> **Note:** Houdini AI orchestration nodes (`hou_mcp_*`) appear in the Houdini category only when the Houdini plugin is installed and `v_nodes_dir` includes `plugins/houdini/v_nodes_houdini/`.
 
 ### Canvas Search — Ctrl+F
 
@@ -530,7 +534,94 @@ Click **Vibrante-Node → Launch** in Houdini's menu bar. This starts a JSON-RPC
 
 ---
 
-## 12. Settings and Environment
+## 12. AI Orchestration — MCP Runtime
+
+Vibrante-Node v2.4.0 adds a complete AI orchestration runtime accessible in two ways: through visual node graphs (Visual Workflow Orchestration) and through a direct MCP server connection (Direct Runtime Orchestration).
+
+### Visual Workflow Orchestration
+
+Use the `hou_mcp_*` node family inside a workflow to build AI-driven Houdini pipelines with visual debugging, step-by-step inspection, and interactive approval gates.
+
+**Generic MCP client nodes** (bundled in all installations, `category: MCP`):
+
+| Node | Purpose |
+|------|---------|
+| `mcp_server_init` | Connect to any MCP server by name. Supports stdio (subprocess) and SSE (HTTP) transports. |
+| `mcp_list_tools` | List all tools available on a registered MCP server. |
+| `mcp_call_tool` | Call any tool on a registered MCP server with JSON arguments. |
+
+**Houdini AI orchestration nodes** (`category: Houdini`, requires Houdini plugin):
+
+| Node | Purpose |
+|------|---------|
+| `hou_mcp_scene_context` | Read the current Houdini scene state as a structured snapshot (networks, selection, HDAs, render nodes). The linchpin node — read this before planning. |
+| `hou_mcp_build_node_chain` | Build a Houdini network from a JSON spec: create nodes, set parameters, connect them, layout, optionally cook. |
+| `hou_mcp_transaction` | Execute a batch of ops atomically. Validates all ops up front; rolls back on failure. |
+| `hou_mcp_graph_diff` | Read the dirty-state ledger — what was created, modified, deleted, or connected since the last diff. |
+| `hou_mcp_ai_plan` | Parse a natural language prompt → intent → context analysis → structured execution plan. Never executes. |
+| `hou_mcp_ai_preview` | Validate an AI plan without executing: risk level, errors, dependency impact, capability gaps. |
+| `hou_mcp_ai_execute` | Execute a validated plan via the transaction system. Blocks on high-risk plans until an `approver` is supplied. |
+| `hou_mcp_ai_review` | Post-execution review: did execution match the original intent? Returns outcome, match score, recommendations. |
+
+**Canonical AI planning workflow:**
+
+```
+hou_mcp_scene_context   ── read current scene state
+    ↓ context
+hou_mcp_ai_plan         ── "build a pyro smoke source inside /obj/geo1"
+    ↓ plan
+hou_mcp_ai_preview      ── validate risk, check constraints
+    ↓ preview
+if_condition            ── check risk_level == "low" or approval given
+    ↓ (approved)
+hou_mcp_ai_execute      ── execute transactionally, rollback on failure
+    ↓ result
+hou_mcp_ai_review       ── verify intent matched execution
+    ↓ review
+console_print           ── log outcome
+```
+
+### Direct Runtime Orchestration — Headless MCP Server
+
+Run the Vibrante runtime as a standalone MCP server and connect Claude Desktop, Codex CLI, or Cursor directly. No visual canvas is needed.
+
+**Step 1 — Start the Houdini bridge** (if using Houdini scene operations):
+```
+Houdini → Vibrante-Node menu → Launch Vibrante-Node
+```
+
+**Step 2 — Start the MCP server:**
+```bash
+python scripts/run_vibrante_mcp.py
+```
+
+**Step 3 — Configure your AI client.** See [README.md](README.md) for Claude Desktop, Codex CLI, and Cursor configuration.
+
+**Step 4 — In your AI client session:**
+
+Call `initialize_runtime_context` first, then use any of the 12 semantic tools:
+
+| Category | Tools |
+|---|---|
+| Runtime | `initialize_runtime_context`, `query_runtime_state`, `query_scene_context` |
+| Knowledge | `query_capabilities`, `query_workflow_templates`, `query_examples` |
+| Planning | `plan_scene`, `preview_execution`, `validate_execution_plan` |
+| Execution | `execute_workflow_transaction`, `review_execution` |
+| Node Info | `query_node_parameters` |
+
+### Runtime Safety Rules
+
+Regardless of orchestration mode, the runtime enforces these rules:
+
+- All mutations route through the transaction system (begin → validate → execute → commit/rollback)
+- Plans with `ok=False` are never executed
+- High-risk plans (`requires_approval=True`) block until an approver identity is supplied
+- `delete_node` operations are treated as high-risk (10× weight) and always trigger approval review
+- No raw Houdini API calls are exposed to AI tools — only semantic, validated operations
+
+---
+
+## 13. Settings and Environment
 
 ### Preferences Dialog — Edit → Preferences (`Ctrl+,`)
 
@@ -570,7 +661,7 @@ Two buttons at the bottom-left of the Preferences dialog:
 
 ---
 
-## 13. Keyboard Shortcuts Reference
+## 14. Keyboard Shortcuts Reference
 
 ### Graph Navigation
 
@@ -622,7 +713,7 @@ Two buttons at the bottom-left of the Preferences dialog:
 
 ---
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 | Symptom | Likely Cause | Resolution |
 |---------|-------------|-----------|
@@ -638,6 +729,11 @@ Two buttons at the bottom-left of the Preferences dialog:
 | "Unknown publisher" on exe | Unsigned binary | Expected for dev builds; see `tools/sign_release.ps1` |
 | Loop appears to hang | While loop condition never becomes False | Add a `loop_break` node or verify condition logic |
 | Type mismatch warning in log | Connected ports of different types | Informational only — connection still works; `any` ports are always compatible |
+| MCP server won't start | `mcp` package missing | `pip install "mcp>=1.0.0"` |
+| `query_scene_context` returns "bridge not available" | Houdini bridge not running | Launch Vibrante-Node from Houdini menu bar; verify `VIBRANTE_HOU_PORT` |
+| `execute_workflow_transaction` returns `pending_approval` | Plan marked as high-risk | Supply `approver="your_name"` argument to authorize execution |
+| `hou_mcp_ai_plan` not in library | Houdini plugin path missing | Set `v_nodes_dir` to `plugins/houdini/v_nodes_houdini/` in Preferences → Application Paths |
+| AI plan `ok=False` | Planning failed | Check `error` output on `hou_mcp_ai_plan`; verify parent path exists in scene |
 
 **Log files:**
 

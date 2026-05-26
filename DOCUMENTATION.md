@@ -19,6 +19,8 @@ This is the complete technical reference for Vibrante-Node. Use it as a quick-lo
 9. [Keyboard Shortcuts — Complete Table](#9-keyboard-shortcuts)
 10. [Log Levels and Node States Reference](#10-log-and-state-reference)
 11. [Error Codes and Troubleshooting Index](#11-error-index)
+12. [Runtime Layer API Reference](#12-runtime-layer-api-reference)
+13. [MCP Semantic Tools Reference](#13-mcp-semantic-tools-reference)
 
 ---
 
@@ -54,8 +56,7 @@ This is the complete technical reference for Vibrante-Node. Use it as a quick-lo
 
 | Node ID | Category | Description |
 |---------|----------|-------------|
-| `add` | Math | Add two numbers |
-| `math_add` | Math | Add with float inputs |
+| `math_add` | Math | Add two numbers (renamed from `add` in v2.4.0) |
 | `add_integers` | Math | Add two integers |
 | `math_abs` | Math | Absolute value |
 | `compare` | Math | Compare two values; returns bool |
@@ -71,12 +72,13 @@ This is the complete technical reference for Vibrante-Node. Use it as a quick-lo
 
 | Node ID | Category | Description |
 |---------|----------|-------------|
-| `concat` | String | Concatenate two strings |
-| `split` | String | Split string by delimiter |
-| `replace` | String | String replacement |
-| `lowercase` | String | Convert to lowercase |
-| `uppercase` | String | Convert to uppercase |
+| `string_split` | String | Split string by delimiter (was `split` pre-v2.4.0) |
+| `string_replace` | String | String replacement (was `replace` pre-v2.4.0) |
+| `string_lowercase` | String | Convert to lowercase (was `lowercase` pre-v2.4.0) |
+| `string_uppercase` | String | Convert to uppercase (was `uppercase` pre-v2.4.0) |
 | `string_length` | String | Character count |
+
+> `concat` and `multiply` were removed in v2.4.0 — no direct replacements.
 
 ### Data Structures
 
@@ -103,6 +105,42 @@ This is the complete technical reference for Vibrante-Node. Use it as a quick-lo
 | `hou_scene_info` | Houdini | Get HIP file, FPS, frame range |
 | `hou_save_hip` | Houdini | Save the Houdini scene |
 | `hou_sop_chain` | Houdini | Build and cook a SOP chain |
+
+**AI Orchestration nodes** — require the Houdini plugin (`v_nodes_dir`); ship in `plugins/houdini/v_nodes_houdini/`.
+
+| Node ID | Tier | Description |
+|---------|------|-------------|
+| `hou_mcp_scene_context` | 1 | Structured scene snapshot (selection, networks, HDAs, render nodes) for LLM agents |
+| `hou_mcp_build_node_chain` | 1 | Build a Houdini network from a declarative JSON spec |
+| `hou_mcp_transaction` | 2 | Transactional execution boundary — commit or rollback on failure |
+| `hou_mcp_graph_diff` | 2 | Return diff of scene changes since last read (created/modified/deleted) |
+| `hou_mcp_execution_preview` | 2.5 | Preview operation impact without executing |
+| `hou_mcp_replay_transaction` | 2.5 | Deterministically replay a previously recorded transaction |
+| `hou_mcp_semantic_execute` | 2.75 | Translate a named intent to ops and execute via transaction system |
+| `hou_mcp_runtime_capabilities` | 2.75 | Query the capability registry (no bridge calls) |
+| `hou_mcp_workflow_templates` | 2.75 | Browse templates and/or resolve to concrete op lists |
+| `hou_mcp_ai_plan` | 3 | NL prompt → parsed intent → context analysis → validated execution plan |
+| `hou_mcp_ai_preview` | 3 | Validate an AI plan without executing — returns risk, errors, capability gaps |
+| `hou_mcp_ai_execute` | 3 | Execute a validated AI plan via the transaction system with approval gate |
+| `hou_mcp_ai_review` | 3 | Post-execution review — did execution match the original intent? |
+| `hou_mcp_runtime_federation` | 4 | Register and discover peer runtimes; exchange capabilities |
+| `hou_mcp_distributed_execute` | 4 | Execute operations on a distributed worker pool |
+| `hou_mcp_agent_plan` | 4 | Submit a supervised agent proposal (planning only — never executes directly) |
+| `hou_mcp_remote_worker` | 4 | Register, heartbeat, acquire, and release remote workers |
+| `hou_mcp_knowledge_query` | 4 | Query or update the production knowledge graph |
+| `hou_mcp_runtime_analytics` | 5 | Execution performance reports (advisory, no bridge calls) |
+| `hou_mcp_predictive_execution` | 5 | Heuristic failure prediction for a batch of operations |
+| `hou_mcp_workflow_optimizer` | 5 | Advisory execution path analysis and optimization tips |
+| `hou_mcp_recommendation_engine` | 5 | Advisory workflow, template, and strategy recommendations |
+| `hou_mcp_execution_quality` | 5 | Orchestration-level quality evaluation (efficiency, stability, correctness) |
+
+### MCP (Generic — bundled with every install)
+
+| Node ID | Description |
+|---------|-------------|
+| `mcp_server_init` | Configure and open an MCP client session; cached by `server_name` |
+| `mcp_list_tools` | Enumerate tools on a registered MCP server |
+| `mcp_call_tool` | Invoke any MCP tool with JSON arguments |
 
 ### Maya (25 nodes — headless action pattern)
 
@@ -368,6 +406,16 @@ All arrays default to `[]` if absent.
 | `v_nodes_dir` | `setup_env()` / EnvManager | `NodeRegistry.load_all_with_extras()` | Extra node definition directories (colon-separated) |
 | `v_scripts_path` | `setup_env()` / EnvManager | `MainWindow._populate_scripts_menu()` | Extra script directories (colon-separated) |
 
+### MCP Runtime Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VIBRANTE_MCP_TIMEOUT` | `30` | Per-call timeout in seconds for MCP client calls |
+| `VIBRANTE_AUDIT_PATH` | `~/.vibrante_node_audit.jsonl` | JSONL audit trail for transaction history |
+| `VIBRANTE_SEMANTIC_MEMORY_PATH` | (in-memory) | Persistent semantic memory store (JSONL) |
+| `VIBRANTE_PLANNING_MEMORY_PATH` | (in-memory) | Persistent planning event store (JSONL) |
+| `VIBRANTE_STUDIO_KNOWLEDGE_PATH` | (in-memory) | Studio pipeline pattern store (JSONL) |
+
 ### User-Configurable Variables (EnvManager)
 
 | Config key | `os.environ` key | Description |
@@ -484,6 +532,8 @@ hip_path = os.environ.get("VIBRANTE_HIP_FILE", "")
 | `set_frame(frame)` | int | `{"frame": int}` | |
 | `set_playback_range(start, end)` | int, int | `{"start", "end"}` | |
 | `scene_info()` | — | `{"hip_file", "houdini_version", "fps", "frame", "frame_range"}` | |
+| `get_selection()` | — | `{"paths": list[str]}` | Selected node paths; `[]` in headless (v2.4.0+) |
+| `network_summary(path)` | str | `list[{"name", "type", "path", "category"}]` | Children with category in one round-trip (v2.4.0+) |
 
 **Behavior notes:**
 - Each call acquires a `threading.Lock` — thread-safe.
@@ -601,6 +651,323 @@ hip_path = os.environ.get("VIBRANTE_HIP_FILE", "")
 
 ---
 
+## 12. Runtime Layer API Reference
+
+The `src/runtime/` module is the orchestration seam between graph nodes and DCCs / MCP servers. All functions are async unless noted.
+
+### `src.runtime.mcp_runtime` — MCP Client Registry
+
+```python
+from src.runtime import mcp_runtime
+
+await mcp_runtime.register_server(name, transport, config)
+# transport: "stdio" | "sse"
+# stdio config: {"command": str, "args": list, "env": dict|None}
+# sse config:   {"url": str, "headers": dict|None}
+# returns: {"connected": bool, "server_info": {...}, "capabilities": {...}}
+
+await mcp_runtime.list_tools(server_name)
+# returns: [{"name", "description", "inputSchema"}, ...]
+
+await mcp_runtime.call_tool(server_name, tool_name, arguments)
+# returns: {"result": any, "result_json": str, "is_error": bool}
+
+await mcp_runtime.shutdown_server(server_name)
+await mcp_runtime.shutdown_all()
+mcp_runtime.shutdown_all_sync()          # sync wrapper — for closeEvent
+```
+
+**Lifecycle:** Sessions persist across graph executions. Torn down only by `shutdown_server` / `shutdown_all`. `shutdown_all_sync()` is called automatically by `MainWindow.closeEvent`. Override timeout via `VIBRANTE_MCP_TIMEOUT` or `arguments["_timeout_sec"]`.
+
+### `src.runtime.houdini_runtime` — Semantic Houdini Ops
+
+```python
+from src.runtime import houdini_runtime
+
+context = await houdini_runtime.scene_context(
+    include_selection=True, include_assets=True,
+    include_render=True, force_refresh=False
+)
+# returns shape-stable dict:
+# {
+#   "scene":     {"hip_file", "hip_name", "houdini_version", "fps", "frame", "frame_range"},
+#   "selection": [{"path", "type", "category"}, ...],
+#   "networks":  {"obj":[...], "mat":[...], "out":[...], ...},
+#   "assets":    {"hda_files": [...], "definitions": [...]},
+#   "render":    {"render_nodes": [{"path", "type"}, ...]}
+# }
+
+result = await houdini_runtime.build_node_chain(spec)
+# spec: {"intent": str, "nodes": [...], "connections": [...], "layout": bool, "cook": bool}
+# returns: {"ok": bool, "error": str, "created_paths": [...], "id_to_path": {...}}
+
+result = await houdini_runtime.execute_operation(op)
+# op: {"op": str, "parent"/"node"/...: str, ...}
+# returns recorded-operation dict: {"op", "params", "result", "snapshot", "status", "error", "dirty", "timestamp"}
+```
+
+**`execute_operation` invariant:** never raises. Failures are captured in `status="failed"` + `error` fields.
+
+### `src.runtime.scene_cache` — Per-Run Cache
+
+```python
+from src.runtime.scene_cache import get_scene_cache
+
+cache = get_scene_cache()
+cache.set("key", value, ttl_sec=5.0)
+cache.get("key")                          # None if missing or expired
+cache.invalidate("scene_context::")       # call after any mutating op
+cache.get_dirty_nodes()                   # dict[str, list] — sorted, JSON-serialisable
+cache.clear_dirty_state()
+cache.stats()
+```
+
+**Rule:** every `houdini_runtime` function that mutates Houdini state MUST call `cache.invalidate("scene_context::")` before returning.
+
+### `src.runtime.transaction_manager` — Transaction Lifecycle
+
+```python
+from src.runtime.transaction_manager import get_transaction_manager
+
+mgr = get_transaction_manager()
+
+txn_id = mgr.begin_transaction(name, metadata={})
+mgr.record_operation(txn_id, recorded_op)
+mgr.commit_transaction(txn_id)
+mgr.rollback_transaction(txn_id)         # calls rollback handlers in reverse
+mgr.mark_failed(txn_id, error)
+txn = mgr.get_transaction(txn_id)        # full dict
+mgr.get_history(limit=50)               # newest-first list of dicts
+
+# Register a rollback handler (DCC-agnostic)
+mgr.register_rollback_handler("create_node", async_handler_fn)
+```
+
+**State machine:** `pending → committed | rolled_back | failed` (all terminal). Rollback never raises — exceptions from handlers are captured in `rollback_errors`.
+
+### `src.runtime.semantic_execution` — Semantic Executor
+
+```python
+from src.runtime.semantic_execution import get_semantic_executor
+
+executor = get_semantic_executor()
+
+# Translate only (no execution)
+plan = await executor.translate(intent_id, context)
+
+# Full execution pipeline
+result = await executor.execute(
+    intent_id, context,
+    dry_run=False, auto_commit=True, rollback_on_error=True
+)
+# Pipeline: SemanticRegistry → CapabilityRegistry → RuntimeConstraints →
+#           ValidationEngine → ResourceEstimator → TransactionManager → AuditStore
+```
+
+### `src.runtime.validation_engine` — Pre-Execution Validator
+
+```python
+from src.runtime.validation_engine import get_validation_engine
+
+result = await get_validation_engine().validate_operations(operations)
+# result: {"valid": bool, "errors": [...], "warnings": [...],
+#          "risk_level": "low"|"medium"|"high", "op_count": int, "summary": str}
+```
+
+**Risk weights:** `delete_node=10`, `set_parms/connect_nodes/cook_node=1`, all others `0`. `low` < 1, `medium` 1–9, `high` ≥ 10.
+
+---
+
+## 13. MCP Semantic Tools Reference
+
+The MCP server exposes 12 semantic tools via `scripts/run_vibrante_mcp.py`. All tools route through the validation and transaction system — raw Houdini API names are never exposed.
+
+### Runtime Tools
+
+#### `initialize_runtime_context`
+
+Warm up all runtime singletons and return the system prompt and bootstrap data. **Call first in every session.**
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `client_id` | string (optional) | AI client identifier for session tracking |
+
+Returns: `{"ok", "bootstrap_data", "system_prompt", "session_id"}`
+
+---
+
+#### `query_runtime_state`
+
+Current session state, active goals, pending approvals, and module health.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `session_id` | string (optional) | Session to query; defaults to current |
+
+Returns: `{"ok", "session", "active_goals", "pending_approvals", "module_status"}`
+
+---
+
+#### `query_scene_context`
+
+Structured snapshot of the live Houdini scene. Returns a shape-stable dict safe to use in LLM prompts.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `force_refresh` | bool | Bypass 5-second cache |
+| `include_selection` | bool | Include selected node paths |
+| `include_assets` | bool | Include loaded HDA definitions |
+| `include_render` | bool | Include ROP node list |
+
+Returns: `{"ok", "context": {"scene", "selection", "networks", "assets", "render"}, "context_json"}`
+
+---
+
+### Knowledge Tools
+
+#### `query_capabilities`
+
+List what the runtime can currently do.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `cap_type` | string (optional) | Filter by type: `houdini_op`, `renderer`, `mcp_server`, etc. |
+
+Returns: `{"ok", "capabilities": [{"id", "cap_type", "metadata"}, ...], "count"}`
+
+---
+
+#### `query_workflow_templates`
+
+Browse built-in workflow templates and optionally resolve one to a concrete op list.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `intent` | string (optional) | Resolve this template to operations |
+| `variables` | object (optional) | Template substitution variables |
+| `tag` | string (optional) | Filter by tag (e.g. `"vfx"`, `"usd"`) |
+
+Returns: `{"ok", "templates": [...], "resolved_operations"?: [...]}`
+
+---
+
+#### `query_examples`
+
+Built-in usage examples for common intents.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `intent` | string (optional) | Return examples for this intent only |
+
+Returns: `{"ok", "examples": [{"intent", "description", "operations": [...]}]}`
+
+---
+
+### Planning Tools
+
+#### `plan_scene`
+
+Translate a natural-language prompt into a validated execution plan. **Never executes.**
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `prompt` | string | Natural-language description of what to build |
+| `scene_context` | object (optional) | Output from `query_scene_context` for richer planning |
+
+Returns: `{"ok", "plan": {"plan_id", "intent", "operations", "requires_approval", "resource_estimate", "reasoning"}, "plan_json"}`
+
+---
+
+#### `preview_execution`
+
+Validate and predict the risk of a batch of operations **without executing**.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `operations` | array | List of structured operation dicts |
+| `include_dependencies` | bool | Include dependency impact analysis |
+
+Returns: `{"ok", "valid", "risk_level", "errors", "warnings", "dependency_impact", "preview_json"}`
+
+---
+
+#### `validate_execution_plan`
+
+Structural and constraint validation only — no risk prediction.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `operations` | array | Op list to validate |
+| `max_op_count` | int (optional) | Override default max (150) |
+
+Returns: `{"ok", "valid", "errors", "warnings", "risk_level"}`
+
+---
+
+### Execution Tools
+
+#### `execute_workflow_transaction`
+
+Execute a plan via the full transaction system. **Requires prior `preview_execution` call for high-risk plans.**
+
+Two execution paths:
+
+| Path | Input | Behaviour |
+|------|-------|-----------|
+| Named intent | `intent` + `context` | Routes through `SemanticExecutor.execute()` — full Tier 2.75 pipeline |
+| Plan JSON | `plan_json` | Safety gates → `TransactionManager` → `execute_operation` loop |
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `intent` | string (optional) | Named semantic operation (e.g. `"build_pyro_source"`) |
+| `context` | object (optional) | Context variables for intent resolution |
+| `plan_json` | string (optional) | JSON-serialised plan from `plan_scene` |
+| `dry_run` | bool | Validate only — no execution |
+| `auto_commit` | bool | Commit on full success (default `true`) |
+| `rollback_on_error` | bool | Roll back on first failed op (default `true`) |
+| `approver` | string (optional) | Approver identity for high-risk plans |
+
+Returns: `{"ok", "status", "transaction_id", "operations_executed", "rollback_performed", "graph_diff", "report_json"}`
+
+**Safety gates:** plans with `ok=False` are rejected. Plans with `requires_approval=True` return `status="pending_approval"` unless `approver` is supplied. All ops validated by `ValidationEngine` + `RuntimeConstraints` before any bridge call.
+
+---
+
+#### `review_execution`
+
+Post-execution review — compares what actually happened against the original plan.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `plan_json` | string | The plan that was executed |
+| `execution_result_json` | string | Output from `execute_workflow_transaction` |
+
+Returns: `{"ok", "outcome", "intent_match_score", "findings", "recommendations", "diff_analysis"}`
+
+---
+
+### Additional Tool
+
+#### `query_node_parameters`
+
+Inspect the parameter schema of a Houdini node type or live node instance.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `node_path` | string | Absolute Houdini node path (e.g. `/obj/geo1/sphere1`) |
+
+Returns: `{"ok", "node_path", "node_type", "parameters": [{"name", "type", "value", "default"}, ...]}`
+
+---
+
+### Forbidden Tool Surface
+
+The following names are never registered as MCP tools and must not appear in the tool list. Any change that introduces them fails `test_mcp_tool_registry.py::test_forbidden_tools_not_present`:
+
+`create_node`, `set_parm`, `set_parms`, `run_python`, `run_code`, `delete_node`, `raw_houdini_execute`, `connect_nodes`, `cook_node`
+
+---
+
 **Documentation map:**
 
 | Document | Audience | Focus |
@@ -621,3 +988,18 @@ hip_path = os.environ.get("VIBRANTE_HIP_FILE", "")
 | `docs_src/08_api_reference.md` | Full class / method reference (1,500 lines) |
 | `docs_src/05_node_development.md` | Node development guide (1,000 lines) |
 | `docs_src/09_advanced_topics.md` | GroupNode, autosave, wire inspector internals |
+
+**Runtime layer (src/runtime/):**
+
+| Module | Purpose |
+|--------|---------|
+| `mcp_runtime.py` | MCP client session registry (Tier 1) |
+| `houdini_runtime.py` | Semantic Houdini ops: scene_context, build_node_chain, execute_operation (Tiers 1–2) |
+| `scene_cache.py` | Per-run TTL cache + dirty tracking |
+| `transaction_manager.py` | Transaction lifecycle + rollback dispatch (Tier 2) |
+| `semantic_execution.py` | Full semantic translation + execution pipeline (Tier 2.75) |
+| `ai_planner.py` | Plan generation from parsed intent + context (Tier 3) |
+| `mcp_tool_registry.py` | All 12 MCP semantic tool handlers (Tier 6) |
+| `mcp_transport.py` | MCP stdio server transport (Tier 6) |
+
+Entry point for external AI clients: `scripts/run_vibrante_mcp.py`
