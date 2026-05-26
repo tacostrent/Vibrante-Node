@@ -8,6 +8,44 @@ Full release notes for each version: see `RELEASE_vX.Y.Z.md` / `releases/` direc
 
 ---
 
+## [v2.4.0] — 2026-05-26
+
+**Type:** Minor — complete AI orchestration MCP runtime, 26 new nodes, bug fixes
+
+### Added
+- Complete `src/runtime/` module: AI orchestration runtime spanning Tiers 1–6 (40+ modules). MCP client sessions, transaction system, AI planning pipeline, distributed execution, Tier 5 advisory analytics, Tier 6 MCP server.
+- `scripts/run_vibrante_mcp.py` — MCP stdio server entry point. Claude Desktop / Codex CLI / Cursor integration.
+- 12 MCP semantic tools: `initialize_runtime_context`, `query_runtime_state`, `query_scene_context`, `query_capabilities`, `query_workflow_templates`, `query_examples`, `query_node_parameters`, `plan_scene`, `preview_execution`, `validate_execution_plan`, `execute_workflow_transaction`, `review_execution`.
+- 3 generic MCP nodes in `nodes/`: `mcp_server_init`, `mcp_list_tools`, `mcp_call_tool`.
+- 23 Houdini AI nodes in `plugins/houdini/v_nodes_houdini/`: `hou_mcp_scene_context`, `hou_mcp_build_node_chain`, `hou_mcp_transaction`, `hou_mcp_graph_diff`, and 19 more (see RELEASE_v2.4.0.md).
+- New bridge methods: `bridge.get_selection()`, `bridge.network_summary(path)`.
+- `list_images_recursive` utility node.
+- Subprocess crash log (`~/.vibrante_node_subprocess.log`) in Houdini plugin launcher.
+- MCP shutdown hook in `MainWindow.closeEvent` — prevents stdio subprocess leaks on app exit.
+- Linux packaging: `pyproject.toml`, `setup.py`, `MANIFEST.in`, `linux/` directory (pip, AppImage, .deb).
+- `ABOUT.md` — Wikipedia-style project overview.
+- `vibrante_node` Python package (`vibrante_node/__init__.py`, `vibrante_node/app.py`).
+- 70+ new unit test files covering the entire runtime layer.
+
+### Fixed
+- `build_node_chain`: topological sort ensures parent nodes are created before their children; `actual_by_expected` map handles Houdini name-collision renaming.
+- `review_execution` (`execution_review.py`): `match_score` was always `0.0` when `operations_executed` was absent from the result dict; now falls back to `1.0` when `status == "committed"`.
+- `preview_execution` MCP tool: `ImportError` — wrong import name (`get_predictive_execution` → `get_predictive_engine`).
+
+### Changed
+- Node ID renames for consistency: `add`→`math_add`, `subtract`→`math_subtract`, `divide`→`math_divide`, `modulo`→`math_modulo`, `lowercase`→`string_lowercase`, `uppercase`→`string_uppercase`, `replace`→`string_replace`, `split`→`string_split`, `append_file`→`file_append`, `write_file`→`file_write`, `random_float`→`example_random_float`.
+- `test_all_workflows.py`: auto-discovers plugin node directories so new DCCs need zero test changes.
+- `test_settings_persistence.py`: config writes now isolated to per-test temp path.
+
+### Removed
+- `concat` node (no direct replacement; use string manipulation nodes).
+- `multiply` node (no direct replacement; use math nodes).
+
+### Dependencies
+- `mcp>=1.0.0` added to `requirements.txt`.
+
+---
+
 ## [v2.3.0] — 2026-05-18
 
 **Type:** Minor — new nodes, developer tooling, and bug fixes

@@ -173,14 +173,14 @@ vibrante-node
 **AppImage (no Python required — single self-contained file):**
 
 ```bash
-chmod +x Vibrante-Node-2.3.0-x86_64.AppImage
-./Vibrante-Node-2.3.0-x86_64.AppImage
+chmod +x Vibrante-Node-2.4.0-x86_64.AppImage
+./Vibrante-Node-2.4.0-x86_64.AppImage
 ```
 
 **Ubuntu/Debian .deb package:**
 
 ```bash
-sudo dpkg -i vibrante-node_2.3.0_amd64.deb
+sudo dpkg -i vibrante-node_2.4.0_amd64.deb
 vibrante-node
 ```
 
@@ -388,6 +388,7 @@ For the complete authoring reference, including Houdini bridge usage, headless a
 
 | Version | Type | Highlights |
 |---|---|---|
+| [v2.4.0](RELEASE_v2.4.0.md) | Minor | Complete AI orchestration MCP runtime (Tiers 1–6); 26 new nodes; `query_node_parameters` MCP tool; node ID cleanup; 3 critical bug fixes |
 | [v2.3.0](RELEASE_v2.3.0.md) | Minor | HTTP Request node; Authenticode signing tools; Node Builder fixes; canvas drag-trail fix |
 | [v2.2.1](RELEASE_v2.2.1.md) | Patch | About dialog crash fix; LICENSE bundled in exe |
 | [v2.2.0](RELEASE_v2.2.0.md) | Minor | Settings dialog; EnvManager; reactive propagation fix; 10 new website examples |
@@ -398,21 +399,22 @@ For the complete authoring reference, including Houdini bridge usage, headless a
 
 ---
 
-## Latest Release — v2.3.0
+## Latest Release — v2.4.0
 
-**Released:** 2026-05-18 · [Full Release Notes](RELEASE_v2.3.0.md)
+**Released:** 2026-05-26 · [Full Release Notes](RELEASE_v2.4.0.md)
 
-**v2.3.0 — Minor**
-- New bundled **HTTP Request** node — async GET/POST with headers, body, and timeout; uses `run_in_executor` so the UI stays responsive during network calls
-- Authenticode signing scripts (`tools/create_dev_cert.ps1`, `tools/sign_release.ps1`) — remove "Unknown publisher" warning from Windows security dialogs
-- Fixed canvas drag trail — `NodeWidget.boundingRect()` now covers port connectors; `shape()` overridden for correct hit-testing
-- Fixed http_request UI freeze — moved HTTP execution entirely to thread pool via `loop.run_in_executor`
-- Fixed Node Builder: exec port type corruption, default-value loss, and icon-path field triggering full code regeneration
-- Fixed Load Node From JSON / Load Workflow cross-file-type detection — each dialog now rejects the other's file type with a clear error message
+**v2.4.0 — Minor**
+- Complete `src/runtime/` module: AI-native orchestration runtime spanning Tiers 1–6 (40+ modules). MCP client sessions, transaction system, AI planning pipeline, distributed execution, Tier 5 advisory analytics, Tier 6 MCP server
+- **Vibrante-Node is now a full MCP server** — run `scripts/run_vibrante_mcp.py` and connect Claude Desktop, Codex CLI, or Cursor directly to your Houdini scene
+- 12 MCP semantic tools: `initialize_runtime_context`, `query_runtime_state`, `query_scene_context`, `query_capabilities`, `query_workflow_templates`, `query_examples`, **`query_node_parameters`** (new), `plan_scene`, `preview_execution`, `validate_execution_plan`, `execute_workflow_transaction`, `review_execution`
+- 26 new nodes: 3 generic MCP nodes + 23 Houdini AI nodes (`hou_mcp_scene_context`, `hou_mcp_build_node_chain`, `hou_mcp_transaction`, `hou_mcp_graph_diff`, and 19 more)
+- Fixed `build_node_chain` topological ordering; fixed `review_execution` always scoring 0%; fixed `preview_execution` ImportError
+- Node ID consistency renames (`add`→`math_add`, `lowercase`→`string_lowercase`, etc.); `concat` and `multiply` nodes removed
 
-**v2.2.1 — Patch (included in this release)**
-- Fixed About dialog crash (`QTextEdit` → `QTextBrowser`)
-- Fixed LICENSE file not shown in exe About dialog
+**v2.3.0 — Minor (previous release)**
+- New bundled **HTTP Request** node — async GET/POST with headers, body, and timeout
+- Authenticode signing scripts — remove "Unknown publisher" warning from Windows security dialogs
+- Fixed canvas drag trail, Node Builder corruption, and Load Workflow cross-file-type detection
 
 ---
 

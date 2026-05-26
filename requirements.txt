@@ -6,3 +6,4 @@ pytest
 pytest-qt
 google-generativeai
 pytest-asyncio
+mcp>=1.0.0

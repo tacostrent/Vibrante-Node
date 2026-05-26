@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_workflow_templates",
+    "name": "hou_mcp_workflow_templates",
+    "description": "Browse or apply workflow templates. With template_id empty and list_all=true, returns all template metadata. With template_id set and context_json provided, resolves the template to concrete operations (does NOT execute — wire to hou_mcp_transaction for execution).",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "exec_in",      "type": "any",    "widget_type": null,       "options": null, "default": null},
+        {"name": "template_id",  "type": "string", "widget_type": "text",      "options": null, "default": ""},
+        {"name": "context_json", "type": "string", "widget_type": "text",      "options": null, "default": "{}"},
+        {"name": "list_all",     "type": "bool",   "widget_type": "checkbox",  "options": null, "default": true},
+        {"name": "tag_filter",   "type": "string", "widget_type": "text",      "options": null, "default": ""}
+    ],
+    "outputs": [
+        {"name": "exec_out",      "type": "any",    "widget_type": null, "options": null, "default": null},
+        {"name": "templates",     "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "template_ids",  "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "operations",    "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "count",         "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "errors",        "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "report_json",   "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nimport json\n\nclass Hou_Mcp_Workflow_Templates(BaseNode):\n    name = \"hou_mcp_workflow_templates\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"template_id\",  \"string\", widget_type=\"text\",     default=\"\")\n        self.add_input(\"context_json\", \"string\", widget_type=\"text\",     default=\"{}\")\n        self.add_input(\"list_all\",     \"bool\",   widget_type=\"checkbox\", default=True)\n        self.add_input(\"tag_filter\",   \"string\", widget_type=\"text\",     default=\"\")\n        self.add_output(\"templates\",    \"list\")\n        self.add_output(\"template_ids\", \"list\")\n        self.add_output(\"operations\",   \"list\")\n        self.add_output(\"count\",        \"int\")\n        self.add_output(\"errors\",       \"list\")\n        self.add_output(\"report_json\",  \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        from src.runtime.workflow_templates import get_workflow_templates\n        tmpl_id    = str(inputs.get(\"template_id\") or \"\").strip()\n        ctx_raw    = inputs.get(\"context_json\") or \"{}\"\n        list_all   = bool(inputs.get(\"list_all\", True))\n        tag_filter = str(inputs.get(\"tag_filter\") or \"\").strip() or None\n\n        errors:    list = []\n        operations: list = []\n        wt = get_workflow_templates()\n\n        # Parse context\n        context = {}\n        if tmpl_id:\n            try:\n                context = json.loads(ctx_raw) if isinstance(ctx_raw, str) else dict(ctx_raw or {})\n            except Exception as exc:\n                errors.append(f\"context_json parse error: {exc}\")\n\n        # List templates\n        templates = []\n        if list_all or not tmpl_id:\n            templates = wt.list_templates(tag=tag_filter)\n\n        # Resolve specific template if requested\n        if tmpl_id and not errors:\n            try:\n                operations = wt.apply_template(tmpl_id, context)\n            except KeyError as exc:\n                errors.append(str(exc))\n            except Exception as exc:\n                errors.append(f\"Template apply error: {exc}\")\n\n        template_ids = [t[\"template_id\"] for t in templates] if templates else ([tmpl_id] if tmpl_id else [])\n        report = {\"templates\": templates, \"template_ids\": template_ids, \"count\": len(templates), \"errors\": errors}\n\n        return {\n            \"exec_out\":     True,\n            \"templates\":    templates,\n            \"template_ids\": template_ids,\n            \"operations\":   operations,\n            \"count\":        len(templates),\n            \"errors\":       errors,\n            \"report_json\":  json.dumps(report),\n        }\n\ndef register_node():\n    return Hou_Mcp_Workflow_Templates\n"
+}

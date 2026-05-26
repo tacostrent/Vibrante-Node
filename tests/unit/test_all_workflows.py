@@ -48,11 +48,40 @@ from src.nodes.base import BaseNode
 
 _REGISTRY_LOADED = False
 
+
+def _discover_plugin_node_dirs() -> list[Path]:
+    """Auto-discover every plugin node folder under plugins/.
+
+    Convention: any directory matching `plugins/*/v_nodes_*` is treated as a
+    plugin-scoped node folder loaded at runtime via the `v_nodes_dir` env var.
+    Adding a new DCC plugin (e.g. plugins/maya/v_nodes_maya/) requires zero
+    test changes — discovery is purely path-pattern driven, never hardcoded.
+    """
+    repo = Path(__file__).parent.parent.parent
+    plugins_root = repo / "plugins"
+    if not plugins_root.is_dir():
+        return []
+    found: list[Path] = []
+    for plugin_dir in sorted(plugins_root.iterdir()):
+        if not plugin_dir.is_dir():
+            continue
+        for child in sorted(plugin_dir.iterdir()):
+            if child.is_dir() and child.name.startswith("v_nodes_"):
+                found.append(child)
+    return found
+
+
 def _ensure_registry():
     global _REGISTRY_LOADED
     if not _REGISTRY_LOADED:
-        nodes_dir = str(Path(__file__).parent.parent.parent / "nodes")
-        NodeRegistry.load_all(nodes_dir)
+        repo = Path(__file__).parent.parent.parent
+        NodeRegistry.load_all(str(repo / "nodes"))
+        # Mirror the runtime environment when launched from a DCC plugin:
+        # those folders are added to v_nodes_dir, so any workflow referencing
+        # DCC-specific nodes (e.g. hou_mcp_*) must validate against them.
+        # Discovery is path-agnostic — see _discover_plugin_node_dirs.
+        for d in _discover_plugin_node_dirs():
+            NodeRegistry._load_directory(str(d))
         _REGISTRY_LOADED = True
 
 

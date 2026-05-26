@@ -93,20 +93,20 @@ most other modern x86_64 distros.
 
 ```bash
 # Download the latest release
-wget https://github.com/KamalTDev/vibrante-node/releases/latest/download/Vibrante-Node-2.3.0-x86_64.AppImage
+wget https://github.com/KamalTDev/vibrante-node/releases/latest/download/Vibrante-Node-2.4.0-x86_64.AppImage
 
 # Mark executable
-chmod +x Vibrante-Node-2.3.0-x86_64.AppImage
+chmod +x Vibrante-Node-2.4.0-x86_64.AppImage
 
 # Run
-./Vibrante-Node-2.3.0-x86_64.AppImage
+./Vibrante-Node-2.4.0-x86_64.AppImage
 ```
 
 ### Optional: integrate with your desktop
 
 ```bash
 # Move to a permanent location
-mv Vibrante-Node-2.3.0-x86_64.AppImage ~/Applications/
+mv Vibrante-Node-2.4.0-x86_64.AppImage ~/Applications/
 
 # (Optional) add a desktop launcher — most desktop envs pick this up
 cp ~/.local/share/applications/  # some AppImage launchers do this automatically
@@ -127,7 +127,7 @@ sudo dnf install fuse fuse-libs
 If FUSE is unavailable, you can extract and run without it:
 
 ```bash
-./Vibrante-Node-2.3.0-x86_64.AppImage --appimage-extract
+./Vibrante-Node-2.4.0-x86_64.AppImage --appimage-extract
 ./squashfs-root/AppRun
 ```
 
@@ -142,10 +142,10 @@ Uses the system `python3-pyqt5` package — lighter than the AppImage.
 
 ```bash
 # Download the .deb
-wget https://github.com/KamalTDev/vibrante-node/releases/latest/download/vibrante-node_2.3.0_amd64.deb
+wget https://github.com/KamalTDev/vibrante-node/releases/latest/download/vibrante-node_2.4.0_amd64.deb
 
 # Install
-sudo dpkg -i vibrante-node_2.3.0_amd64.deb
+sudo dpkg -i vibrante-node_2.4.0_amd64.deb
 
 # Satisfy any missing dependencies (if dpkg reports errors)
 sudo apt-get install -f

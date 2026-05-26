@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_recommendation_engine",
+    "name": "hou_mcp_recommendation_engine",
+    "description": "Get advisory recommendations for workflows, templates, execution strategies, and dependency resolutions. Uses historical patterns, capability registry, and workflow templates to surface the best options. Never executes anything.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "intent",           "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "operations_json",  "type": "string", "widget_type": "text", "options": null, "default": "[]" },
+        { "name": "context_json",     "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",          "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "recommended_workflow",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "recommended_template",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "strategies",            "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "primary_strategy",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "workflow_confidence",   "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "recommendations_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",              "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\n\nclass Hou_Mcp_Recommendation_Engine(BaseNode):\n    name = \"hou_mcp_recommendation_engine\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"intent\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"operations_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"context_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"recommended_workflow\", \"string\")\n        self.add_output(\"recommended_template\", \"string\")\n        self.add_output(\"strategies\", \"any\")\n        self.add_output(\"primary_strategy\", \"string\")\n        self.add_output(\"workflow_confidence\", \"float\")\n        self.add_output(\"recommendations_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            from src.runtime.recommendation_engine import get_recommendation_engine\n            engine = get_recommendation_engine()\n\n            intent = inputs.get(\"intent\") or \"\"\n            ops_raw = inputs.get(\"operations_json\") or \"[]\"\n            ctx_raw = inputs.get(\"context_json\") or \"{}\"\n            try:\n                operations = json.loads(ops_raw) if isinstance(ops_raw, str) else ops_raw\n            except json.JSONDecodeError:\n                operations = []\n            try:\n                context = json.loads(ctx_raw) if isinstance(ctx_raw, str) else ctx_raw\n            except json.JSONDecodeError:\n                context = {}\n\n            wf_rec = engine.recommend_workflow(intent, context) if intent else {}\n            tmpl_rec = engine.recommend_template(intent, context) if intent else {}\n            strategy_rec = engine.recommend_strategy(operations, context)\n\n            full = {\"workflow\": wf_rec, \"template\": tmpl_rec, \"strategy\": strategy_rec}\n            return {\n                \"recommended_workflow\": wf_rec.get(\"recommended_op\") or \"\",\n                \"recommended_template\": tmpl_rec.get(\"recommended_template\") or \"\",\n                \"strategies\":           strategy_rec.get(\"strategies\", []),\n                \"primary_strategy\":     strategy_rec.get(\"primary\", \"\"),\n                \"workflow_confidence\":  wf_rec.get(\"confidence\", 0.0),\n                \"recommendations_json\": json.dumps(full),\n                \"exec_out\": True,\n            }\n        except Exception as e:\n            self.log_error(f\"Recommendation engine error: {e}\")\n            return {\"recommended_workflow\": \"\", \"recommended_template\": \"\", \"strategies\": [], \"primary_strategy\": \"\", \"workflow_confidence\": 0.0, \"recommendations_json\": \"{}\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Recommendation_Engine\n"
+}

@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_workflow_optimizer",
+    "name": "hou_mcp_workflow_optimizer",
+    "description": "Analyze an operation plan and recommend optimizations: execution reordering, batch splitting, template selection, and risk reduction strategies. Advisory only — never modifies or executes the plan.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "operations_json",    "type": "string", "widget_type": "text",     "options": null, "default": "[]" },
+        { "name": "intent",             "type": "string", "widget_type": "text",     "options": null, "default": "" },
+        { "name": "include_alts",       "type": "bool",   "widget_type": "checkbox", "options": null, "default": true },
+        { "name": "exec_in",            "type": "any",    "widget_type": null,       "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "risk_level",           "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "optimization_tips",    "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "reorder_suggested",    "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "alternatives",         "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "preferred_strategy",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "analysis_json",        "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",             "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\n\nclass Hou_Mcp_Workflow_Optimizer(BaseNode):\n    name = \"hou_mcp_workflow_optimizer\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"operations_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"intent\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"include_alts\", \"bool\", widget_type=\"checkbox\", default=True)\n        self.add_output(\"risk_level\", \"string\")\n        self.add_output(\"optimization_tips\", \"any\")\n        self.add_output(\"reorder_suggested\", \"bool\")\n        self.add_output(\"alternatives\", \"any\")\n        self.add_output(\"preferred_strategy\", \"string\")\n        self.add_output(\"analysis_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            from src.runtime.workflow_optimizer import get_workflow_optimizer\n            optimizer = get_workflow_optimizer()\n\n            ops_raw = inputs.get(\"operations_json\") or \"[]\"\n            try:\n                operations = json.loads(ops_raw) if isinstance(ops_raw, str) else ops_raw\n            except json.JSONDecodeError:\n                operations = []\n\n            intent = inputs.get(\"intent\") or \"\"\n            analysis = optimizer.analyze_plan(operations)\n            alternatives_result = {}\n            if inputs.get(\"include_alts\", True) and intent:\n                alternatives_result = optimizer.recommend_alternatives(intent, operations)\n\n            full = {**analysis, \"alternatives\": alternatives_result}\n            return {\n                \"risk_level\":         analysis[\"risk_level\"],\n                \"optimization_tips\":  analysis[\"optimization_tips\"],\n                \"reorder_suggested\":  analysis[\"reorder_suggested\"],\n                \"alternatives\":       alternatives_result.get(\"alternatives\", []),\n                \"preferred_strategy\": alternatives_result.get(\"preferred\", \"\") or \"\",\n                \"analysis_json\":      json.dumps(full),\n                \"exec_out\": True,\n            }\n        except Exception as e:\n            self.log_error(f\"Workflow optimizer error: {e}\")\n            return {\"risk_level\": \"unknown\", \"optimization_tips\": [], \"reorder_suggested\": False, \"alternatives\": [], \"preferred_strategy\": \"\", \"analysis_json\": \"{}\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Workflow_Optimizer\n"
+}

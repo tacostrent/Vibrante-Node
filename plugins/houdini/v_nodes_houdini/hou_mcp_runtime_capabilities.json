@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_runtime_capabilities",
+    "name": "hou_mcp_runtime_capabilities",
+    "description": "Query the runtime capability registry to discover what operations, services, and integrations are currently available. No bridge calls — pure registry read.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "exec_in",          "type": "any",    "widget_type": null,      "options": null, "default": null},
+        {"name": "capability_type",  "type": "string", "widget_type": "text",     "options": null, "default": ""},
+        {"name": "include_metadata", "type": "bool",   "widget_type": "checkbox", "options": null, "default": true}
+    ],
+    "outputs": [
+        {"name": "exec_out",     "type": "any",    "widget_type": null, "options": null, "default": null},
+        {"name": "capabilities", "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "count",        "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "types",        "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "report_json",  "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nimport json\n\nclass Hou_Mcp_Runtime_Capabilities(BaseNode):\n    name = \"hou_mcp_runtime_capabilities\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"capability_type\",  \"string\", widget_type=\"text\",     default=\"\")\n        self.add_input(\"include_metadata\", \"bool\",   widget_type=\"checkbox\", default=True)\n        self.add_output(\"capabilities\", \"list\")\n        self.add_output(\"count\",        \"int\")\n        self.add_output(\"types\",        \"list\")\n        self.add_output(\"report_json\",  \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        from src.runtime.capability_registry import get_capability_registry\n        cap_type = str(inputs.get(\"capability_type\") or \"\").strip() or None\n        include_meta = bool(inputs.get(\"include_metadata\", True))\n\n        registry = get_capability_registry()\n        raw = registry.query_capabilities(cap_type=cap_type)\n\n        if not include_meta:\n            capabilities = [{\"type\": c[\"type\"], \"id\": c[\"id\"]} for c in raw]\n        else:\n            capabilities = raw\n\n        types = sorted(set(c[\"type\"] for c in raw))\n        report = {\"capabilities\": capabilities, \"count\": len(capabilities), \"types\": types}\n\n        return {\n            \"exec_out\":     True,\n            \"capabilities\": capabilities,\n            \"count\":        len(capabilities),\n            \"types\":        types,\n            \"report_json\":  json.dumps(report),\n        }\n\ndef register_node():\n    return Hou_Mcp_Runtime_Capabilities\n"
+}

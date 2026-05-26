@@ -1,0 +1,29 @@
+{
+    "node_id": "hou_mcp_semantic_execute",
+    "name": "hou_mcp_semantic_execute",
+    "description": "Translate a named semantic intent to a validated execution plan and optionally execute it via the transaction system. All translation is DETERMINISTIC — no LLMs involved.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "exec_in",            "type": "any",    "widget_type": null,       "options": null, "default": null},
+        {"name": "intent",             "type": "string", "widget_type": "text",      "options": null, "default": ""},
+        {"name": "context_json",       "type": "string", "widget_type": "text",      "options": null, "default": "{}"},
+        {"name": "dry_run",            "type": "bool",   "widget_type": "checkbox",  "options": null, "default": false},
+        {"name": "auto_commit",        "type": "bool",   "widget_type": "checkbox",  "options": null, "default": true},
+        {"name": "rollback_on_error",  "type": "bool",   "widget_type": "checkbox",  "options": null, "default": true}
+    ],
+    "outputs": [
+        {"name": "exec_out",           "type": "any",    "widget_type": null, "options": null, "default": null},
+        {"name": "success",            "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "operations_executed","type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "transaction_id",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "status",             "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "graph_diff",         "type": "any",    "widget_type": null, "options": null, "default": null},
+        {"name": "errors",             "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "warnings",           "type": "list",   "widget_type": null, "options": null, "default": null},
+        {"name": "resource_estimate",  "type": "any",    "widget_type": null, "options": null, "default": null},
+        {"name": "report_json",        "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nimport json\n\nclass Hou_Mcp_Semantic_Execute(BaseNode):\n    name = \"hou_mcp_semantic_execute\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"intent\",            \"string\", widget_type=\"text\",     default=\"\")\n        self.add_input(\"context_json\",      \"string\", widget_type=\"text\",     default=\"{}\")\n        self.add_input(\"dry_run\",           \"bool\",   widget_type=\"checkbox\", default=False)\n        self.add_input(\"auto_commit\",       \"bool\",   widget_type=\"checkbox\", default=True)\n        self.add_input(\"rollback_on_error\", \"bool\",   widget_type=\"checkbox\", default=True)\n        self.add_output(\"success\",             \"bool\")\n        self.add_output(\"operations_executed\", \"list\")\n        self.add_output(\"transaction_id\",      \"string\")\n        self.add_output(\"status\",              \"string\")\n        self.add_output(\"graph_diff\",          \"any\")\n        self.add_output(\"errors\",              \"list\")\n        self.add_output(\"warnings\",            \"list\")\n        self.add_output(\"resource_estimate\",   \"any\")\n        self.add_output(\"report_json\",         \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        from src.runtime.semantic_execution import get_semantic_executor\n        intent   = str(inputs.get(\"intent\", \"\")).strip()\n        ctx_raw  = inputs.get(\"context_json\") or \"{}\"\n        dry_run  = bool(inputs.get(\"dry_run\", False))\n        auto_cmt = bool(inputs.get(\"auto_commit\", True))\n        rb_err   = bool(inputs.get(\"rollback_on_error\", True))\n\n        _empty = {\n            \"exec_out\": True, \"success\": False, \"operations_executed\": [],\n            \"transaction_id\": \"\", \"status\": \"failed\", \"graph_diff\": {},\n            \"errors\": [], \"warnings\": [], \"resource_estimate\": {}, \"report_json\": \"{}\"\n        }\n\n        if not intent:\n            _empty[\"errors\"] = [\"intent must not be empty\"]\n            return _empty\n\n        try:\n            context = json.loads(ctx_raw) if isinstance(ctx_raw, str) else dict(ctx_raw or {})\n        except Exception as exc:\n            _empty[\"errors\"] = [f\"context_json parse error: {exc}\"]\n            return _empty\n\n        try:\n            executor = get_semantic_executor()\n            result   = await executor.execute(\n                intent, context,\n                dry_run=dry_run,\n                auto_commit=auto_cmt,\n                rollback_on_error=rb_err,\n            )\n        except Exception as exc:\n            _empty[\"errors\"] = [f\"semantic execution failed: {exc}\"]\n            return _empty\n\n        return {\n            \"exec_out\":            True,\n            \"success\":             bool(result.get(\"ok\", False)),\n            \"operations_executed\": result.get(\"operations_executed\", []),\n            \"transaction_id\":      result.get(\"transaction_id\") or \"\",\n            \"status\":              result.get(\"status\", \"failed\"),\n            \"graph_diff\":          result.get(\"graph_diff\", {}),\n            \"errors\":              result.get(\"errors\", []),\n            \"warnings\":            result.get(\"warnings\", []),\n            \"resource_estimate\":   result.get(\"resource_estimate\", {}),\n            \"report_json\":         result.get(\"report_json\", \"{}\"),\n        }\n\ndef register_node():\n    return Hou_Mcp_Semantic_Execute\n"
+}

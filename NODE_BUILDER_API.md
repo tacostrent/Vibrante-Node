@@ -1,6 +1,6 @@
 # Vibrante-Node — Node Builder API
 
-**Version:** v2.3.0 | [User Guide](USER_GUIDE.md) | [Automation API](AUTOMATION_API.md) | [Developer Guide](DEVELOPER.md) | [Technical Reference](DOCUMENTATION.md)
+**Version:** v2.4.0 | [User Guide](USER_GUIDE.md) | [Automation API](AUTOMATION_API.md) | [Developer Guide](DEVELOPER.md) | [Technical Reference](DOCUMENTATION.md)
 
 This document is the complete reference for building custom nodes: `BaseNode`, port configuration, lifecycle hooks, the JSON node schema, distribution patterns, and integration with Houdini, Maya, Blender, and Prism Pipeline.
 

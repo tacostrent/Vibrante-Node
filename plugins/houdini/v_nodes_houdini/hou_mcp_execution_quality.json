@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_execution_quality",
+    "name": "hou_mcp_execution_quality",
+    "description": "Evaluate the orchestration-level quality of a completed execution. Scores efficiency, semantic correctness, stability, validation reliability, replay consistency, and dependency integrity. NOT artistic evaluation — runtime quality only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "execution_result_json", "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "plan_json",             "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "history_json",          "type": "string", "widget_type": "text", "options": null, "default": "[]" },
+        { "name": "exec_in",               "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "overall_score",  "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "grade",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "dimensions",     "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "findings",       "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "quality_json",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",       "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\n\nclass Hou_Mcp_Execution_Quality(BaseNode):\n    name = \"hou_mcp_execution_quality\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"execution_result_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"plan_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"history_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_output(\"overall_score\", \"float\")\n        self.add_output(\"grade\", \"string\")\n        self.add_output(\"dimensions\", \"any\")\n        self.add_output(\"findings\", \"any\")\n        self.add_output(\"quality_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            from src.runtime.execution_quality import get_execution_quality\n            quality = get_execution_quality()\n\n            def _parse(raw, default):\n                try:\n                    return json.loads(raw) if isinstance(raw, str) else raw\n                except (json.JSONDecodeError, TypeError):\n                    return default\n\n            result  = _parse(inputs.get(\"execution_result_json\") or \"{}\", {})\n            plan    = _parse(inputs.get(\"plan_json\") or \"{}\", None)\n            history = _parse(inputs.get(\"history_json\") or \"[]\", [])\n\n            if not plan:\n                plan = None\n            if not history:\n                history = None\n\n            evaluation = quality.evaluate(result, plan=plan, history=history)\n            return {\n                \"overall_score\": evaluation[\"overall_score\"],\n                \"grade\":         evaluation[\"grade\"],\n                \"dimensions\":    evaluation[\"dimensions\"],\n                \"findings\":      evaluation[\"findings\"],\n                \"quality_json\":  json.dumps(evaluation),\n                \"exec_out\": True,\n            }\n        except Exception as e:\n            self.log_error(f\"Execution quality error: {e}\")\n            return {\"overall_score\": 0.0, \"grade\": \"F\", \"dimensions\": {}, \"findings\": [], \"quality_json\": \"{}\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Execution_Quality\n"
+}

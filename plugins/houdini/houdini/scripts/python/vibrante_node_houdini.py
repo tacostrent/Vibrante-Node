@@ -28,6 +28,17 @@ import sys
 import glob
 import subprocess
 import platform
+import datetime
+
+
+def _subprocess_log_path():
+    """Path to the rolling subprocess log used for crash diagnostics.
+
+    Lives in the user's home directory so it works for any install location
+    and survives uninstalls. Header lines (timestamp + python + script) are
+    prepended on each launch so multiple sessions can be told apart.
+    """
+    return os.path.join(os.path.expanduser("~"), ".vibrante_node_subprocess.log")
 
 
 def get_app_root():
@@ -466,18 +477,46 @@ def launch(hip_file="", extra_env=None):
     print(f"[Vibrante-Node] Command server port: {port or '(not started)'}")
     print(f"[Vibrante-Node] PATH (first 3): {os.pathsep.join(env.get('PATH', '').split(os.pathsep)[:3])}")
 
+    log_path = _subprocess_log_path()
+    log_handle = None
     try:
+        # Rotate if the log has grown beyond 5 MB — keeps the file from
+        # filling the user's home dir after many sessions, without losing
+        # the most recent crash.
+        try:
+            if os.path.getsize(log_path) > 5 * 1024 * 1024:
+                os.remove(log_path)
+        except OSError:
+            pass
+
+        log_handle = open(log_path, "a", encoding="utf-8", buffering=1)
+        log_handle.write(
+            "\n" + ("=" * 78) + "\n"
+            f"[{datetime.datetime.now().isoformat(timespec='seconds')}] "
+            f"launch python={python_exe} script={main_script}\n"
+            + ("=" * 78) + "\n"
+        )
+        log_handle.flush()
+
         create_flags = subprocess.CREATE_NEW_PROCESS_GROUP if platform.system() == "Windows" else 0
         proc = subprocess.Popen(
             [python_exe, main_script],
             cwd=app_root,
             env=env,
             creationflags=create_flags,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
         )
 
-        _show_status(f"Vibrante-Node launched (PID: {proc.pid})")
+        print(f"[Vibrante-Node] Subprocess log: {log_path}")
+        _show_status(f"Vibrante-Node launched (PID: {proc.pid}) -- log: {log_path}")
 
     except Exception as e:
+        if log_handle is not None:
+            try:
+                log_handle.close()
+            except OSError:
+                pass
         _show_error(f"Failed to launch Vibrante-Node:\n{str(e)}")
 
 

@@ -1,0 +1,18 @@
+{
+    "node_id": "mcp_list_tools",
+    "name": "MCP: List Tools",
+    "description": "List every tool exposed by a registered MCP server. Outputs the full tool catalog, just the names (handy for a for-each loop), the per-tool inputSchemas, and the server capabilities. Requires an upstream MCP: Server Init node with a matching server_name.",
+    "category": "MCP",
+    "icon_path": null,
+    "use_exec": true,
+    "inputs": [
+        {"name": "server_name", "type": "string", "widget_type": "text", "default": "default"}
+    ],
+    "outputs": [
+        {"name": "tools", "type": "list"},
+        {"name": "names", "type": "list"},
+        {"name": "schemas", "type": "list"},
+        {"name": "count", "type": "int"}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime import mcp_runtime\n\nclass MCPListToolsNode(BaseNode):\n    name = \"MCP: List Tools\"\n    category = \"MCP\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"server_name\", \"string\", widget_type=\"text\", default=\"default\")\n        self.add_output(\"tools\", \"list\")\n        self.add_output(\"names\", \"list\")\n        self.add_output(\"schemas\", \"list\")\n        self.add_output(\"count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        server_name = (inputs.get(\"server_name\") or \"default\").strip() or \"default\"\n        try:\n            tools = await mcp_runtime.list_tools(server_name)\n        except Exception as exc:\n            self.log_error(f\"MCP list_tools failed for '{server_name}': {exc}\")\n            return {\"tools\": [], \"names\": [], \"schemas\": [], \"count\": 0, \"exec_out\": True}\n\n        names = [t.get(\"name\", \"\") for t in tools]\n        schemas = [t.get(\"inputSchema\", {}) for t in tools]\n        self.log_info(f\"MCP server '{server_name}' exposes {len(tools)} tool(s).\")\n        return {\n            \"tools\": list(tools),\n            \"names\": names,\n            \"schemas\": schemas,\n            \"count\": len(tools),\n            \"exec_out\": True,\n        }\n\ndef register_node():\n    return MCPListToolsNode\n"
+}

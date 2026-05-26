@@ -1,6 +1,6 @@
 # 06 — Backend Architecture
 
-**Vibrante-Node v2.3.0 — Technical Reference**
+**Vibrante-Node v2.4.0 — Technical Reference**
 
 This document describes the execution engine, graph model, node registry, and all supporting subsystems that make up the Vibrante-Node backend. It is written for contributors, plugin authors, and advanced users who need to understand what happens between the moment the user clicks **Run** and the moment the last node finishes.
 

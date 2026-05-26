@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_scene_context",
+    "name": "Houdini MCP: Scene Context",
+    "description": "Aggregates the active Houdini session's state into one structured payload suitable for AI agents and LLM prompts. Shape-stable: every key is always present even when empty. Sections (scene / selection / networks / assets / render) can be toggled individually. Cached for 5s; force_refresh bypasses the cache.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini_icon.png",
+    "use_exec": true,
+    "inputs": [
+        {"name": "include_selection", "type": "bool", "widget_type": "bool", "default": true},
+        {"name": "include_assets", "type": "bool", "widget_type": "bool", "default": true},
+        {"name": "include_render", "type": "bool", "widget_type": "bool", "default": true},
+        {"name": "force_refresh", "type": "bool", "widget_type": "bool", "default": false}
+    ],
+    "outputs": [
+        {"name": "context", "type": "any"},
+        {"name": "context_json", "type": "string"},
+        {"name": "scene", "type": "any"},
+        {"name": "networks", "type": "any"},
+        {"name": "selection", "type": "list"}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime import houdini_runtime\n\nclass HouMCPSceneContextNode(BaseNode):\n    name = \"Houdini MCP: Scene Context\"\n    category = \"Houdini\"\n\n    def __init__(self):\n        super().__init__()\n        self.icon_path = \"icons/houdini_icon.png\"\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"include_selection\", \"bool\", widget_type=\"bool\", default=True)\n        self.add_input(\"include_assets\", \"bool\", widget_type=\"bool\", default=True)\n        self.add_input(\"include_render\", \"bool\", widget_type=\"bool\", default=True)\n        self.add_input(\"force_refresh\", \"bool\", widget_type=\"bool\", default=False)\n        self.add_output(\"context\", \"any\")\n        self.add_output(\"context_json\", \"string\")\n        self.add_output(\"scene\", \"any\")\n        self.add_output(\"networks\", \"any\")\n        self.add_output(\"selection\", \"list\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            context = await houdini_runtime.scene_context(\n                include_selection=bool(inputs.get(\"include_selection\", True)),\n                include_assets=bool(inputs.get(\"include_assets\", True)),\n                include_render=bool(inputs.get(\"include_render\", True)),\n                force_refresh=bool(inputs.get(\"force_refresh\", False)),\n            )\n        except Exception as exc:\n            self.log_error(f\"scene_context failed: {exc}\")\n            return {\n                \"context\": {},\n                \"context_json\": \"\",\n                \"scene\": {},\n                \"networks\": {},\n                \"selection\": [],\n                \"exec_out\": True,\n            }\n\n        prompt_json = houdini_runtime.context_to_prompt(context)\n        self.log_info(\n            f\"Scene context: {len(context.get('selection') or [])} selected, \"\n            f\"{len(context.get('networks') or {})} networks summarised.\"\n        )\n        return {\n            \"context\": context,\n            \"context_json\": prompt_json,\n            \"scene\": context.get(\"scene\") or {},\n            \"networks\": context.get(\"networks\") or {},\n            \"selection\": context.get(\"selection\") or [],\n            \"exec_out\": True,\n        }\n\ndef register_node():\n    return HouMCPSceneContextNode\n"
+}

@@ -1,6 +1,6 @@
 # 09 — Advanced Topics
 
-**Vibrante-Node v2.3.0 — Technical Reference**
+**Vibrante-Node v2.4.0 — Technical Reference**
 
 This document covers advanced usage patterns, production deployment, DCC integration deep-dives, headless execution, custom executors, security considerations, and version migration. It is intended for pipeline TDs, tool developers, and studio engineers who need to go beyond the basic node-authoring workflow.
 

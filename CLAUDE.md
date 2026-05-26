@@ -1347,6 +1347,21 @@ def shape(self):
 
 **Files**: `src/ui/canvas/view.py` — `NodeView.__init__` (`setViewportUpdateMode`); `src/ui/node_widget.py` — `boundingRect()`, `shape()` (new), `paint()`
 
+### 10.33 v2.4.0 Release Maintenance Rules
+
+**Version**: v2.4.0 — Released 2026-05-26
+**Type**: Minor — New features, backward-compatible
+
+All version update targets as per section 10.18 have been updated for v2.4.0. Key notes for future reference:
+
+- `mcp_session.py` — `update_session(self, sid: str, **kwargs)` uses `sid` (not `session_id`) as the positional parameter to avoid collision when callers pass `session_id=` as a kwarg (non-mutable field test).
+- Node ID renames: 11 bundled nodes renamed to prefixed IDs (`add`→`math_add`, `lowercase`→`string_lowercase`, etc.). Saved workflows that reference old IDs will fail to load those nodes. See RELEASE_v2.4.0.md for the full migration table.
+- `concat` and `multiply` nodes removed — no direct replacement; use string/math alternatives.
+- `mcp>=1.0.0` added as a required dependency. Run `pip install "mcp>=1.0.0"` after upgrade.
+- `MCP_TOOL_NAMES` in `runtime_identity.py` is the authoritative source for the 12 tool names. Update it when adding new MCP tools; `runtime_prompt_context.py` `get_tool_guide()` and `test_mcp_tool_registry.py` `EXPECTED_TOOLS` must stay in sync.
+- `build_docs.py` `RELEASE_DOCS` list already contains `RELEASE_v2.4.0.md` at index 0; new releases always go at the top.
+- `src/__init__.py` and `vibrante_node/__init__.py` both carry `__version__` — update both on version bump.
+
 ---
 
 ## 11. Autonomous Release Engineering Protocol
@@ -2045,3 +2060,2178 @@ Verify that:
 - no placeholder pages remain
 
 Think carefully before modifying anything.
+
+---
+
+## 12. Runtime Layer & MCP Integration (Tier 1)
+
+The `src/runtime/` module is the orchestration seam between graph nodes and the underlying DCC bridges / external MCP servers. It exists so new agent-facing features compose semantic operations + structured context + (future) transactions on top of the raw bridge, rather than every node calling `get_bridge()` directly.
+
+The architecture is intentionally **AI → Runtime → Graph → MCP → Houdini**, not **AI → Houdini**. MCP is treated as **transport + capability discovery only** — intelligence stays in the runtime.
+
+### 12.1 Design rules (non-negotiable)
+
+1. **MCP is transport only.** Never delegate scene understanding or graph planning to MCP. Intelligence lives in `src/runtime/`.
+2. **No arbitrary Python execution as the default path.** No new agent-facing `execute_python(code)` style nodes. Semantic tool calls + validated specs only. The existing `run_code` bridge method stays available but the runtime layer does NOT expose it as a primary AI-facing tool.
+3. **Context first.** `hou_mcp_scene_context` is the linchpin — agents read structured scene state before acting.
+4. **Runtime stability first.** Async safety, reconnect, timeouts, transactions, caching all land before any AI planning or dynamic tool discovery. Tiers 2–4 are deferred until Tier 1 is proven.
+
+### 12.2 Module layout
+
+```
+src/runtime/
+    __init__.py          ← re-exports mcp_runtime, houdini_runtime, scene_cache
+    mcp_runtime.py       ← long-lived MCP client session registry (Phase 1)
+    houdini_runtime.py   ← semantic Houdini ops: scene_context + build_node_chain (Phases 3–4)
+    scene_cache.py       ← per-run TTL cache (Phase 3)
+```
+
+Future tiers add `transaction_manager.py`, `execution_history.py`, and per-DCC modules (`maya_runtime.py`, `blender_runtime.py`) at this same layer — keep DCC interaction here, not in node `python_code`, so the eventual multi-DCC story works without rewriting nodes.
+
+### 12.3 MCP runtime (`src.runtime.mcp_runtime`)
+
+Async-first registry of MCP `ClientSession`s. Supports two transports:
+
+```python
+# stdio: launch a subprocess speaking MCP over stdin/stdout
+await mcp_runtime.register_server(
+    "everything", "stdio",
+    {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-everything"], "env": None},
+)
+
+# sse: connect to a running HTTP/SSE server
+await mcp_runtime.register_server(
+    "remote", "sse",
+    {"url": "https://mcp.example.com/sse", "headers": {"Authorization": "Bearer …"}},
+)
+```
+
+Public async API:
+
+| Function | Purpose |
+|---|---|
+| `register_server(name, transport, config)` | Open + cache a session by `name`. Idempotent — re-running with the same name is a no-op. |
+| `list_tools(server_name)` | `[{"name", "description", "inputSchema"}, …]` |
+| `call_tool(server_name, tool_name, arguments)` | `{"result", "result_json", "is_error"}` — content blocks are flattened to JSON-serialisable dicts |
+| `shutdown_server(name)` / `shutdown_all()` | Async teardown |
+| `shutdown_all_sync()` | Sync wrapper for `MainWindow.closeEvent` |
+
+**Lifecycle constraint:** the long-lived async-context-manager for each transport is held open inside a background task on Vibrante's existing event loop (the one `_EventLoopRunner` steps from the Qt main thread, CLAUDE.md §10.20). Sessions persist across graph executions. They are torn down only by `shutdown_server` / `shutdown_all`.
+
+**Per-call timeout:** 30 s default. Override via env var `VIBRANTE_MCP_TIMEOUT` or by passing `_timeout_sec` inside the `arguments` dict (the runtime strips it before forwarding).
+
+**Hard rule:** do not call MCP SDK transports from node `python_code` directly. Always go through `mcp_runtime` so session caching, timeout handling, and shutdown remain consistent.
+
+### 12.4 Scene cache (`src.runtime.scene_cache`)
+
+Thread-safe in-memory cache with monotonic-clock TTL + prefix invalidation. Used by `houdini_runtime.scene_context()` to dedupe bridge reads inside a single execution.
+
+```python
+from src.runtime.scene_cache import get_scene_cache
+cache = get_scene_cache()
+cache.set("scene_context::scene", {…}, ttl_sec=5.0)
+cache.get("scene_context::scene")
+cache.invalidate("scene_context::")   # called after every mutating op
+```
+
+**Rule:** any new runtime function that mutates Houdini state MUST call `get_scene_cache().invalidate("scene_context::")` (or a more specific prefix) before returning success. `build_node_chain` already does this — copy the pattern.
+
+### 12.5 Houdini runtime (`src.runtime.houdini_runtime`)
+
+#### `scene_context(include_selection=True, include_assets=True, include_render=True, force_refresh=False)`
+
+Returns one **shape-stable** dict suitable for LLM prompts. Every key is always present even when empty — that stability is what makes the output safe to template into prompts.
+
+```json
+{
+  "scene":     {"hip_file", "hip_name", "houdini_version", "fps", "frame", "frame_range"},
+  "selection": [{"path", "type", "category"}, …],
+  "networks":  {"obj":[…], "mat":[…], "out":[…], "stage"?:[…], "tasks"?:[…], …},
+  "assets":    {"hda_files": [path, …], "definitions": [{"name", "label", "file", "category"}, …]},
+  "render":    {"render_nodes": [{"path", "type"}, …]}
+}
+```
+
+- Optional networks (`stage`, `tasks`, `shop`, `vex`, `ch`) only appear when the corresponding `/network` exists; the four core networks (`obj`, `mat`, `out`) and the four top-level keys are always present.
+- Selection is empty in headless / batch Houdini (the bridge handler catches the missing `hou.selectedNodes` gracefully — see §6.7 fallback pattern).
+- Render-node classification uses a hard-coded set (`karma`, `mantra`, `ifd`, `opengl`, `arnold`, `redshift_rop`, `vray_renderer`, `usdrender_rop`, `lop_render`, `ris`). Extend the set in `_fetch_render` if your studio uses other ROP types.
+
+#### `build_node_chain(spec)`
+
+Declarative, validated, transactional-ish creation. Spec shape:
+
+```python
+{
+    "intent": "string (free-form label, used for logs only)",
+    "nodes": [
+        {"id": "n1", "parent": "/obj/geo1", "type": "sphere", "name": "src",
+         "params": {"radx": 2.0}},
+        ...
+    ],
+    "connections": [
+        {"from": "n1", "to": "n2", "out": 0, "in": 0},
+        ...
+    ],
+    "layout": True,
+    "cook": False,
+}
+```
+
+Execution order: **validate → create → param → connect → layout → cook**. On any failure, returns `{"ok": False, "error": "...", "created_paths": [...], "id_to_path": {...}}` with the partial state intact so a future transaction node (Tier 3) can roll it back. **No automatic rollback in Tier 1.**
+
+Validation rejects: missing required fields, duplicate node ids, connections that reference unknown ids, parents that don't exist in the scene.
+
+### 12.6 New bridge methods (Phase 3 prerequisites)
+
+| Client `hou_bridge.py` | Server `vibrante_hou_server.py` | Purpose |
+|---|---|---|
+| `bridge.get_selection()` | `_cmd_get_selection` | Selected node paths; `[]` in headless |
+| `bridge.network_summary(path)` | `_cmd_network_summary` | Children with `{name, type, path, category}` in one round-trip — avoids the children + node_info per-child pattern |
+
+Both follow the deferred-main-thread + ValueError-on-missing pattern documented in §6.7. The runtime layer prefers `network_summary` over `children` for performance; if a future server build omits the new handler, `_safe_network_summary` transparently falls back to `children`.
+
+### 12.7 Tier 1 nodes
+
+The 5 nodes are split by their dependency on Houdini. Generic MCP client nodes are DCC-agnostic and ship in the bundled `nodes/` folder; Houdini-specific AI nodes need the live bridge and ship under the Houdini plugin's `v_nodes_houdini/` folder (loaded via the `v_nodes_dir` env var only when the Houdini plugin is installed — see §6.3 / §6.4).
+
+| node_id | Category | Location | Purpose |
+|---|---|---|---|
+| `mcp_server_init` | MCP | `nodes/` | Configure + open an MCP session; cached by `server_name` |
+| `mcp_list_tools` | MCP | `nodes/` | Enumerate tools on a registered server |
+| `mcp_call_tool` | MCP | `nodes/` | Invoke a tool with JSON arguments |
+| `hou_mcp_scene_context` | Houdini | `plugins/houdini/v_nodes_houdini/` | The linchpin: structured scene snapshot for AI agents |
+| `hou_mcp_build_node_chain` | Houdini | `plugins/houdini/v_nodes_houdini/` | Build a Houdini network from a JSON spec |
+
+**Rationale for the split:**
+- The generic `mcp_*` nodes can call any MCP server from any workflow — no Houdini dependency, so they belong in the bundled set every user gets.
+- The `hou_mcp_*` nodes import `from src.runtime import houdini_runtime`, which uses `hou_bridge`. They only function when launched from Houdini, so shipping them with the Houdini plugin keeps the bundled node list lean for users on other DCCs.
+
+**Naming convention:**
+- `mcp_*` — generic, DCC-agnostic MCP client primitives. Always `category: "MCP"`.
+- `hou_mcp_*` — Houdini-specific AI-facing semantic operations. Always `category: "Houdini"`.
+- Existing `houdini_*` / `houdini_action_*` nodes (bridge primitives and headless action builders) are unchanged — the new layer rides on top, it does not replace them.
+
+**Connection convention:** MCP nodes resolve their server by string `server_name` from the registry (mirrors the Prism `resolve_prism_core` auto-resolution pattern from §8.1). The connection is not a wire-able object — you do not pass a "client" handle between nodes.
+
+### 12.8 Shutdown lifecycle
+
+`MainWindow.closeEvent` in `src/ui/window.py` calls `mcp_runtime.shutdown_all_sync()` after `_save_user_settings()` and autosave removal. `shutdown_all_sync` is idempotent and no-ops when no sessions exist. Without this, stdio MCP servers would leak as zombie subprocesses on app close.
+
+When adding new long-lived runtime resources (Tier 3 transactions, future per-DCC sessions), wire their teardown into the same closeEvent block.
+
+### 12.9 Test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_mcp_runtime.py` | Registry CRUD + result shaping with mocked sessions (no real MCP transport) |
+| `tests/unit/test_houdini_runtime.py` | scene_context shape + build_node_chain validation with a `FakeBridge` injected via `monkeypatch.setattr(bridge_module, "get_bridge", lambda: fake)` |
+| `tests/unit/test_houdini_mcp_nodes.py` | Per-node JSON schema + class registration + port presence for all 5 nodes. Holds an explicit `_NODE_PATHS` map because the 5 files live in two locations (`nodes/` + `plugins/houdini/v_nodes_houdini/`) and the second is not on the default discovery path. |
+| `tests/unit/test_all_workflows.py` | Auto-discovers the 3 bundled `mcp_*` files from `nodes/`. The 2 Houdini plugin files are intentionally NOT discovered here — they're covered by `test_houdini_mcp_nodes.py` which explicitly loads the plugin folder. |
+
+**Pattern for new runtime tests:** monkey-patch the bridge module (`src.utils.hou_bridge`), not `bridge.get_bridge` directly — the runtime imports the module and resolves `get_bridge()` lazily, so the test patch needs to land on the module attribute.
+
+### 12.10 Roadmap (Tier 1 done — see §13 for Tier 2, plan file for Tiers 3–4)
+
+- ~~**Tier 2** — transaction system + rollback + graph diff + dirty tracking~~ ✓ implemented (see §13)
+- **Tier 3** — `hou_mcp_create_material`, `hou_mcp_execute_hda` (semantic execution; needs new bridge methods for HDA install/list); HIP-level snapshots to make `delete_node` rollbacks recoverable
+- **Tier 4** — `ai_intent_parser`, `ai_graph_planner`, dynamic MCP node generation from tool schemas
+
+Each later tier plugs into the same runtime seam.
+
+---
+
+## 13. Runtime Layer & MCP Integration (Tier 2)
+
+Tier 2 adds the **transactional execution boundary** that the AI-Plan → Execution flow has to pass through. Without it, an AI plan that fails halfway through leaves Houdini in a partial state. With it, the runtime captures a per-op rollback snapshot, walks operations in reverse on failure, and reports a structured graph diff back to the caller.
+
+### 13.1 New runtime modules
+
+```
+src/runtime/
+    transaction_manager.py    ← Tier 2: lifecycle + history + DCC-agnostic rollback dispatch
+    scene_cache.py            ← extended with dirty scene tracking
+    houdini_runtime.py        ← extended with execute_operation + per-op rollback handlers
+```
+
+`src/runtime/__init__.py` import order is load-bearing — `houdini_runtime` registers its rollback handlers with `transaction_manager` at import time. The `__init__.py` imports `transaction_manager` first, then `houdini_runtime` (via `noqa: F401`), so the handler table is populated before any node code runs.
+
+### 13.2 Transaction model
+
+A transaction is a structured dict:
+
+```python
+{
+    "id":             "uuid4 string",
+    "name":           "user-provided label",
+    "created_at":     1700000000.0,
+    "committed_at":   None | float,
+    "rolled_back_at": None | float,
+    "status":         "pending" | "committed" | "rolled_back" | "failed",
+    "operations":     [recorded_op, ...],
+    "snapshots":      [op["snapshot"], ...],   # convenience view
+    "metadata":       {...},
+    "dirty_nodes":    [path, ...],
+    "errors":         [{"op": ..., "error": ...}, ...],
+}
+```
+
+Each **recorded operation**:
+
+```python
+{
+    "op":        "create_node" | "set_parms" | ... ,
+    "params":    {...},                # the original op args
+    "result":    {...},                # what the executor returned
+    "snapshot":  {...},                # op-specific data for rollback
+    "status":    "ok" | "failed",
+    "error":     "..."                 # only when status == "failed"
+    "dirty":     [path, ...],          # paths this op mutated (for diff)
+    "timestamp": 1700000000.0,
+}
+```
+
+### 13.3 Lifecycle (`transaction_manager.TransactionManager`)
+
+```
+begin_transaction(name) → txn_id (pending)
+    ↓
+record_operation(txn_id, op)         # one per executed op
+    ↓
+┌─→ commit_transaction(txn_id) → committed   (success path)
+│
+└─→ rollback_transaction(txn_id) → rolled_back  (calls handlers in reverse)
+    │
+    └─→ mark_failed(txn_id, error) → failed   (no rollback — record failure only)
+```
+
+State-transition rules:
+- `record_operation` only works on `pending` transactions
+- `commit_transaction` only works on `pending`; transitions to `committed`
+- `rollback_transaction` works on `pending` or `failed`; transitions to `rolled_back`
+- `mark_failed` works on `pending` only; transitions to `failed`
+- Each non-pending state is terminal
+
+### 13.4 Rollback dispatch (DCC-agnostic)
+
+`transaction_manager` knows nothing about Houdini. Rollback is dispatched via a module-level handler registry:
+
+```python
+from src.runtime import transaction_manager
+transaction_manager.register_rollback_handler("create_node", _rollback_create_node)
+```
+
+Handlers are `async`, receive the full recorded operation dict, and must return `{"ok": bool, "error"?: str, ...}`. **They MUST NOT raise** — if they do, the manager captures the exception into `rollback_errors` and continues with the next operation. Rollback never crashes the runtime.
+
+`houdini_runtime._register_rollback_handlers()` runs at module import time and wires handlers for every op in `SUPPORTED_OPS`. Future per-DCC modules (e.g. `maya_runtime.py`) register their own handlers the same way.
+
+### 13.5 Supported operations (`houdini_runtime.SUPPORTED_OPS`)
+
+| op | reversible? | snapshot captures | rollback behaviour |
+|---|---|---|---|
+| `create_node` | yes | new path | `delete_node(path)` |
+| `set_parms` | yes (per-key) | prev value per key | `set_parm(node, key, prev)` for each captured |
+| `connect_nodes` | yes (best-effort) | previous input source path on the target | restore prior connection if any, else `setInput(idx, None)` |
+| `delete_node` | **no** (Tier 2 limit) | `node_info` snapshot for diagnostics | reports `"cannot restore deleted node"` cleanly |
+| `set_display_flag` | yes | prev flag state (via `run_code`) | set flag back |
+| `set_render_flag` | yes | prev flag state (via `run_code`) | set flag back |
+| `cook_node` | n/a (read) | path | no-op |
+| `layout_children` | n/a (visual) | path | no-op |
+| `build_node_chain` | yes | all created paths from result | `delete_node` for each in reverse |
+
+**Validation rules** (`houdini_runtime._validate_operation`):
+- `op` must be one of `SUPPORTED_OPS`
+- Per-op required fields enforced (e.g. `create_node` needs `parent` + `type`)
+- `set_parms.parms` must be a dict
+- `build_node_chain.spec` must be a dict
+
+`hou_mcp_transaction` calls `_validate_operation` on every op BEFORE executing any of them, so a single bad op aborts the entire transaction with a clear error report (no partial mutations from a malformed plan).
+
+### 13.6 Operation execution invariants
+
+`houdini_runtime.execute_operation(op)`:
+1. Validates the op shape — if bad, returns `status="failed"` with the validation error
+2. Captures any rollback snapshot data the op needs (e.g. previous parm values, current connection source)
+3. Executes the bridge call(s)
+4. Marks dirty state via `scene_cache.mark_*`
+5. Invalidates the `scene_context::*` cache so subsequent `scene_context()` calls reflect the mutation
+6. Returns a recorded-operation dict ready for `record_operation`
+
+Invariant: **`execute_operation` never raises.** Any bridge failure is captured into the returned dict's `status` / `error` fields.
+
+**Internal use of `run_code`:** rollback snapshots for flags + connections need to read state that has no dedicated bridge method (e.g. `isDisplayFlagSet`, `node.inputs()`). The runtime layer uses `bridge.run_code` internally for these reads. This is **infrastructure-only** — there is no `run_python` operation type exposed to AI agents, by design (see §13.10).
+
+### 13.7 Dirty scene tracking (`scene_cache`)
+
+The cache now carries a six-category dirty ledger:
+
+```python
+{
+    "modified":             set[str],      # parameter / attribute changes
+    "created":              set[str],
+    "deleted":              set[str],
+    "cooked":               set[str],
+    "connections_changed":  set[(from, to, in_idx)],
+    "flags_changed":        set[str],
+}
+```
+
+API:
+```python
+cache.mark_node_dirty(path)
+cache.mark_node_created(path)
+cache.mark_node_deleted(path)
+cache.mark_node_cooked(path)
+cache.mark_connection_changed(from_path, to_path, in_idx=0)
+cache.mark_flag_changed(path)
+cache.get_dirty_nodes() -> dict[str, list]   # sorted, JSON-friendly snapshot
+cache.clear_dirty_state()
+```
+
+**Rules:**
+- The ledger holds **paths only** — never full node state. It is a lightweight indicator, not a snapshot.
+- It is updated **by executors** when they mutate; nothing else writes to it. Never query the bridge to populate it.
+- `mark_node_deleted(path)` supersedes earlier `created` / `modified` / `cooked` / `flags_changed` entries for the same path (deleted means gone — no point reporting it as also modified).
+- `mark_node_created(path)` discards any prior `deleted` mark on the same path (re-created in the same session).
+- `get_dirty_nodes()` returns sorted lists — output ordering must be deterministic for LLM prompts and audit logs.
+
+### 13.8 Graph diff node (`hou_mcp_graph_diff`)
+
+Reads the dirty ledger and returns a structured diff. No bridge calls — pure cache read. `clear_after_read=true` (default) drains the ledger so the next diff starts fresh.
+
+Output:
+```json
+{
+  "created":             [...],
+  "deleted":             [...],
+  "modified":            [...],
+  "cooked":              [...],
+  "connections_changed": [{"from": "...", "to": "...", "in": 0}, ...],
+  "flags_changed":       [...],
+  "total_changes":       12
+}
+```
+
+### 13.9 Transaction node (`hou_mcp_transaction`)
+
+The user-facing execution boundary. Inputs:
+- `transaction_name` (string)
+- `operations` (string — JSON list of structured ops, or live list when wired)
+- `dry_run` (bool) — validate only, no execution
+- `auto_commit` (bool, default true) — commit on full success
+- `rollback_on_error` (bool, default true) — roll back on the first failed op
+
+Behaviour:
+1. Clear the dirty-state ledger so the returned `graph_diff` reflects only this transaction
+2. Parse + validate all ops up front — any validation error aborts before any mutation
+3. If `dry_run`: return `status="validated"` with no executions
+4. `begin_transaction(name, metadata)`
+5. For each op: `execute_operation` → `record_operation`
+6. On a failed op: stop the loop. If `rollback_on_error`, call `rollback_transaction`; otherwise `mark_failed`
+7. On full success with `auto_commit`: `commit_transaction`
+8. Return a structured report (`transaction_id`, `status`, `operations_executed`, `rollback_performed`, `errors`, `graph_diff`, `report_json`)
+
+### 13.10 Execution safety rules (non-negotiable)
+
+1. **No arbitrary Python operation type.** The runtime deliberately does not expose a `run_python` / `execute_code` op. Operations must remain structured, validated, deterministic. Internal `run_code` usage is allowed only as infrastructure (rollback snapshot reads).
+2. **Validation before mutation.** Every op is shape-checked before the transaction begins executing. A malformed plan never causes a partial mutation.
+3. **Rollback tolerance.** A failed rollback handler never crashes the runtime — errors are captured into `rollback_errors` and returned in the report.
+4. **Dirty state baseline.** `hou_mcp_transaction` clears the dirty ledger before begin so `graph_diff` in the report reflects only the current transaction.
+5. **Cache invalidation.** Every executor that mutates Houdini calls `scene_cache.invalidate("scene_context::")` so subsequent `scene_context()` calls reflect ground truth.
+
+### 13.11 Node location conventions (codified)
+
+Rules used by `tests/unit/test_houdini_mcp_nodes.py` (`test_generic_mcp_nodes_in_bundled_dir`, `test_houdini_mcp_nodes_in_plugin_dir`) — they fail loudly if a future PR puts a file in the wrong place.
+
+**`nodes/`** — bundled with every install:
+- Generic runtime / MCP-protocol nodes
+- DCC-independent, reusable orchestration primitives
+- Cross-DCC functionality
+- Examples: `mcp_server_init`, `mcp_list_tools`, `mcp_call_tool`, the loops + sequence + variable builtins
+
+**`plugins/houdini/v_nodes_houdini/`** — loaded only when the Houdini plugin is installed (via `v_nodes_dir` env var):
+- Houdini-specific semantic nodes
+- Anything that touches `hou_bridge` / `houdini_runtime`
+- Scene / runtime operations on a live Houdini session
+- Examples: every `hou_*` and `houdini_*` node (including `hou_mcp_scene_context`, `hou_mcp_build_node_chain`, `hou_mcp_graph_diff`, `hou_mcp_transaction`)
+
+Future DCCs follow the same convention: `plugins/maya/v_nodes_maya/`, `plugins/blender/v_nodes_blender/`, etc.
+
+### 13.12 Path-agnostic plugin discovery
+
+`tests/unit/test_all_workflows.py::_discover_plugin_node_dirs()` automatically scans every `plugins/*/v_nodes_*` directory and loads them into the registry. Adding a new DCC plugin requires zero test changes — the test discovery is purely path-pattern driven. **Do not hardcode plugin paths anywhere new**; the convention is the contract.
+
+### 13.13 Tier 2 test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_transaction_manager.py` | 24 tests — lifecycle, rollback dispatch, history bounded cap, rollback-handler tolerance (raising handlers caught), end-to-end via mocked bridge for create / set_parms / delete failures |
+| `tests/unit/test_graph_diff.py` | 18 tests — dirty-state semantics (delete supersedes, create-after-delete, empty-path ignored, sorted output), executor → dirty-state pipeline, the graph_diff node via the live registry |
+| `tests/unit/test_houdini_mcp_nodes.py` | Extended to cover all 7 Tier-1+Tier-2 nodes via the `_NODE_PATHS` map |
+
+**Pattern for transaction tests:** use the `fresh_manager` fixture (`reset_transaction_manager_for_tests()`) to guarantee a clean singleton between cases. Combine with the `fake_bridge` fixture that monkey-patches `src.utils.hou_bridge.get_bridge` to test end-to-end execute → record → rollback without a live Houdini.
+
+### 13.14 Tier 2 deferred items (NOT in this work)
+
+- **HIP-level snapshots** for full delete-rollback recoverability (currently `delete_node` rollback returns `{"ok": False, "error": "cannot restore..."}` cleanly)
+- **Cross-transaction history persistence** — the bounded history is in-memory only (cap 200, drops oldest)
+- **Multi-DCC runtime modules** — the dispatch table is ready; `maya_runtime.py` / `blender_runtime.py` would register their handlers the same way `houdini_runtime` does
+- **AI planning layer** (Tier 4) — `ai_intent_parser` / `ai_graph_planner` would feed the transaction node; never call executors directly
+
+
+---
+
+## 14. Runtime Intelligence Layer (Tier 2.5)
+
+Tier 2.5 adds **execution intelligence** on top of the Tier 2 transaction system — NOT AI autonomy. Every component is advisory and/or deterministic. No language model involvement; no autonomous decision-making.
+
+```
+AI request -> Execution Preview -> Validation Engine -> Transaction (Tier 2) -> Rollback
+                                        | warns
+                                  Dependency Graph
+                                        | populates
+                              Scene Cache Viz Data
+                                        | persisted
+                                  Audit Store
+                                        ^ read by
+                             Replay Transaction node
+```
+
+### 14.1 Dependency Graph (`src/runtime/dependency_graph.py`)
+
+Lightweight, in-memory, thread-safe directed graph of inter-node dependencies.
+
+**Dependency types:** `connection`, `parameter_reference`, `cook_dependency`, `display_dependency`, `render_dependency`
+
+```python
+from src.runtime.dependency_graph import get_dependency_graph
+
+graph = get_dependency_graph()
+graph.register_dependency("/obj/sphere1", "/obj/mountain1", "connection")
+graph.get_downstream("/obj/sphere1")        # [{"source", "target", "type"}]
+graph.get_upstream("/obj/mountain1")        # same shape
+graph.get_affected_nodes(["/obj/sphere1"])  # BFS -> sorted list of affected paths
+graph.get_cook_chain("/obj/sphere1")        # connection + cook_dependency edges only
+graph.remove_node("/obj/old")              # wipes all incident edges
+graph.clear()                              # full reset (scene reload)
+graph.stats()                              # {"nodes_with_upstream", "nodes_with_downstream", "total_edges"}
+graph.all_edges()                          # [{"source", "target", "type"}, ...]
+```
+
+**Edge direction:** source -> target means "target depends on source". BFS in `get_affected_nodes` walks downstream.
+
+**Self-dependencies and empty paths are silently ignored.** Invalid dep_type raises `ValueError`.
+
+**Singleton:** `get_dependency_graph()` / `reset_dependency_graph_for_tests()`.
+
+### 14.2 Validation Engine (`src/runtime/validation_engine.py`)
+
+Stateless pre-execution validator. Runs semantic checks before any mutation.
+
+```python
+from src.runtime.validation_engine import get_validation_engine
+
+engine = get_validation_engine()
+result = await engine.validate_operations(operations)
+# result = {
+#     "valid": bool,
+#     "errors": [{"index", "op", "message"}],
+#     "warnings": [{"index", "op", "message"}],
+#     "risk_level": "low" | "medium" | "high",
+#     "op_count": int,
+#     "summary": str,
+# }
+```
+
+**Checks performed:**
+- Op shape (delegates to `houdini_runtime._validate_operation`)
+- Self-connections -> error
+- Dangerous deletes (downstream dependents in dependency graph) -> warning
+- `build_node_chain` sub-spec validation (duplicate ids, self-connections, missing ids)
+- Empty `parms` dict -> warning (no-op)
+- Non-dict op items -> error
+
+**Risk scoring (per-op weights, summed across batch):**
+
+| Op | Weight |
+|---|---|
+| create_node, set_display_flag, set_render_flag, layout_children | 0 |
+| set_parms, connect_nodes, cook_node | 1 |
+| build_node_chain | 2 |
+| delete_node | 10 |
+
+`low` < 1, `medium` 1-9, `high` >= 10.
+
+**The validation engine does NOT query the bridge.** It reads only the dependency graph and the op vocabulary.
+
+### 14.3 Audit Store (`src/runtime/audit_store.py`)
+
+Optional JSONL-backed persistent transaction audit trail.
+
+```python
+from src.runtime.audit_store import get_audit_store, AuditStore
+
+store = get_audit_store()                              # default: ~/.vibrante_node_audit.jsonl
+# or: AuditStore(path=None)                           # in-memory only (tests)
+
+audit_id = await store.log_transaction(data)
+record   = await store.get_transaction(txn_id)        # by id / transaction_id / audit_id
+records  = await store.query_transactions(limit=100)  # newest first; status= filter available
+pruned   = await store.compact()
+store.stats()   # {"path", "records_in_memory", "write_count", ...}
+```
+
+**Storage invariants:**
+- Lazy disk load (on first read or write)
+- Disk writes via `asyncio.to_thread` — never block the event loop
+- Write failures silently swallowed (audit must never block execution)
+- `compact()` prunes by `max_age_days` (default 30) AND `max_records` (default 10,000)
+- Auto-compact when buffer > 2 * max_records
+- Atomic rewrite: `.tmp` file then `rename`
+- Corrupt JSONL lines skipped on load
+
+**Override path:** `VIBRANTE_AUDIT_PATH` env var or `path=` constructor argument.
+
+**Singleton:** `get_audit_store()` / `reset_audit_store_for_tests()`.
+
+### 14.4 Execution Scheduler (`src/runtime/execution_scheduler.py`)
+
+Serialised FIFO mutation queue preventing concurrent bridge mutations.
+
+```python
+from src.runtime.execution_scheduler import get_execution_scheduler
+
+scheduler = get_execution_scheduler()
+result = await scheduler.enqueue(my_async_factory, transaction_id="txn-42")
+# returns factory return value, or raises if factory raised
+
+await scheduler.cancel("txn-42")  # True if found and marked; False if already running/done
+scheduler.stats()   # {"running", "queue_size", "processed", "cancelled", "errors"}
+```
+
+**Architecture:**
+- Single `asyncio.Queue` + single consumer pump coroutine
+- `enqueue()` pushes item + returns a Future resolved when callable completes
+- `cancel()` marks item; pump skips it and cancels its Future
+- `start()` / `stop()` idempotent; `enqueue()` auto-starts if not running
+- Pump exits cleanly on `__stop__` sentinel from `stop()`
+- Exceptions propagate to the awaiting caller; pump continues
+
+**Singleton:** `get_execution_scheduler()` / `reset_execution_scheduler_for_tests()`.
+
+### 14.5 Scene Cache -- Graph Visualization Data
+
+`SceneCache` now carries a third responsibility: graph-state metadata for display (data only, no rendering).
+
+```python
+cache = get_scene_cache()
+cache.record_transaction_ownership(["/obj/geo1"], "txn-uuid")
+cache.record_validation_warning("/obj/old", "downstream dependents will break")
+data = cache.get_graph_visualization_data()
+# {
+#     "recently_modified": {path: timestamp},
+#     "transaction_ownership": {path: txn_id},
+#     "validation_warnings": {path: [warning, ...]},
+# }
+cache.clear_visualization_data()
+```
+
+All three dicts are guarded by `_viz_lock` (separate from `_dirty_lock` and `_lock`).
+
+### 14.6 Transaction Manager -- Visualization Helpers
+
+`TransactionManager` exposes `get_graph_visualization_data()` (synchronous):
+
+```python
+mgr = get_transaction_manager()
+viz = mgr.get_graph_visualization_data()
+# {
+#     "pending_count": int,
+#     "committed_count": int,
+#     "rolled_back_count": int,
+#     "failed_count": int,
+#     "rollback_states": {txn_id: status},
+#     "recent_names": [last 5 names, newest first],
+# }
+```
+
+### 14.7 Houdini Node -- `hou_mcp_execution_preview`
+
+**Location:** `plugins/houdini/v_nodes_houdini/hou_mcp_execution_preview.json`
+
+Preview impact of a batch of operations WITHOUT mutating Houdini. Safe at any time.
+
+Inputs: `operations` (JSON list), `include_dependencies` (bool), `estimate_cooks` (bool)
+
+Outputs: `nodes_to_create`, `nodes_to_modify`, `nodes_to_delete`, `affected_nodes`, `estimated_cooks`, `risk_level`, `warnings`, `errors`, `dependency_impact`, `preview_json`
+
+**No bridge calls. No dirty-state mutations. No transaction manager interaction.**
+
+### 14.8 Houdini Node -- `hou_mcp_replay_transaction`
+
+**Location:** `plugins/houdini/v_nodes_houdini/hou_mcp_replay_transaction.json`
+
+Deterministically replay a previously recorded transaction.
+
+Inputs: `transaction_id`, `dry_run` (bool), `rollback_on_error` (bool)
+
+Outputs: `replayed`, `operations_executed`, `errors`, `graph_diff`, `status`, `report_json`
+
+**Replay semantics:**
+1. Reads stored ops from `TransactionManager.get_transaction(txn_id)` (params only, not snapshots)
+2. Re-validates all ops via `ValidationEngine` before any execution
+3. Begins a NEW transaction for the replay (new txn_id, name `replay_{txn_id[:8]}`)
+4. Executes ops via `houdini_runtime.execute_operation` in original order
+5. Commits or rolls back based on outcome
+
+### 14.9 Tier 2.5 test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_dependency_graph.py` | 42 tests -- register/remove/remove_node, BFS multi-hop/diamond, cook chain, clear/stats/all_edges, singleton |
+| `tests/unit/test_validation_engine.py` | 22 tests -- risk levels, shape errors, self-connections, dangerous-delete warnings, build_node_chain sub-spec, singleton |
+| `tests/unit/test_audit_store.py` | 20 tests -- log/get/query, disk round-trip, corrupt JSONL skipped, compact, in-memory-only, singleton |
+| `tests/unit/test_scheduler.py` | 15 tests -- lifecycle, enqueue/FIFO/exception-propagation, cancel, stats, singleton |
+| `tests/unit/test_execution_preview.py` | 18 tests -- node registration, no bridge calls, op classification, risk, dep impact, preview_json |
+| `tests/unit/test_transaction_replay.py` | 16 tests -- error paths, empty txn, dry_run, replay, rollback-on-failure, report_json |
+
+### 14.10 Tier 2.5 deferred items (NOT in this work)
+
+- **Dependency graph population from live scene** -- currently populated only when ops execute; a "scan existing scene -> build graph" bridge call is Tier 3.
+- **Auto-log to audit store from hou_mcp_transaction** -- intentionally not wired yet (requires path config).
+- **Execution scheduler integration into hou_mcp_transaction** -- exists but not wired; concurrent callers should route through scheduler.
+- **sqlite backend** for audit store (richer queries, range scans by timestamp/status).
+
+
+---
+
+## 15. Semantic Runtime Layer (Tier 2.75)
+
+Tier 2.75 adds **deterministic semantic intelligence** on top of the Tier 2.5 intelligence layer. The key distinction from an "AI planning" layer is that all translation is deterministic Python â€” no LLMs, no dynamic decisions, no autonomous graph mutation. An LLM can *name* an intent; it cannot *execute* one without going through the full validation/constraint/transaction pipeline.
+
+Architecture:
+```
+LLM (names intent only)
+    â†’ SemanticRegistry (intent â†’ op list, deterministic)
+    â†’ CapabilityRegistry (required capability check)
+    â†’ RuntimeConstraints (policy gate)
+    â†’ ValidationEngine (structural check)
+    â†’ ResourceEstimator (cost estimate)
+    â†’ ExecutionPlan (inspect, approve, optionally modify)
+    â†’ SemanticExecutor.execute() â†’ TransactionManager â†’ houdini_runtime
+    â†’ AuditStore (lineage)
+```
+
+**Non-negotiable:** `LLM â†’ direct graph mutation` is never permitted. The semantic layer is the mandatory choke point.
+
+### 15.1 Capability Registry (`src.runtime.capability_registry`)
+
+Dynamic registry of what the runtime can currently do. Pre-populated at import time with all built-in houdini ops, runtime services, DCC integrations, and known renderers.
+
+Capability types: `houdini_op`, `runtime_service`, `semantic_operation`, `mcp_server`, `dcc_integration`, `renderer`
+
+```python
+from src.runtime.capability_registry import get_capability_registry
+
+caps = get_capability_registry()
+caps.register_capability("mcp_server", "my_server", {"url": "http://..."})
+caps.supports("karma")       # True (built-in)
+caps.query_capabilities(cap_type="renderer")
+caps.deregister_capability("my_server")
+```
+
+Singleton: `get_capability_registry()` / `reset_capability_registry_for_tests()`.
+
+### 15.2 Resource Estimator (`src.runtime.resource_estimator`)
+
+Heuristic-only cost estimation. No bridge calls, no profiling.
+
+```python
+from src.runtime.resource_estimator import get_resource_estimator
+
+est = get_resource_estimator()
+est.estimate_operation({"op": "create_node", "type": "pyro"})
+# â†’ {memory_impact: 0.85, cook_cost: 0.8, risk_level: "low", notes: [...]}
+
+est.estimate_transaction(ops)
+# â†’ {op_count, estimated_memory, estimated_cook_cost, risk_level, graph_complexity, per_op}
+
+est.estimate_graph_complexity(n_nodes=20, n_connections=15)
+# â†’ "high"
+```
+
+Risk weights mirror `validation_engine` for consistency (`create_node`=0, `set_parms`=1, `delete_node`=10). Simulation/volume node types bump memory and cook cost to 0.8+.
+
+Singleton: `get_resource_estimator()` / `reset_resource_estimator_for_tests()`.
+
+### 15.3 Runtime Constraints (`src.runtime.runtime_constraints`)
+
+Policy-based gate that runs BEFORE the transaction system. Built-in policies always active:
+
+| Policy id | Type | Rule |
+|---|---|---|
+| `_builtin_protect_stage` | `protected_path` | `/stage` and subpaths forbidden |
+| `_builtin_protect_out` | `protected_path` | `/out` and subpaths forbidden |
+| `_builtin_max_ops` | `max_ops` | Max 100 ops per transaction |
+
+User-configurable policy types: `protected_path`, `forbidden_op`, `forbidden_node_type`, `max_ops`, `permission` (callable check).
+
+Built-in policies cannot be removed (`remove_policy` returns `False` for them). Policy ids starting with `_builtin_` are reserved.
+
+```python
+from src.runtime.runtime_constraints import get_runtime_constraints
+
+r = get_runtime_constraints()
+r.add_policy("forbidden_node_type", "no_python", {"node_type": "python"})
+r.validate_operation(op)         # {valid, violations}
+r.validate_transaction(ops)     # {valid, violations, op_count}
+```
+
+Singleton: `get_runtime_constraints()` / `reset_runtime_constraints_for_tests()`.
+
+### 15.4 Workflow Templates (`src.runtime.workflow_templates`)
+
+Parameterised workflow blueprints with `{varname}` interpolation. Resolve to concrete op lists â€” no bridge calls, no side effects.
+
+Built-in templates: `pyro_source`, `usd_export`, `karma_render`, `geometry_cache`, `asset_publish`, `vfx_container`, `solaris_lighting_setup`.
+
+```python
+from src.runtime.workflow_templates import get_workflow_templates
+
+wt = get_workflow_templates()
+wt.list_templates(tag="vfx")
+ops = wt.apply_template("karma_render", {
+    "name": "final_karma", "stage_path": "/stage",
+    "output_path": "$HIP/render/$F4.exr",
+    "res_x": "1920", "res_y": "1080",
+})
+```
+
+Variable interpolation is recursive: `{varname}` in any string value (including nested dicts/lists) is substituted. Missing variables raise `KeyError` with a message listing provided keys.
+
+Singleton: `get_workflow_templates()` / `reset_workflow_templates_for_tests()`.
+
+### 15.5 Semantic Registry (`src.runtime.semantic_registry`)
+
+Registry of named semantic operations. Each handler is a pure Python function: `context dict â†’ list[dict]`.
+
+Built-in operations: `create_geo_container`, `build_pyro_source`, `setup_karma_renderer`, `export_to_usd`, `cache_geometry`, `asset_publish_scaffold`, `solaris_lighting_setup`.
+
+```python
+from src.runtime.semantic_registry import get_semantic_registry
+
+r = get_semantic_registry()
+r.register_operation("my_op", {"description": "...", "tags": ["custom"]},
+    lambda ctx: [{"op": "create_node", "parent": ctx["parent"], "type": "geo"}]
+)
+plan = r.resolve_to_execution_plan("my_op", {"parent": "/obj"})
+# â†’ {ok, operation_id, operations, op_count, error, metadata}
+```
+
+Handlers **MUST** be deterministic and free of side-effects. `handler` is never included in `get_operation()` / `list_operations()` output â€” metadata only.
+
+Singleton: `get_semantic_registry()` / `reset_semantic_registry_for_tests()`.
+
+### 15.6 Semantic Executor (`src.runtime.semantic_execution`)
+
+Orchestrates the full translation + execution pipeline.
+
+```python
+from src.runtime.semantic_execution import get_semantic_executor
+
+exec_ = get_semantic_executor()
+
+# Translate only (no execution)
+plan = await exec_.translate("build_pyro_source", {"parent": "/obj", "name": "fire"})
+
+# Full execution
+result = await exec_.execute("build_pyro_source", {"parent": "/obj", "name": "fire"},
+    dry_run=False, auto_commit=True, rollback_on_error=True
+)
+```
+
+Execution pipeline:
+1. `SemanticRegistry.resolve_to_execution_plan` â€” intent â†’ op list
+2. `CapabilityRegistry` â€” warn on missing required capabilities
+3. `RuntimeConstraints.validate_transaction` â€” policy gate (errors on violation)
+4. `ValidationEngine.validate_operations` â€” structural op validation
+5. `ResourceEstimator.estimate_transaction` â€” cost estimate
+6. If dry_run: return plan with `status="validated"`
+7. `TransactionManager.begin_transaction` â†’ execute each op via `houdini_runtime.execute_operation` â†’ commit/rollback
+8. `SceneCache.record_semantic_execution` â€” lineage
+9. `AuditStore.log_transaction` â€” fire-and-forget
+
+Singleton: `get_semantic_executor()` / `reset_semantic_executor_for_tests()`.
+
+### 15.7 Scene Cache â€” Semantic Lineage (extension)
+
+```python
+cache = get_scene_cache()
+cache.record_semantic_execution(intent_id, txn_id, op_count)
+cache.get_semantic_lineage()        # [{intent_id, txn_id, op_count, timestamp}, ...]
+cache.clear_semantic_lineage()
+```
+
+All three lists guarded by `_viz_lock` (same lock used for visualization data).
+
+### 15.8 Tier 2.75 nodes
+
+Three new Houdini plugin nodes in `plugins/houdini/v_nodes_houdini/`:
+
+| node_id | Purpose |
+|---|---|
+| `hou_mcp_semantic_execute` | Translate + optionally execute a named intent via the semantic pipeline |
+| `hou_mcp_runtime_capabilities` | Query the capability registry (no bridge calls) |
+| `hou_mcp_workflow_templates` | Browse templates and/or resolve one to concrete ops (no bridge calls) |
+
+All three are `category: "Houdini"` and `use_exec: true`. `hou_mcp_workflow_templates` intentionally returns `operations` (a list) that is safe to wire into `hou_mcp_transaction` for execution â€” the two nodes are designed to be chained.
+
+### 15.9 Tier 2.75 test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_capability_registry.py` | Built-ins, register/deregister, query, supports/get, stats, singleton |
+| `tests/unit/test_resource_estimator.py` | Risk levels, node-type bumps, estimate_transaction, graph_complexity, singleton |
+| `tests/unit/test_runtime_constraints.py` | Built-in policies, protected paths, forbidden ops/types, max_ops, permission callable, add/remove, validate_transaction, singleton |
+| `tests/unit/test_workflow_templates.py` | Built-ins, list/get/apply, variable interpolation, missing var raises, register/deregister, singleton |
+| `tests/unit/test_semantic_registry.py` | Built-ins, register/deregister, get/list, resolve happy/error/non-list-return, context vars, singleton |
+| `tests/unit/test_semantic_execution.py` | translate shape/unknown/constraint/missing-cap, dry_run, execute commit, rollback simulation, lineage, report_json, singleton |
+
+**Pattern for semantic execution tests:** register a simple ad-hoc operation via `get_semantic_registry().register_operation()` rather than relying on built-ins, so tests are isolated from built-in implementation changes. Combine with `fake_bridge` fixture to run through the full execute pipeline without a live Houdini.
+
+### 15.10 Tier 2.75 deferred items (NOT in this work)
+
+- **Template â†’ Workflow Template â†’ Transaction wiring in UI** â€” the `hou_mcp_workflow_templates` + `hou_mcp_transaction` pair already supports this; the UI node library just needs to surface them together in documentation/examples.
+- **Semantic registry persistence** â€” currently in-memory only; a YAML/JSON registry file would allow studio-defined operations to survive restarts without code changes.
+- **Capability registry auto-update on MCP server connect** â€” `mcp_runtime.register_server()` could call `capability_registry.register_capability("mcp_server", name, {...})` automatically on success.
+- **Constraint profiles** â€” named sets of policies that can be loaded atomically (e.g. "strict_prod", "dev_sandbox").
+- **Audit store integration for semantic operations** â€” currently fires-and-forgets; a dedicated `semantic_operations` table/query would enable replay-by-intent.
+
+---
+
+## 16. Controlled AI Planning Layer (Tier 3)
+
+Tier 3 adds **controlled AI orchestration** on top of the Tier 2/2.5/2.75 runtime. The key distinction from a naive "AI planning" system is the mandatory pipeline:
+
+```
+LLM (names intent only, via intent_parser)
+    → ContextualReasoner (scene analysis, no bridge calls)
+    → AIPlanner (deterministic plan generation)
+    → PlanValidator (multi-layer pre-execution validation)
+    → ApprovalPipeline (human approval gate — required for high-risk plans)
+    → SemanticExecutor / TransactionManager (execution via transaction system)
+    → ExecutionReviewer (post-execution review)
+    → PlanningMemory (structured audit log)
+```
+
+**Non-negotiable safety rules:**
+1. `LLM → direct graph mutation` is NEVER permitted.
+2. The pipeline `LLM → Intent → Planning → Validation → Preview → Transaction → Execution` is always enforced.
+3. Do NOT build autonomous agents. Build controlled AI orchestration.
+4. All AI output must remain: structured, inspectable, replayable, deterministic, constraint-aware.
+5. Do NOT allow uncontrolled execution, AI self-modification, constraint bypass, or transaction bypass.
+
+### 16.1 New Tier 3 runtime modules
+
+```
+src/runtime/
+    llm_provider.py          ← Provider-agnostic LLM abstraction (Tier 3)
+    planning_memory.py       ← Synchronous structured planning event store (Tier 3)
+    intent_parser.py         ← Deterministic NL→intent keyword parser + LLM enhancement (Tier 3)
+    contextual_reasoning.py  ← Pre-planning scene analysis (no bridge calls) (Tier 3)
+    ai_planner.py            ← Plan generation from parsed intent + context (Tier 3)
+    plan_validator.py        ← Multi-layer pre-execution plan validation (Tier 3)
+    execution_explainer.py   ← Template-based human-readable explanation generator (Tier 3)
+    execution_review.py      ← Post-execution intent-match review (Tier 3)
+    approval_pipeline.py     ← Human approval state machine (Tier 3)
+```
+
+### 16.2 LLM provider abstraction (`src.runtime.llm_provider`)
+
+Provider-agnostic interface. The runtime is fully functional without any LLM — all core operations are deterministic. LLMs add optional intelligence for intent disambiguation and plan refinement **only**.
+
+| Provider | Purpose |
+|---|---|
+| `NoOpLLMProvider` | Default — always available, returns `enhanced=False`, never fails |
+| `MockLLMProvider` | Deterministic testing — takes `responses: Dict[str, Dict]` keyed by prompt substring |
+| `ClaudeLLMProvider` | Production — requires `anthropic` SDK + `ANTHROPIC_API_KEY`; returns structured JSON only |
+
+**Safety rules for all providers:**
+1. Return STRUCTURED DICTS only — never raw executable text.
+2. No provider may execute operations or mutate Houdini state.
+3. All provider output is validated before use.
+4. Providers are stateless between calls.
+5. API keys never appear in logs or audit trails.
+
+```python
+from src.runtime.llm_provider import get_llm_provider, set_llm_provider, MockLLMProvider
+set_llm_provider(MockLLMProvider(responses={"pyro": {"intent": "build_pyro_source", "confidence": 0.95}}))
+```
+
+Singleton: `get_llm_provider()` / `set_llm_provider(provider)` / `reset_llm_provider_for_tests()`.
+
+### 16.3 Intent parser (`src.runtime.intent_parser`)
+
+Deterministic-first intent resolver. Keyword scoring runs before any LLM involvement.
+
+```python
+from src.runtime.intent_parser import get_intent_parser
+parser = get_intent_parser()
+result = await parser.parse("build a pyro smoke simulation inside /obj/geo1")
+# result["intent"] = "build_pyro_source"
+# result["parameters"] = {"style": "smoke", "parent": "/obj/geo1"}
+# result["confidence"] = 0.9
+# result["llm_enhanced"] = False
+```
+
+**LLM enhancement rule:** the LLM result replaces the deterministic result ONLY if `llm_confidence > deterministic_confidence` OR the deterministic layer found no intent. This prevents a misconfigured LLM from degrading a well-working parser.
+
+**Supported intents:** `build_pyro_source`, `create_geo_container`, `setup_karma_renderer`, `export_to_usd`, `cache_geometry`, `asset_publish_scaffold`, `solaris_lighting_setup`.
+
+Singleton: `get_intent_parser()` / `reset_intent_parser_for_tests()`.
+
+### 16.4 Contextual reasoning (`src.runtime.contextual_reasoning`)
+
+Analyzes the current runtime context BEFORE planning. No bridge calls — reads only in-memory state (scene_cache, dependency_graph, transaction_manager, capability_registry). All reads wrapped in try/except for graceful degradation when systems are not initialized.
+
+```python
+from src.runtime.contextual_reasoning import get_contextual_reasoner
+reasoner = get_contextual_reasoner()
+analysis = reasoner.analyze(intent, parameters, scene_context=None)
+# analysis["existing_workflows"]       — prior executions of this intent
+# analysis["recommended_actions"]      — ["extend_existing"] or ["create_new"]
+# analysis["conflicts"]                — dependency chain conflicts
+# analysis["optimization_suggestions"] — advisory hints
+# analysis["scene_complexity"]         — "low" | "medium" | "high"
+# analysis["scene_summary"]            — human-readable one-liner
+```
+
+Singleton: `get_contextual_reasoner()` / `reset_contextual_reasoner_for_tests()`.
+
+### 16.5 AI planner (`src.runtime.ai_planner`)
+
+Generates a structured execution plan from a parsed intent + context analysis. Deterministic by default; LLM refinement is advisory only.
+
+```python
+from src.runtime.ai_planner import get_ai_planner
+planner = get_ai_planner()
+plan = await planner.plan(parsed_intent, context_analysis, scene_context=None)
+# plan["plan_id"]              — uuid4
+# plan["ok"]                   — False if errors
+# plan["intent"]               — resolved semantic op id
+# plan["selected_template"]    — template id used (or None → semantic registry)
+# plan["operations"]           — concrete op list ready for SemanticExecutor
+# plan["requires_approval"]    — True if high-risk / destructive / large
+# plan["approval_reasons"]     — why approval is required
+# plan["resource_estimate"]    — from ResourceEstimator
+# plan["reasoning"]            — list of planner decision explanations
+# plan["llm_refined"]          — True if LLM added suggestions
+```
+
+**Approval triggers:** `requires_approval=True` in plan, `risk_level="high"`, `delete_node` ops present, `estimated_cook_cost > 0.8`, `op_count > 20`, constraint violations.
+
+Singleton: `get_ai_planner()` / `reset_ai_planner_for_tests()`.
+
+### 16.6 Plan validator (`src.runtime.plan_validator`)
+
+Multi-layer pre-execution validation. Runs BEFORE the approval gate and before any transaction begins. Stateless — no bridge calls.
+
+**Validation layers (in order):**
+1. Structural validity — op fields, required keys
+2. Capability check — required capabilities registered
+3. Constraint compliance — RuntimeConstraints policy gate
+4. Dependency validity — delete targets with downstream dependents → warning
+5. Safety checks — destructive risk, self-connections, large batch deletes
+6. Resource thresholds — cook cost / memory / op count limits
+
+```python
+from src.runtime.plan_validator import get_plan_validator
+validator = get_plan_validator()
+result = await validator.validate(plan, intent_metadata=None, max_cook_cost=1.5, max_op_count=150)
+# result["valid"]             — bool
+# result["errors"]            — list of blocking issues
+# result["warnings"]          — advisory issues
+# result["capability_gaps"]   — missing required capabilities
+# result["safety_warnings"]   — destructive-risk notices
+# result["dependency_impact"] — downstream affected nodes
+# result["risk_level"]        — "low" | "medium" | "high"
+```
+
+Singleton: `get_plan_validator()` / `reset_plan_validator_for_tests()`.
+
+### 16.7 Execution explainer (`src.runtime.execution_explainer`)
+
+Template-based human-readable explanation generator. Zero LLM calls, zero bridge calls. Output is deterministic.
+
+```python
+from src.runtime.execution_explainer import get_execution_explainer
+expl = get_execution_explainer()
+expl.explain_plan(plan)             # plan explanation + op list + approval text
+expl.explain_validation(result)     # validation PASSED/FAILED + issues
+expl.explain_approval(state)        # approval status + reasons
+expl.explain_execution(result)      # execution commit/rollback + scene changes
+expl.explain_review(review)         # outcome + findings + recommendations
+```
+
+Each method returns a dict with `summary`, `full_text`, and type-specific detail fields. `full_text` is formatted for log panels and debug output.
+
+Singleton: `get_execution_explainer()` / `reset_execution_explainer_for_tests()`.
+
+### 16.8 Execution reviewer (`src.runtime.execution_review`)
+
+Post-execution structured review. Compares actual execution against the original plan. NOT autonomous self-repair — purely observational.
+
+```python
+from src.runtime.execution_review import get_execution_reviewer
+reviewer = get_execution_reviewer()
+review = reviewer.review(plan, execution_result)
+# review["outcome"]              — "success" | "partial" | "failure" | "undetermined"
+# review["intent_match_score"]   — 0.0–1.0 (fraction of ops that completed OK)
+# review["findings"]             — specific observations
+# review["recommendations"]      — advisory next steps (never auto-executed)
+# review["diff_analysis"]        — created/modified/deleted vs planned
+```
+
+Singleton: `get_execution_reviewer()` / `reset_execution_reviewer_for_tests()`.
+
+### 16.9 Approval pipeline (`src.runtime.approval_pipeline`)
+
+Synchronous approval state machine for high-risk plans. Not required for safe low-risk plans (which are auto-approved via `auto_approve()`).
+
+```python
+from src.runtime.approval_pipeline import get_approval_pipeline
+pipe = get_approval_pipeline()
+
+if pipe.requires_approval(plan):
+    req_id = pipe.submit_for_approval(plan, submitter="ai_node")
+    # ... human reviews ...
+    pipe.approve(req_id, approver="td_lead", notes="Verified OK.")
+    # OR pipe.reject(req_id, reason="Too many deletes.")
+    # OR pipe.defer(req_id)
+else:
+    decision = pipe.auto_approve(plan)
+```
+
+**State machine:** `pending → approved | rejected | deferred`. Terminal states only. `approve/reject/defer` return `False` for non-pending or unknown requests.
+
+**Approval triggers:** `plan.requires_approval=True`, `risk_level="high"`, `delete_node` ops.
+
+Singleton: `get_approval_pipeline()` / `reset_approval_pipeline_for_tests()`.
+
+### 16.10 Planning memory (`src.runtime.planning_memory`)
+
+Synchronous structured event store for planning metadata. NOT a chat log. Enables analytics, replayability, explainability, and debugging.
+
+**Valid event types:** `intent_parsed`, `plan_generated`, `plan_validated`, `plan_approved`, `plan_rejected`, `plan_deferred`, `execution_result`, `review_result`.
+
+```python
+from src.runtime.planning_memory import get_planning_memory
+mem = get_planning_memory()
+eid = mem.record("plan_approved", {"intent": "build_pyro_source", "plan_id": "..."})
+events = mem.query(event_type="plan_approved", intent="build_pyro_source", limit=10)
+stats  = mem.stats()
+```
+
+Optional JSONL persistence: `VIBRANTE_PLANNING_MEMORY_PATH` env var. In-memory cap: 500 records (lazy prune at 2x). Singleton: `get_planning_memory()` / `reset_planning_memory_for_tests()`.
+
+### 16.11 Tier 3 nodes
+
+Four new Houdini plugin nodes in `plugins/houdini/v_nodes_houdini/`:
+
+| node_id | Purpose |
+|---|---|
+| `hou_mcp_ai_plan` | Parse a natural language prompt → intent → context analysis → plan dict. NEVER executes. |
+| `hou_mcp_ai_preview` | Validate an AI plan WITHOUT executing. Returns risk, errors, capability gaps, explanation. |
+| `hou_mcp_ai_execute` | Execute a validated AI plan via the transaction system with optional approval gate. |
+| `hou_mcp_ai_review` | Post-execution review: did execution match intent? Returns outcome, match score, findings. |
+
+**Canonical workflow:** `hou_mcp_ai_plan` → `hou_mcp_ai_preview` → (human review) → `hou_mcp_ai_execute` → `hou_mcp_ai_review`.
+
+**`hou_mcp_ai_execute` approval gate:** Supply an `approver` name to authorize high-risk execution. Without an `approver`, the node blocks with `status=pending_approval` rather than auto-executing a dangerous plan.
+
+**`hou_mcp_ai_plan` note:** Internally calls `IntentParser.parse()` + `ContextualReasoner.analyze()` + `AIPlanner.plan()`. No bridge calls.
+
+### 16.12 Tier 3 AI execution invariants (non-negotiable)
+
+1. **No bypass of the constraint system.** `hou_mcp_ai_execute` always reads the plan's `ok` flag; a plan with `ok=False` is rejected before any bridge call.
+2. **No bypass of the transaction system.** All execution goes through `TransactionManager.begin_transaction` + `execute_operation` + `commit/rollback`. There is no direct bridge call in AI node code.
+3. **No arbitrary Python execution.** The AI nodes do not expose `run_python` or `execute_code` operations. Execution is always via structured, validated ops.
+4. **Approval is synchronous.** `hou_mcp_ai_execute` blocks (returns `pending_approval` status) rather than auto-executing a plan that requires approval but has no approver supplied.
+5. **Review is observational only.** `hou_mcp_ai_review` produces findings and recommendations. It NEVER triggers re-execution or self-repair. Its output is for human consumption.
+6. **LLM output is advisory only.** `ClaudeLLMProvider` output is schema-validated before use. LLM confidence must exceed deterministic confidence to override the parser. LLM refinement suggestions are surfaced as warnings — never as automatic parameter changes.
+7. **Planning memory is audit-only.** Records written to `PlanningMemory` cannot trigger execution. They are read-only from the perspective of the execution pipeline.
+
+### 16.13 Tier 3 test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_planning_memory.py` | record/query/stats/clear, disk JSONL, max_records prune, singleton |
+| `tests/unit/test_intent_parser.py` | All 7 intents, parameter extraction, style extraction, ambiguity, LLM enhancement, singleton |
+| `tests/unit/test_contextual_reasoning.py` | Complexity scoring, existing workflow detection (lineage + dirty state), conflicts, singleton |
+| `tests/unit/test_ai_planner.py` | Plan shape, no-intent failure, template vs registry fallback, constraint violations, approval triggers, LLM refinement, singleton |
+| `tests/unit/test_plan_validator.py` | All structural error types, capability gaps, dependency impact, safety warnings, constraint errors, resource thresholds, singleton |
+| `tests/unit/test_execution_explainer.py` | explain_plan/validation/approval/execution/review for all status variants, _op_to_human coverage, singleton |
+| `tests/unit/test_execution_review.py` | Outcome classification, match score, findings, recommendations, op_stats, singleton |
+| `tests/unit/test_approval_pipeline.py` | requires_approval triggers, state machine transitions, expiry, auto_approve, list_pending, singleton |
+
+**Pattern:** use `MockLLMProvider` + `set_llm_provider()` for LLM-dependent tests. Always `reset_llm_provider_for_tests()` in autouse fixture. No live API calls, no live Houdini.
+
+### 16.14 Tier 3 deferred items (NOT in this work)
+
+- **End-to-end NL→execution demo workflow** — a single workflow JSON chaining `hou_mcp_ai_plan` → `hou_mcp_ai_preview` → `hou_mcp_ai_execute` → `hou_mcp_ai_review`. Deferred to Tier 4 examples.
+- **`ai_graph_planner` multi-step planning** — planning sequences that produce multiple semantic intents per prompt (e.g. "build a full VFX shot" → pyro + lighting + render). Requires intent dependency ordering.
+- **Dynamic MCP node generation from tool schemas** — generate in-memory nodes from MCP tool schemas discovered via `mcp_list_tools`. Deferred until approval pipeline is hardened through production use.
+- **`planning_memory` replay-by-intent** — query planning memory to replay a previous AI plan by intent name. The memory store is already built; the replay UI/node is deferred.
+- **Constraint profiles** — named sets of policies (e.g. "strict_prod", "dev_sandbox") loadable atomically into RuntimeConstraints.
+- **Approval pipeline persistence** — pending approvals currently live in-memory only; a persistent approval queue would survive process restarts.
+
+
+---
+
+## 17. Distributed Autonomous Orchestration Infrastructure (Tier 4)
+
+Tier 4 introduces the **distributed AI-native orchestration layer** — the infrastructure enabling multiple runtimes, DCCs, and supervised agents to collaborate on complex production tasks. This is NOT uncontrolled autonomous AI. Every agent, every cross-DCC operation, every remote execution still goes through the full validation/constraint/transaction pipeline.
+
+**Mandatory safety invariant (non-negotiable):**
+
+```
+External AI → Agent Runtime (Supervised) → ValidationEngine → RuntimeConstraints
+    → TransactionManager → houdini_runtime.execute_operation → AuditStore
+```
+
+`External AI → direct execution authority` is NEVER permitted, anywhere in this tier.
+
+### 17.1 MCP Server Runtime (`src.runtime.mcp_server_runtime`)
+
+Tier 4 makes Vibrante-Node an **MCP server** — exposing structured runtime tools to external AI clients. This is the counterpart to Tier 1's MCP client.
+
+**Built-in tools exposed:**
+
+| Tool name | Handler | Purpose |
+|---|---|---|
+| `vibrante_plan_workflow` | `_handle_plan_workflow` | Submit a natural-language prompt for AI planning |
+| `vibrante_preview_plan` | `_handle_preview_plan` | Preview operations without executing |
+| `vibrante_list_capabilities` | `_handle_list_capabilities` | Enumerate available capabilities |
+| `vibrante_list_templates` | `_handle_list_templates` | Browse + apply workflow templates |
+| `vibrante_query_audit` | `_handle_query_audit` | Query the audit store for transaction history |
+| `vibrante_get_scene_status` | `_handle_get_scene_status` | Current dirty-state + semantic lineage |
+
+Tools are sorted alphabetically in `list_tools()`. Custom tools can be registered/deregistered; built-in tools cannot be deregistered (raises `ValueError`).
+
+**handle_request invariant:** never raises — all exceptions are caught and returned as `{"is_error": True, "error": "..."}`.
+
+**Singleton:** `get_mcp_server_runtime()` / `reset_mcp_server_runtime_for_tests()`.
+
+### 17.2 Distributed Runtime (`src.runtime.distributed_runtime`)
+
+Worker pool + execution dispatch. Maintains a registry of workers (local or remote), routes operations to the best available worker by capability and load.
+
+**Worker model:**
+- Each worker has: `name`, `capabilities`, `endpoint`, `max_load`, `current_load`, `status`
+- Endpoint `local://` → execution goes through the full local pipeline (ValidationEngine + RuntimeConstraints + TransactionManager + houdini_runtime)
+- Endpoint `remote://...` → recorded as `dispatched` (transport wired externally)
+
+**Worker selection:** least-load-ratio worker with all required capabilities.
+
+**Local execution pipeline (safety-enforcing):**
+```
+validate_transaction() → validate_operations() → begin_transaction()
+    → execute_operation() per op → commit/rollback → record_dispatch()
+```
+
+**Dispatch record:** every dispatch (including remote) is logged via `_record_dispatch(dispatch_id, data)` and retrievable by `get_dispatch_status(dispatch_id)`.
+
+**Singleton:** `get_distributed_runtime()` / `reset_distributed_runtime_for_tests()`.
+
+### 17.3 Agent Runtime (`src.runtime.agent_runtime`)
+
+Runtime-supervised agent system. Agents do NOT execute — they plan. Execution requires a separate human-approval step.
+
+**Supervision levels:**
+
+| Level | `execution_authorized` | `requires_approval` | Notes |
+|---|---|---|---|
+| `advisory` | always `False` | always `True` | Dry-run / advisory output only; never authorizes |
+| `strict` | always `False` | always `True` | Human approval always required before any execution |
+| `standard` | `True` only when plan is valid + risk != high + not requires_approval | conditional | Safe plans may be auto-authorized |
+
+**Proposal lifecycle:**
+1. `register_agent(name, supervision_level, role)` → `agent_id`
+2. `submit_proposal(agent_id, proposal)` → runs IntentParser + ContextualReasoner + AIPlanner + PlanValidator
+3. `_apply_supervision(level, plan, validation)` → `supervision_result` with `execution_authorized`, `requires_approval`, `reason`
+4. Proposal stored; `proposal_count` incremented
+
+**Execution gate:** `execution_authorized=True` (standard level only) means the caller MAY submit the plan to `hou_mcp_ai_execute`. It does NOT mean execution happens automatically.
+
+**Singleton:** `get_agent_runtime()` / `reset_agent_runtime_for_tests()`.
+
+### 17.4 Multi-DCC Runtime (`src.runtime.multi_dcc_runtime`)
+
+DCC routing + adapter protocol. Determines which DCC handles which operation and dispatches accordingly.
+
+**DccAdapter protocol:**
+
+```python
+class DccAdapter:
+    @property
+    def is_available(self) -> bool: ...
+    async def execute_operations(self, ops, dry_run=False) -> dict: ...
+```
+
+Built-in adapters:
+- `HoudiniDccAdapter` — routes via `DistributedRuntime.dispatch_operations()`. Auto-registers a local worker on first call.
+- `MockAdapter` (test-only) — always returns `{"ok": True, "status": "mock_ok", ...}`
+
+**Routing priority (per op):**
+1. `hint_dcc` if provided and registered
+2. Op type in DCC's declared capabilities
+3. `_HOUDINI_OPS` fallback set (the standard Houdini op names)
+4. `"houdini"` default
+
+**`execute_cross_dcc(ops)`** partitions ops by `route_operations()`, executes each DCC's slice via `execute_for_dcc()`, and returns `{"ok", "by_dcc", "errors"}`.
+
+**Singleton:** `get_multi_dcc_runtime()` / `reset_multi_dcc_runtime_for_tests()`.
+
+### 17.5 Knowledge Graph (`src.runtime.knowledge_graph`)
+
+In-memory semantic relationship store for production entities.
+
+**Entity types:** `asset`, `shot`, `sequence`, `worker`, `dcc_session`, `workflow`, `render`, `custom`
+
+**Relationship types:** `depends_on`, `created_by`, `rendered_in`, `submitted_to`, `part_of`, `executed_by`, `produces`, `references`, `custom`
+
+Key invariants:
+- `add_relationship()` auto-creates entity stubs (type `"custom"`) for unknown ids — no pre-registration required
+- Self-relationships raise `ValueError`
+- `remove_entity()` cascades: all incident relationships removed atomically
+- `find_path()` is outbound-only BFS with configurable `max_depth` (default 6)
+- `query_related(direction="both")` returns entities on either end of incident edges
+
+**Singleton:** `get_knowledge_graph()` / `reset_knowledge_graph_for_tests()`.
+
+### 17.6 Semantic Memory (`src.runtime.semantic_memory`)
+
+Persistent structured orchestration pattern store.
+
+**Pattern types:** `execution_pattern`, `planning_pattern`, `optimization_hint`, `workflow_lineage`
+
+**Outcome values:** `success`, `partial`, `failure`, `unknown`
+
+**NOT stored:** raw LLM prompts, chat logs, personal user data, unparsed free-text. Only structured metadata.
+
+**`get_best_patterns(intent)`** sort key: `success < partial < unknown < failure` (then `-timestamp` within each outcome group) — most successful recent patterns first.
+
+**Persistence:** JSONL append-only file. Path from `VIBRANTE_SEMANTIC_MEMORY_PATH` env var. Write failures silently swallowed — memory must never block execution. Prune at 2x `max_records` (default 1,000).
+
+**Singleton:** `get_semantic_memory()` / `reset_semantic_memory_for_tests()`.
+
+### 17.7 Worker Runtime (`src.runtime.worker_runtime`)
+
+Worker pool accounting. Distinct from `DistributedRuntime` (which handles dispatch); `WorkerRuntime` manages the pool's lifecycle state.
+
+**Worker lifecycle:** `registered → idle ↔ busy → offline`
+
+**Stale detection:** `check_stale_workers(timeout_sec=60)` marks workers as `offline` when `last_heartbeat` is older than `timeout_sec`. Returns sorted list. Does NOT re-check already-offline workers.
+
+**`acquire_worker()`** is atomic: increments `current_load` and sets `status="busy"` under the lock. Returns the least-load-ratio matching worker, or `None` if none available.
+
+**`update_heartbeat()`** revives `offline` workers back to `idle` (if load=0) or `busy`.
+
+**Singleton:** `get_worker_runtime()` / `reset_worker_runtime_for_tests()`.
+
+### 17.8 Workflow Federation (`src.runtime.workflow_federation`)
+
+Cross-DCC federated workflow execution. A federated workflow is a DAG of segments; each segment targets a specific DCC and carries its own operation list.
+
+**Creation validation (before any execution):**
+- Unique segment ids
+- No dependency cycles (Kahn's algorithm)
+
+**Execution order:** topological sort → execute segments in dependency order via `MultiDccRuntime.execute_for_dcc()`.
+
+**Failure behaviour:** on the first failed segment, all remaining segments are marked `"skipped"` and the loop breaks. Each successful segment commits independently through its DCC's validation/transaction pipeline — the federation layer adds no execution authority.
+
+**`get_status()`** returns per-segment statuses without the full result data — use `get_workflow()` for the full dict.
+
+**Singleton:** `get_workflow_federation()` / `reset_workflow_federation_for_tests()`.
+
+### 17.9 Runtime Federation API (`src.runtime.runtime_federation_api`)
+
+Runtime-to-runtime peer discovery and coordinated execution routing.
+
+**Local runtime:** auto-registered at init as `id="local"`, `endpoint="local://"`, `runtime_type="local"`. Cannot be deregistered.
+
+**Runtime types:** `local`, `remote`, `farm`, `cloud`
+
+**`discover_capabilities("local")`** queries the live `CapabilityRegistry` — always reflects current state.
+
+**`discover_capabilities(remote_id)`** returns what was registered at registration time — static snapshot.
+
+**`request_execution(runtime_id, ops)`:**
+- Local / `local://` endpoint → `DistributedRuntime.dispatch_operations()`
+- Remote endpoint → returns `{"ok": True, "status": "federated_dispatch", "dispatch_id": ...}` (transport wired externally)
+- Unknown runtime → `{"ok": False, "error": "Unknown runtime: ..."}`
+
+**Capability exchange:** `exchange_capabilities()` updates the peer's capability list in the local registry and logs the exchange in `_exchanges`.
+
+**Singleton:** `get_runtime_federation_api()` / `reset_runtime_federation_api_for_tests()`.
+
+### 17.10 Capability Registry extensions (Tier 4)
+
+`CAPABILITY_TYPES` extended with two new values:
+- `"remote_capability"` — a capability exposed by a remote peer runtime
+- `"mcp_tool"` — a tool exposed by a registered MCP server
+
+New methods:
+```python
+caps.expose_via_mcp(cap_id, tool_schema)         # mark capability as MCP-exposed
+caps.get_mcp_tools()                              # list all MCP-exposed capabilities
+caps.register_remote_capability(runtime_id, cap_type, cap_id, metadata)
+                                                  # namespace: {runtime_id}:{cap_id}
+caps.get_remote_capabilities(runtime_id)          # filter by remote=True + runtime_id
+```
+
+**Namespacing:** `register_remote_capability()` stores as `{runtime_id}:{cap_id}` to prevent collision with local capability ids.
+
+### 17.11 Tier 4 nodes
+
+| node_id | Location | Purpose |
+|---|---|---|
+| `hou_mcp_runtime_federation` | `plugins/houdini/v_nodes_houdini/` | Register / discover / exchange capabilities with peer runtimes |
+| `hou_mcp_distributed_execute` | `plugins/houdini/v_nodes_houdini/` | Execute operations on a distributed worker pool |
+| `hou_mcp_agent_plan` | `plugins/houdini/v_nodes_houdini/` | Submit a supervised agent proposal (planning only — never executes directly) |
+| `hou_mcp_remote_worker` | `plugins/houdini/v_nodes_houdini/` | Register / heartbeat / acquire / release remote workers |
+| `hou_mcp_knowledge_query` | `plugins/houdini/v_nodes_houdini/` | Query / mutate the production knowledge graph |
+
+All five are `category: "Houdini"` and `use_exec: true`. They follow the same naming convention as Tier 1-3 Houdini nodes.
+
+**`hou_mcp_agent_plan` safety note:** auto-registers the agent if `agent_id` is empty. The proposal result contains `execution_authorized` and `requires_approval` fields. The node NEVER calls `execute_operation` directly — execution must be wired to a separate `hou_mcp_ai_execute` node which the user reviews explicitly.
+
+### 17.12 Tier 4 test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_mcp_server_runtime.py` | list_tools, get_tool, handle_request, register/deregister custom tool, deregister builtin raises, lifecycle, stats, singleton |
+| `tests/unit/test_distributed_runtime.py` | worker CRUD, cap_filter, dispatch no_worker, remote dispatch, dispatch_id retrieval, cap mismatch, local dry_run via monkeypatch, stats, singleton |
+| `tests/unit/test_agent_runtime.py` | agent CRUD, invalid supervision raises, proposal errors, advisory/strict/standard supervision semantics, proposal_count, get_proposal, stats, singleton |
+| `tests/unit/test_multi_dcc_runtime.py` | built-in houdini, register/deregister, routing (hint/capability/fallback), route_operations partition, execute unknown, execute mock, execute_cross_dcc, adapter exception caught, stats, singleton |
+| `tests/unit/test_knowledge_graph.py` | entity CRUD, relationship CRUD, auto-stub creation, cascade remove, query_related (outbound/inbound/both/filtered), find_path (direct/multi-hop/no-path/max-depth), all_entities/all_relationships, stats, clear, singleton |
+| `tests/unit/test_semantic_memory.py` | record_pattern (valid/invalid-type/invalid-outcome), get_pattern, query_patterns (filters/limit/newest-first), get_best_patterns ordering, record_workflow_lineage, stats, clear, disk round-trip, singleton |
+| `tests/unit/test_worker_runtime.py` | register/deregister, heartbeat (revives offline), acquire (least-loaded/at-max/no-match), release (clamped), find_workers_for, check_stale, stats, singleton |
+| `tests/unit/test_workflow_federation.py` | create (empty/duplicate/cycle raises), get_workflow/list/get_status, execute all-success, execute failure+skipped, execute dry_run, topological ordering, stats, singleton |
+| `tests/unit/test_runtime_federation_api.py` | local auto-registered, register/deregister (local raises), discover_capabilities (local=live/remote=static/unknown=[]), exchange_capabilities, heartbeat, request_execution (local/remote/unknown), stats, singleton |
+
+**Pattern:** use `MockAdapter(DccAdapter)` for workflow federation and multi-DCC tests — inject via `mdr.register_dcc("houdini", MockAdapter(...), [...])` before executing federated workflows so no live Houdini is needed.
+
+**Pattern:** monkeypatch `DistributedRuntime._execute_local` for distributed runtime tests that need to exercise the local dispatch path without a live Houdini.
+
+**Pattern:** use `SemanticMemory(path=None)` for in-memory-only semantic memory tests; use `SemanticMemory(path=tmpfile)` for disk persistence tests.
+
+### 17.13 Tier 4 safety audit
+
+Every Tier 4 module was designed against the following invariants. Any PR modifying Tier 4 must re-verify these:
+
+1. **No agent executes directly.** `AgentRuntime.submit_proposal()` returns a plan + supervision_result. Execution requires wiring to `hou_mcp_ai_execute` and a separate approval step.
+2. **Distributed execution is always validated.** `DistributedRuntime._execute_local()` calls `RuntimeConstraints.validate_transaction()` AND `ValidationEngine.validate_operations()` before any bridge interaction.
+3. **Remote dispatch is opaque.** Remote endpoints receive a `dispatched` status record only — the actual execution transport is the caller's responsibility and happens outside this module.
+4. **Federation adds no authority.** `WorkflowFederation.execute_federated()` calls `execute_for_dcc()` which calls the DCC adapter's `execute_operations()` — each segment still goes through its own full validation/transaction pipeline.
+5. **Built-in MCP tools cannot be removed.** `McpServerRuntime.deregister_tool()` raises `ValueError` for built-in tools — external MCP clients cannot remove Vibrante's own tools.
+6. **Knowledge graph is advisory.** `KnowledgeGraph` is a read/write cache of production relationships — it has no execution authority and does not interact with the bridge or transaction system.
+7. **Semantic memory stores no raw prompts.** `SemanticMemory.record_pattern()` validates `pattern_type` and `outcome` — free-form text is not accepted as pattern data.
+
+### 17.14 Tier 4 deferred items (NOT in this work)
+
+- **Live remote transport for federation.** The federation API records remote dispatches but does not implement the actual network transport (WebSocket, HTTP, gRPC). This is production infrastructure that requires authentication, encryption, and retry handling beyond the scope of the runtime layer.
+- **`WorkerRuntime` + `DistributedRuntime` integration.** Currently separate singletons — a future integration would have `DistributedRuntime._select_worker()` consult `WorkerRuntime.acquire_worker()` for heartbeat-validated pool accounting.
+- **Federated workflow rollback.** If segment B fails after segment A committed, segment A's changes are not rolled back across DCCs. Cross-DCC rollback requires HIP-level snapshots and coordinated undo (planned for a future tier).
+- **Knowledge graph persistence.** The graph is in-memory only; JSONL or SQLite persistence would enable cross-session production relationship tracking.
+- **Agent collaboration.** Multiple agents sharing context, negotiating plans, or delegating sub-tasks to each other is explicitly deferred — all proposals remain single-agent for now.
+- **MCP server transport.** `McpServerRuntime` defines the tool registry and handlers but does not implement an actual HTTP/SSE or stdio MCP server transport — that requires the `mcp` SDK's server-side APIs (separate from the client used in Tier 1).
+
+---
+
+## 18. Adaptive Procedural Intelligence Layer (Tier 5)
+
+Tier 5 adds **advisory-only adaptive intelligence** on top of Tiers 1–4. The key distinction from active orchestration is that EVERY module in this tier is purely observational, analytical, and advisory. No module in Tier 5 calls `get_bridge()`, `houdini_runtime`, `TransactionManager`, or `ExecutionScheduler` directly.
+
+**Mandatory safety invariant (non-negotiable):**
+
+```
+Adaptive Intelligence → Recommendation → Validation → Approval → Transaction → Execution
+```
+
+`Adaptive Intelligence → direct execution authority` is NEVER permitted.
+
+**What Tier 5 does:**
+- Analyzes execution plans and histories to produce optimization tips
+- Predicts failure risk using deterministic heuristics (no opaque ML)
+- Recommends workflows, templates, and strategies
+- Evaluates execution quality after the fact
+- Tracks studio pipeline patterns for future advisory use
+
+**What Tier 5 does NOT do:**
+- Execute any operations
+- Modify any Houdini state
+- Bypass the Validation → Approval → Transaction pipeline
+- Use self-modifying AI or autonomous mutation
+
+### 18.1 New Tier 5 runtime modules
+
+```
+src/runtime/
+    workflow_optimizer.py        ← Advisory execution path analyzer and optimizer
+    runtime_analytics.py         ← Execution performance data collector and reporter
+    predictive_execution.py      ← Heuristic-based failure prediction
+    orchestration_heuristics.py  ← Inspectable, overridable orchestration heuristics
+    recommendation_engine.py     ← Advisory workflow/template/strategy recommendations
+    resource_optimizer.py        ← Advisory resource allocation optimization
+    failure_intelligence.py      ← Failure pattern detection and health analysis
+    execution_quality.py         ← Orchestration-level quality evaluation
+    studio_knowledge.py          ← Studio pipeline pattern knowledge store
+```
+
+`src/runtime/execution_scheduler.py` is also extended with adaptive scheduling metadata (see §18.10).
+
+### 18.2 Workflow Optimizer (`src.runtime.workflow_optimizer`)
+
+Advisory execution path analysis. Reads op lists and history — no bridge calls.
+
+```python
+from src.runtime.workflow_optimizer import get_workflow_optimizer
+
+opt = get_workflow_optimizer()
+analysis = opt.analyze_plan(operations)
+# analysis["risk_score"]         — numeric (delete_node=10, set_parms/connect/cook=1, rest=0)
+# analysis["risk_level"]         — "low" | "medium" | "high"
+# analysis["op_count"]           — int
+# analysis["delete_count"]       — int
+# analysis["optimization_tips"]  — advisory list[str]
+# analysis["reorder_suggested"]  — True if cooks precede creates
+# analysis["batch_suggested"]    — True if op_count >= 15
+# analysis["summary"]            — human-readable one-liner
+
+alts = opt.recommend_alternatives(operations, intent="build_pyro_source")
+# alts["alternatives"] — list of strategy dicts (id, description, recommended)
+# "dry_run_first" is always present; "split_batch" for large batches;
+# "wrap_transaction" for delete ops; preferred alternatives indicated for high risk
+
+opt.record_outcome(template_id, outcome)
+# outcome ∈ {"success", "partial", "failure", "rolled_back"}
+# raises ValueError for invalid outcome
+
+score = opt.score_template(template_id)
+# {"template_id", "avg_score", "sample_count", "recommendation"}
+# recommendation: "preferred" (avg≥0.8), "acceptable" (avg≥0.5), "avoid" (<0.5), "unknown" (no history)
+
+hist = opt.get_optimization_history(limit=10)
+# list of {template_id, outcome, score, timestamp} newest-first
+```
+
+**Risk weights:** `delete_node=10`, `set_parms=connect_nodes=cook_node=1`, all others `0`. Risk level: `low` < 5, `medium` 5–14, `high` ≥ 15.
+
+Singleton: `get_workflow_optimizer()` / `reset_workflow_optimizer_for_tests()`.
+
+### 18.3 Runtime Analytics (`src.runtime.runtime_analytics`)
+
+Execution performance data collector. Append-only in-memory records, capped at 2,000.
+
+```python
+from src.runtime.runtime_analytics import get_runtime_analytics
+
+analytics = get_runtime_analytics()
+analytics.record_execution({"intent": "build_pyro_source", "status": "committed",
+                             "duration_sec": 3.0, "op_count": 5, "rollback_performed": False,
+                             "worker_id": "w1"})
+analytics.record_validation({"valid": True, "risk_level": "low", "op_count": 5,
+                              "warning_count": 0, "error_count": 0, "intent": "build_pyro_source"})
+analytics.record_worker_event({"event": "acquire", "worker_id": "w1", "success": True,
+                                "current_load": 1, "max_load": 4})
+
+report = analytics.get_report()
+# report["execution_metrics"]    — {total, success_rate, avg_duration_sec, rollback_rate, top_failure_intents}
+# report["failure_metrics"]      — {total_failures, rollback_rate, by_intent, top_failure_intents}
+# report["resource_metrics"]     — {acquire_count, release_count, stale_count, by_worker}
+# report["workflow_statistics"]  — {by_intent, by_status, total_validations, validation_failure_rate}
+# report["generated_at"]         — float timestamp
+
+trends = analytics.get_execution_trends(window_sec=300)
+# [{intent, status, duration_sec, op_count, timestamp}, ...] filtered to last window_sec
+```
+
+Singleton: `get_runtime_analytics()` / `reset_runtime_analytics_for_tests()`.
+
+### 18.4 Predictive Execution (`src.runtime.predictive_execution`)
+
+Heuristic failure prediction. Deterministic, explainable — no opaque ML.
+
+```python
+from src.runtime.predictive_execution import get_predictive_execution
+
+pe = get_predictive_execution()
+pred = pe.predict(operations, context={})
+# pred["predicted_risk"]         — "low" | "medium" | "high"
+# pred["failure_probability"]    — float 0.0–1.0
+# pred["risk_factors"]           — list[str] (named, human-readable)
+# pred["recommendations"]        — list[str] (advisory)
+# pred["confidence"]             — float 0.5–1.0
+
+pressure = pe.predict_resource_pressure(operations, context={})
+# pressure["memory_pressure"]    — "low" | "medium" | "high"
+# pressure["cook_pressure"]      — "low" | "medium" | "high"
+# pressure["notes"]              — list[str]
+
+conflicts = pe.predict_dependency_conflicts(operations)
+# conflicts["conflicts"]         — list of {type, op_index, explanation}
+# conflicts["risk_level"]        — "none" | "low" | "medium" | "high"
+
+congestion = pe.predict_scheduler_congestion(queue_depth=7)
+# congestion["congestion_level"] — "none" | "mild" | "severe"
+# congestion["recommendation"]   — advisory string
+```
+
+**Named risk factors (all deterministic):**
+- `large_batch` (≥ 20 ops)
+- `high_delete_count` (≥ 5 delete_node ops)
+- `cook_before_connect` (cook ops appear before connect ops in the list)
+- `unknown_op_types` (op keys not in SUPPORTED_OPS)
+- `high_risk_score` (total risk weight ≥ 20)
+- `missing_source_node` (connect_nodes references a path not created in the same batch)
+
+**Heavy node types** (bump memory/cook pressure): `pyro`, `flip`, `vellum`, `ocean`, `crowd`, `smoke`.
+
+Singleton: `get_predictive_execution()` / `reset_predictive_execution_for_tests()`.
+
+### 18.5 Orchestration Heuristics (`src.runtime.orchestration_heuristics`)
+
+Inspectable, overridable heuristics. Every heuristic is named and documented via `list_heuristics()`.
+
+```python
+from src.runtime.orchestration_heuristics import get_orchestration_heuristics
+
+h = get_orchestration_heuristics()
+
+h.order_operations(ops)
+# {"ordered_indices": [int, ...], "changed": bool, "summary": str}
+# Order weights: create_node=1, build_node_chain=2, set_parms=3, connect_nodes=4,
+#                flags=5, layout=6, cook=7, delete=8
+
+h.select_worker(workers, required_capabilities)
+# {"selected_id": str|None, "alternatives": [...], "reason": str}
+# Selects least-loaded idle worker with all required capabilities
+
+h.group_for_batching(ops, max_batch_size=10)
+# {"batches": [[indices], ...], "batch_count": int, "summary": str}
+# Splits at delete_node boundaries and at max_batch_size
+
+h.route_operation(op, available_dccs)
+# {"recommended_dcc": str|None, "confidence": float, "reason": str}
+# Priority: hint_dcc > houdini op types > first available DCC fallback
+
+h.prioritize_queue(items)
+# {"ordered_ids": [str, ...], "summary": str}
+# items: [{id, priority (0–100), risk_level, op_count, timestamp}]
+# Sort: (-priority, risk_ord, op_count, timestamp)
+
+h.list_heuristics()
+# Returns exactly 5 dicts: [{name, description, inputs, outputs}, ...]
+```
+
+Singleton: `get_orchestration_heuristics()` / `reset_orchestration_heuristics_for_tests()`.
+
+### 18.6 Recommendation Engine (`src.runtime.recommendation_engine`)
+
+Advisory recommendations for workflows, templates, and dependency conflicts. Reads SemanticRegistry, WorkflowTemplates, SemanticMemory — never calls bridge.
+
+```python
+from src.runtime.recommendation_engine import get_recommendation_engine
+
+engine = get_recommendation_engine()
+
+engine.recommend_workflow(intent, context={})
+# {"recommended_op": str|None, "confidence": float, "reasoning": [str], "alternatives": [...]}
+# confidence degraded when required capabilities (e.g. karma renderer) are not available
+
+engine.recommend_template(intent)
+# {"recommended_template": str|None, "confidence": float, "all_candidates": [...], "reasoning": [str]}
+# Checks SemanticMemory for historical best, then built-in intent→template map, then WorkflowTemplates
+
+engine.recommend_strategy(operations)
+# {"strategies": [{"id", "description", "recommended": bool}, ...], "primary": str|None}
+# "dry_run_first" always present; "wrap_transaction" for delete ops; "split_batch" for ≥ 15 ops
+
+engine.recommend_dependency_resolution(conflicts)
+# {"resolutions": [{"conflict_type", "resolution", "confidence"}, ...], "all_resolvable": bool}
+# Handles: self_connection (resolvable), missing_source_node (resolvable),
+#          cycle (NOT resolvable), unknown type (NOT resolvable)
+```
+
+**stats():** `{"recommendation_count": int}` — increments on every `recommend_workflow`, `recommend_template`, `recommend_strategy` call.
+
+Singleton: `get_recommendation_engine()` / `reset_recommendation_engine_for_tests()`.
+
+### 18.7 Resource Optimizer (`src.runtime.resource_optimizer`)
+
+Advisory resource allocation. No bridge calls, no execution authority.
+
+```python
+from src.runtime.resource_optimizer import get_resource_optimizer
+
+opt = get_resource_optimizer()
+
+opt.recommend_worker_allocation(operations, workers)
+# {"recommended_worker": str|None, "load_after": float, "should_split": bool, "reason": str}
+# should_split=True when len(ops) >= _MAX_OPS_PER_TRANSACTION (15)
+# load_after = (current_load + 1) / max_load for selected worker
+
+opt.recommend_transaction_sizing(operations)
+# {"group_count": int, "split_points": [int], "recommended_size": int, "summary": str}
+# Splits at: risk_score≥10, count≥recommended_size, delete_node with prior ops
+
+opt.recommend_scheduling_order(items)
+# {"ordered_ids": [str, ...], "summary": str}
+# items: [{id, priority, risk_level, op_count, timestamp}]
+
+opt.recommend_load_balancing(workers)
+# {"pool_health": "healthy"|"unbalanced"|"overloaded", "actions": [...], "summary": str}
+# Actions: "scale_up" (any worker at 100% load), "revive_or_remove" (offline worker),
+#          "rebalance" (high variance between worker loads)
+```
+
+**Constants:** `_MAX_OPS_PER_TRANSACTION = 15`, `_IDEAL_WORKER_LOAD = 0.7`.
+
+**stats():** `{"call_count": int}` — increments on `recommend_worker_allocation` and `recommend_transaction_sizing`.
+
+Singleton: `get_resource_optimizer()` / `reset_resource_optimizer_for_tests()`.
+
+### 18.8 Failure Intelligence (`src.runtime.failure_intelligence`)
+
+Failure pattern detector and health analyzer. Reads execution history records — no bridge calls.
+
+```python
+from src.runtime.failure_intelligence import get_failure_intelligence
+
+fi = get_failure_intelligence()
+
+fi.analyze(records)
+# {"failure_patterns": [...], "risk_clusters": [...], "recommendations": [str], "health_score": float}
+# health_score = fraction of committed (non-rollback) records; 1.0 for empty input
+
+fi.detect_recurring_patterns(records)
+# {"patterns": [{"pattern", "intent"/"count", "recommendation"}, ...]}
+# Patterns: repeated_intent_failure (≥2 failures for same intent),
+#           high_rollback_rate (≥30% rollbacks), large_batch_failures (op_count>15, ≥2 failures)
+
+fi.detect_risky_structures(operations)
+# {"risks": [{"type", "description", "severity"}], "safe": bool}
+# Risk types: connect_without_create (connect ops but no create ops in list),
+#             interleaved_create_delete (create ops between delete ops),
+#             cook_empty_setup (cook before any creates/connects)
+
+fi.get_hotspot_report(records)
+# {"clusters": [{"cluster": "intent_hotspot"|"template_hotspot", "intent_or_template", "failure_rate", "count"}]}
+# Hotspot: failure_rate ≥ 0.5 with ≥ 2 total records for that intent/template
+```
+
+**stats():** `{"analysis_count": int}` — increments on each `analyze()` call.
+
+Singleton: `get_failure_intelligence()` / `reset_failure_intelligence_for_tests()`.
+
+### 18.9 Execution Quality (`src.runtime.execution_quality`)
+
+Orchestration-level quality evaluator. Evaluates EXECUTION QUALITY (timing, stability, correctness) — NOT artistic or render quality.
+
+```python
+from src.runtime.execution_quality import get_execution_quality
+
+q = get_execution_quality()
+
+result = q.evaluate(execution_result, plan=None, history=None)
+# result["overall_score"]  — float 0.0–1.0 (weighted average of 6 dimensions)
+# result["dimensions"]     — dict with exactly 6 keys:
+#     "efficiency"             — timing vs budget (2 sec/op default budget)
+#     "semantic_correctness"   — ops_executed / plan ops (1.0 if no plan)
+#     "stability"              — success fraction from history (1.0 if no history)
+#     "validation_reliability" — fraction of valid validation records
+#     "replay_consistency"     — heuristic based on rollback flag
+#     "dependency_integrity"   — heuristic based on error count
+# result["findings"]       — list[str] (at least 1 entry, always present)
+# result["grade"]          — "A"|"B"|"C"|"D"|"F"
+
+q.score_efficiency(execution_result)
+# budget_sec = _BUDGET_SEC_PER_OP (2.0) × max(op_count, 1)
+# returns 1.0 if duration ≤ budget, else budget/duration
+
+q.score_stability(history_records)
+# fraction where status=="committed" AND NOT rollback_performed
+# 1.0 for empty history
+
+q.score_validation_reliability(validation_records)
+# fraction where valid==True; 1.0 for empty list
+
+q.grade(score)
+# A (≥0.9), B (≥0.8), C (≥0.7), D (≥0.6), F (<0.6)
+```
+
+**stats():** `{"eval_count": int}`.
+
+Singleton: `get_execution_quality()` / `reset_execution_quality_for_tests()`.
+
+### 18.10 Studio Knowledge (`src.runtime.studio_knowledge`)
+
+Structured studio pipeline pattern store. Tracks orchestration outcomes and recipes for advisory use.
+
+```python
+from src.runtime.studio_knowledge import get_studio_knowledge, StudioKnowledge
+
+sk = get_studio_knowledge()
+
+sk.record_workflow_pattern({"intent": "build_pyro_source", "outcome": "success",
+                             "op_count": 8, "dcc": "houdini", "template_id": "pyro_source"})
+sk.record_asset_pattern({"intent": "asset_publish", "outcome": "success", "dcc": "houdini"})
+# Both raise ValueError for invalid outcome values
+
+best = sk.get_best_recipe("build_pyro_source", dcc="houdini")
+# dict or None — highest op_count success record for the intent/dcc combo
+
+patterns = sk.query_patterns(intent=None, dcc=None, outcome=None, limit=20)
+# newest-first list of pattern dicts
+
+insights = sk.get_optimization_insights("build_pyro_source")
+# {"intent", "pattern_count", "success_rate", "avg_op_count",
+#  "best_template", "best_dcc", "insights": [str]}
+```
+
+**Valid outcomes:** `"success"`, `"partial"`, `"failure"`, `"unknown"`.
+
+**Valid pattern types:** `"workflow_pattern"`, `"asset_pattern"`, `"cross_dcc_pattern"`, `"pipeline_recipe"`, `"optimization_hint"`.
+
+**Persistence:** optional JSONL file. Path from `VIBRANTE_STUDIO_KNOWLEDGE_PATH` env var or `StudioKnowledge(path=...)`. Write failures silently swallowed. Corrupt JSONL lines skipped on load. Prunes at 2× `_max_records` (default 1,000).
+
+**Does NOT store:** raw artist conversations, private production data (file paths, asset names), arbitrary free-text or user input.
+
+Singleton: `get_studio_knowledge()` / `reset_studio_knowledge_for_tests()`.
+
+### 18.11 Execution Scheduler extensions (adaptive scheduling)
+
+`ExecutionScheduler.enqueue()` accepts two new optional parameters:
+
+```python
+result = await scheduler.enqueue(
+    factory_coroutine,
+    transaction_id="txn-42",
+    priority=80,       # int 0–100, default 50 (clamped)
+    risk_level="high", # "low" | "medium" | "high", default "low"
+)
+```
+
+Two new methods:
+
+```python
+scheduler.congestion_level()
+# "none" (queue < 5), "mild" (5–9), "severe" (≥ 10)
+
+scheduler.get_pending_items()
+# sorted list of {id, queued_at, priority, risk_level, cancelled}
+# no callables exposed
+```
+
+`stats()` now includes `"congestion_level"` key.
+
+**Architecture note:** priority and risk_level are **metadata only** — they are stored on the item dict for inspection/analytics but do NOT reorder the FIFO pump queue. The adaptive intelligence layer reads this metadata for advisory scheduling recommendations; actual execution order remains FIFO to preserve determinism.
+
+### 18.12 Tier 5 nodes
+
+Five new Houdini plugin nodes in `plugins/houdini/v_nodes_houdini/`. All are `category: "Houdini"` and `use_exec: true`.
+
+| node_id | Inputs | Key Outputs |
+|---|---|---|
+| `hou_mcp_runtime_analytics` | `report_type`, `window_sec` | `execution_metrics`, `failure_metrics`, `resource_metrics`, `workflow_statistics`, `trends`, `report_json` |
+| `hou_mcp_predictive_execution` | `operations_json`, `context_json`, `include_resource_pred`, `queue_depth` | `predicted_risk`, `failure_probability`, `risk_factors`, `recommendations`, `resource_pressure`, `scheduler_status`, `prediction_json` |
+| `hou_mcp_workflow_optimizer` | `operations_json`, `intent`, `include_alts` | `risk_level`, `optimization_tips`, `reorder_suggested`, `alternatives`, `preferred_strategy`, `analysis_json` |
+| `hou_mcp_recommendation_engine` | `intent`, `operations_json`, `context_json` | `recommended_workflow`, `recommended_template`, `strategies`, `primary_strategy`, `workflow_confidence`, `recommendations_json` |
+| `hou_mcp_execution_quality` | `execution_result_json`, `plan_json`, `history_json` | `overall_score`, `grade`, `dimensions`, `findings`, `quality_json` |
+
+All five are safe to call at any time — no bridge calls, no execution authority.
+
+### 18.13 Tier 5 test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_workflow_optimizer.py` | analyze_plan risk levels/tips/reorder/batch/empty, recommend_alternatives dry_run/preferred/split, score_template unknown/preferred/avoid, record_outcome valid/invalid, get_optimization_history newest-first/limit, stats, singleton |
+| `tests/unit/test_runtime_analytics.py` | record_execution/validation/worker_event IDs, get_report all 4 metrics keys, success_rate/rollback_rate/top_intents, resource acquire/release/stale, by_intent/by_status/validation_failure_rate, trends window, stats, singleton |
+| `tests/unit/test_predictive_execution.py` | predict empty/unknown_ops/large_batch/high_delete/cook_before_connect/high_risk_score, recommendations, confidence range, predict_resource_pressure normal/heavy/cook_count, predict_dependency_conflicts self_connection/no_conflicts, predict_scheduler_congestion none/mild/severe, stats, singleton |
+| `tests/unit/test_orchestration_heuristics.py` | order_operations empty/create-before-cook/delete-last/already-ordered, select_worker least-loaded/no-caps/no-idle/alternatives/empty, group_for_batching empty/delete-splits/max-size/single, route_operation explicit/houdini/no-dccs/fallback, prioritize_queue empty/priority/FIFO, list_heuristics 5 entries, singleton |
+| `tests/unit/test_recommendation_engine.py` | recommend_workflow known/unknown/missing-cap/reasoning, recommend_template known/unknown/reasoning, recommend_strategy dry_run/delete/large/primary, recommend_dependency_resolution self_connection/missing_source/cycle/empty, stats, singleton |
+| `tests/unit/test_resource_optimizer.py` | recommend_worker_allocation best/no-workers/should_split/load_after, recommend_transaction_sizing empty/single/delete-split/size_positive, recommend_scheduling_order empty/priority/FIFO, recommend_load_balancing healthy/overloaded/offline/empty, stats, singleton |
+| `tests/unit/test_failure_intelligence.py` | analyze empty/all-success/mixed/keys/low-health-recommendation, detect_recurring_patterns repeated_intent/high_rollback/large_batch/no_failures, detect_risky_structures safe/self_connection/connect_without_create/interleaved, get_hotspot_report intent/template/no_failures, stats, singleton |
+| `tests/unit/test_execution_quality.py` | evaluate committed/failed/dimensions/with-plan/partial-plan/with-history/findings/grade, score_efficiency within-budget/2x-budget/zero-duration/zero-op_count, score_stability all-success/all-failed/empty/mixed, score_validation_reliability all-valid/mixed/empty, grade A/B/C/D/F, stats, singleton |
+| `tests/unit/test_studio_knowledge.py` | record_workflow_pattern/record_asset_pattern returns id, invalid outcome raises, get_best_recipe best/none/dcc_filter, query_patterns all/intent/dcc/outcome/limit/newest-first, get_optimization_insights shape/empty/success_rate/best_template/best_dcc, stats shape/write_count, disk round-trip, corrupt JSONL skipped, singleton |
+
+**Pattern for Tier 5 tests:** no bridge fixtures needed — all modules are advisory-only. Use `autouse=True` fixture with `reset_X_for_tests()` before and after each test. For `recommendation_engine`, also reset `capability_registry`, `workflow_templates`, and `semantic_registry` to isolate from built-in state. For `studio_knowledge` disk tests, use `tempfile.NamedTemporaryFile` + explicit `os.unlink` in a try/finally.
+
+### 18.14 Tier 5 safety audit
+
+Every Tier 5 module was designed against the following invariants. Any PR modifying Tier 5 must re-verify these:
+
+1. **No direct bridge calls.** None of the 9 Tier 5 modules import or call `get_bridge()` or `houdini_runtime`. Any change that introduces such a call violates the advisory-only contract.
+2. **No execution authority.** No Tier 5 module calls `TransactionManager`, `ExecutionScheduler.enqueue()`, or any method that causes Houdini state mutation.
+3. **Heuristics are deterministic and named.** All risk factors, patterns, and heuristics in `predictive_execution`, `failure_intelligence`, and `orchestration_heuristics` are Python-literal rules with documented names. No statistical models, no probability distributions, no opaque scoring.
+4. **Studio knowledge stores no private data.** `StudioKnowledge._record()` stores only: `intent`, `outcome`, `dcc`, `op_count`, `template_id`, `duration_sec`, `op_fingerprint` (list of op type strings). Asset names, file paths, and free-text are never captured.
+5. **Recommendations are advisory only.** Every module's output is a suggestion dict — never an imperative. Nodes that consume Tier 5 output still route execution through `ValidationEngine → RuntimeConstraints → ApprovalPipeline → TransactionManager`.
+6. **Execution scheduler metadata does not change FIFO order.** `priority` and `risk_level` on scheduled items are readable via `get_pending_items()` but the pump loop processes items in arrival order. Reordering by priority would introduce non-determinism and is explicitly deferred.
+
+### 18.15 Tier 5 deferred items (NOT in this work)
+
+- **ML-backed risk models.** The current prediction engine is purely heuristic. A future tier could integrate lightweight sklearn-style models (trained on AuditStore data) as an optional enhancement — but only if they remain explainable and produce a named-factor list alongside any score.
+- **`StudioKnowledge` SQLite backend.** The JSONL append store is efficient for writes but slow for large-scale queries (pattern_count > 10,000). A SQLite backend with index on `(intent, outcome, timestamp)` would support range queries and aggregation at studio scale.
+- **Analytics → optimizer feedback loop.** `RuntimeAnalytics.get_execution_trends()` could feed `WorkflowOptimizer.analyze_plan()` with live window statistics (e.g. "recent executions of this op type fail at 40%"). Currently they are independent singletons.
+- **Orchestration heuristic overrides.** The `OrchestrationHeuristics` class is designed for override via subclassing (all heuristics are plain methods). A future `register_heuristic_override(name, fn)` API would let studio pipelines replace individual rules without subclassing.
+- **`ExecutionScheduler` priority queue.** If priority reordering is needed in the future, the pump loop must be rebuilt as a `heapq`-based priority queue. This is a breaking change to execution ordering semantics and requires careful regression testing against all scheduling tests.
+
+---
+
+## 19. MCP Operational Runtime (Tier 6)
+
+Tier 6 converts the Vibrante Runtime from a library into a **real MCP server** — a process that Claude Desktop, Codex CLI, Cursor, and any MCP-compatible AI client can connect to via stdio. The MCP protocol is treated strictly as **transport only**; all intelligence, validation, constraints, and execution authority remain in the runtime layer (Tiers 1–5).
+
+**Mandatory safety invariant (non-negotiable):**
+
+```
+External AI (Claude / Codex / GPT)
+    → MCP stdio transport (MCPTransport)
+    → MCPToolRegistry (semantic tools only)
+    → SemanticExecutor / TransactionManager / ValidationEngine
+    → houdini_runtime.execute_operation
+    → AuditStore
+```
+
+`External AI → raw Houdini mutation / arbitrary Python execution` is NEVER permitted.
+
+### 19.1 New runtime modules
+
+```
+src/runtime/
+    runtime_identity.py       ← Operational identity constants consumed by bootstrap + prompt context
+    runtime_bootstrap.py      ← Runtime warm-up + structured bootstrap payload for LLMs
+    runtime_prompt_context.py ← System prompt and scene context block generators
+    mcp_session.py            ← Connected LLM session lifecycle management
+    mcp_tool_registry.py      ← MCP-exposed tool registry + all 11 semantic tool handlers
+    mcp_transport.py          ← MCP stdio transport (Server, list_tools, call_tool, stdio loop)
+```
+
+Entry point: `scripts/run_vibrante_mcp.py`
+
+### 19.2 Runtime identity (`src.runtime.runtime_identity`)
+
+All operational identity constants are defined here and consumed by `runtime_bootstrap` and `runtime_prompt_context`. Nothing in this module does I/O or touches singletons.
+
+```python
+RUNTIME_NAME    = "Vibrante Runtime"
+RUNTIME_VERSION = "2.4.0"
+RUNTIME_TYPE    = "AI-native procedural orchestration runtime"
+EXECUTION_MODEL = "semantic_transactional_execution"
+
+EXECUTION_RULES             # list[str]  — 7 operational rules
+RECOMMENDED_EXECUTION_FLOW  # list[str]  — 8 ordered steps (initialize → review)
+MCP_TOOL_NAMES              # list[str]  — 11 canonical tool names
+RUNTIME_IDENTITY            # dict       — merged identity payload
+```
+
+**Do not** hardcode `RUNTIME_NAME`, `RUNTIME_VERSION`, or `MCP_TOOL_NAMES` in any other module — always import from `runtime_identity`.
+
+### 19.3 Runtime bootstrap (`src.runtime.runtime_bootstrap`)
+
+Warms up all runtime singletons and produces the structured payload sent to connected LLMs at initialization time.
+
+```python
+from src.runtime.runtime_bootstrap import (
+    initialize_runtime,
+    get_runtime_capabilities,
+    get_available_templates,
+    get_available_operations,
+    get_bootstrap_data,
+)
+
+status = initialize_runtime()
+# {"ok": True, "initialized_at": float, "modules": [...]}
+
+data = get_bootstrap_data()
+# {
+#     "runtime_name":              str,
+#     "runtime_version":           str,
+#     "runtime_type":              str,
+#     "execution_model":           str,
+#     "runtime_rules":             list[str],
+#     "recommended_execution_flow": list[str],
+#     "mcp_tools":                 list[str],
+#     "workflow_templates":        list[str],
+#     "available_capabilities":    list[dict],
+#     "available_operations":      list[str],
+# }
+```
+
+**Graceful degradation:** `get_runtime_capabilities`, `get_available_templates`, and `get_available_operations` each return `[]` on any error — bootstrap never fails the session.
+
+### 19.4 Runtime prompt context (`src.runtime.runtime_prompt_context`)
+
+Generates two prompt artifacts used by the tool handlers:
+
+| Function | When used | Output |
+|---|---|---|
+| `get_system_prompt()` | Once per connection, via `initialize_runtime_context` | Full operational system prompt; embeds runtime identity, rules, recommended flow, tool guide |
+| `get_contextual_prompt(scene_context)` | Mid-session refresh, when scene changes | Shorter prompt — rules + optional scene block only |
+| `get_scene_context_block(ctx)` | Inside both of the above | Formatted scene text; truncates network lists at 5 (+N more); returns "not available" for None/empty |
+
+`get_system_prompt()` is idempotent — calling it twice returns an identical string. The prompt embeds a hard rule that `initialize_runtime_context` must be called first and that `preview_execution` must precede `execute_workflow_transaction`.
+
+### 19.5 MCP session lifecycle (`src.runtime.mcp_session`)
+
+Sessions track structured orchestration events — never raw prompts or user text.
+
+```python
+from src.runtime.mcp_session import get_session_manager, SESSION_EVENT_TYPES
+
+mgr = get_session_manager()
+sid = mgr.create_session("claude-desktop")   # auto-records "session_started"
+
+mgr.update_session(sid,
+    active_goals=["build_pyro_smoke"],
+    current_plan={"intent": "build_pyro_source", ...},
+)
+mgr.record_session_event(sid, "plan_generated", {"intent": "build_pyro_source"})
+mgr.close_session(sid)
+```
+
+**`SESSION_EVENT_TYPES`** (12 valid event types):
+`session_started`, `runtime_context_initialized`, `plan_generated`, `execution_started`, `execution_completed`, `review_completed`, `approval_requested`, `approval_granted`, `approval_rejected`, `tool_called`, `error`, `session_closed`
+
+Unknown event types are normalised to `"error"` with the original type recorded in the event data.
+
+**`_MUTABLE_FIELDS`** (only these can be written via `update_session`):
+`active_goals`, `pending_approval_ids`, `current_plan`
+
+`session_id`, `client_id`, and `created_at` are immutable after creation. `has_current_plan` is derived from whether `current_plan` is set.
+
+**Singleton:** `get_session_manager()` / `reset_sessions_for_tests()`.
+
+### 19.6 MCP tool registry (`src.runtime.mcp_tool_registry`)
+
+Central registry of all MCP-exposed semantic tools. Completely decoupled from transport — tools can be registered, tested, and dispatched without a running transport.
+
+```python
+from src.runtime.mcp_tool_registry import (
+    MCPToolRegistry,
+    ToolDefinition,
+    get_mcp_tool_registry,
+    register_all_tools,
+)
+
+registry = get_mcp_tool_registry()
+
+# Manual registration
+defn = ToolDefinition(
+    name="my_tool", description="...", inputSchema={},
+    handler=async_handler_fn, category="custom",
+)
+registry.register_tool(defn)
+
+# Batch registration (all 11 semantic tools)
+transport = MCPTransport()
+register_all_tools(transport=transport)   # also forwards each to transport.register_tool()
+
+# Dispatch
+result = await registry.dispatch_tool("plan_scene", {"prompt": "add a pyro source"})
+```
+
+`dispatch_tool` never raises: exceptions are caught and returned as `{"ok": False, "error": "..."}`. Non-dict handler results are wrapped in `{"result": value}`.
+
+**Singleton:** `get_mcp_tool_registry()` / `reset_mcp_tool_registry_for_tests()`.
+
+### 19.7 The 11 semantic tools
+
+All tools are stateless from the transport perspective — session state is managed by `SessionManager`, runtime state by the Tier 1–5 singletons.
+
+**Runtime category (3 tools):**
+
+| Tool | Purpose |
+|---|---|
+| `initialize_runtime_context` | Warm up runtime singletons; return bootstrap data + system prompt |
+| `query_runtime_state` | Current session state, active goals, pending approvals, module status |
+| `query_scene_context` | Structured scene snapshot from `houdini_runtime.scene_context()` |
+
+**Knowledge category (3 tools):**
+
+| Tool | Purpose |
+|---|---|
+| `query_capabilities` | What operations the runtime can perform (`CapabilityRegistry`) |
+| `query_workflow_templates` | Browse and optionally resolve workflow templates to op lists |
+| `query_examples` | Built-in examples for common intents |
+
+**Planning category (3 tools):**
+
+| Tool | Purpose |
+|---|---|
+| `plan_scene` | NL prompt → parsed intent → context analysis → validated execution plan |
+| `preview_execution` | Validate + predict risk of an op list WITHOUT executing |
+| `validate_execution_plan` | Structural + constraint validation only |
+
+**Execution category (2 tools):**
+
+| Tool | Purpose |
+|---|---|
+| `execute_workflow_transaction` | Execute a plan via the transaction system (dual-path: named intent OR plan_json) |
+| `review_execution` | Post-execution review: did execution match intent? |
+
+**`execute_workflow_transaction` dual-path:**
+1. `intent` supplied (no `plan_json`) → delegates to `SemanticExecutor.execute()` — the full Tier 2.75 pipeline (registry → constraints → validation → resources → transaction → commit/rollback)
+2. `plan_json` supplied → safety gates (ok=False rejected, requires_approval blocked without approver) → `TransactionManager.begin_transaction` → `execute_operation` loop → `commit_transaction` or `rollback_transaction`
+
+**Safety gates on execution:**
+- Plans with `ok=False` are rejected before any bridge call
+- Plans with `requires_approval=True` return `status="pending_approval"` unless `approver` is supplied
+- All ops validated by `ValidationEngine` + `RuntimeConstraints` before execution begins
+- `build_node_chain` spec is validated for duplicate ids, missing ids, self-connections, and non-existent parents
+
+### 19.8 Transport architecture (`src.runtime.mcp_transport`)
+
+The transport wraps the `mcp` SDK server-side APIs with Vibrante's tool registry.
+
+```
+External AI client (stdio)
+    ↓ stdin/stdout
+MCPTransport._run_async()
+    ├── app.list_tools()  → queries MCPToolRegistry.list_tools()
+    └── app.call_tool()   → dispatches to MCPToolRegistry.dispatch_tool()
+                                ↓
+                          returns TextContent(type="text", text=json.dumps(result))
+```
+
+**Deferred SDK imports:** `mcp.server.Server`, `mcp.server.stdio.stdio_server`, and `mcp.types` are imported lazily on the first `run_stdio()` call via `_require_mcp_server()`. This mirrors the client-side pattern in `mcp_runtime.py` — importing `mcp_transport` at startup costs nothing.
+
+**`run_stdio()`** calls `asyncio.run(self._run_async())` — safe because `run_vibrante_mcp.py` is a standalone script, not embedded in the Qt event loop.
+
+**`is_running`** property is guarded by `threading.Lock` for thread-safe inspection from signal handlers.
+
+**Singleton:** `get_mcp_transport()` / `reset_mcp_transport_for_tests()`.
+
+### 19.9 Entry point (`scripts/run_vibrante_mcp.py`)
+
+```python
+transport = MCPTransport()
+initialize_runtime()          # warms all singletons
+register_all_tools(transport) # registers all 11 tools + forwards to transport
+transport.run_stdio()         # blocks until the client disconnects
+```
+
+The script adds `_ROOT` (project root) to `sys.path` before any imports so `src.*` is importable without installation.
+
+**Without Houdini:** planning, knowledge, and capability tools work fully. `query_scene_context` and `execute_workflow_transaction` return a clear "bridge not available" message when the TCP bridge is not reachable — they never crash the process.
+
+### 19.10 AI client integration
+
+**Claude Desktop** (`~/.claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "vibrante": {
+      "command": "python",
+      "args": ["D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py"],
+      "env": { "VIBRANTE_HOU_PORT": "18811" }
+    }
+  }
+}
+```
+
+**Codex CLI** (`codex.toml` or `~/.config/codex/config.toml`):
+
+```toml
+[mcp_servers.vibrante]
+command     = "python"
+args        = ["D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py"]
+trust_level = "trusted"
+```
+
+**Cursor** (`.cursor/mcp.json` in workspace root):
+
+```json
+{
+  "mcpServers": {
+    "vibrante": {
+      "command": "python",
+      "args": ["D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py"]
+    }
+  }
+}
+```
+
+**Prerequisites:**
+
+```bash
+pip install "mcp>=1.0.0" pydantic toposort
+```
+
+For Houdini scene operations:
+1. Open Houdini with the Vibrante-Node plugin installed.
+2. Click **Vibrante-Node → Launch Vibrante-Node** from the Houdini menu bar (starts bridge on port 18811).
+3. Run the entry point script — tools like `query_scene_context` and `execute_workflow_transaction` will connect to the bridge automatically.
+
+### 19.11 Orchestration execution invariants (non-negotiable)
+
+1. **No raw Houdini API exposure.** `MCPToolRegistry` must never register `create_node`, `set_parm`, `set_parms`, `run_python`, `run_code`, `delete_node`, `connect_nodes`, `cook_node`, or any other direct bridge method. The `FORBIDDEN_TOOLS` set in `test_mcp_tool_registry.py` is the authoritative list.
+2. **No arbitrary Python execution.** No tool handler may accept or evaluate a `code` / `python` / `script` argument. All execution is structured, validated, and deterministic.
+3. **All mutations route through the transaction system.** `execute_workflow_transaction` calls either `SemanticExecutor.execute()` (named intent path) or `TransactionManager.begin_transaction` + `execute_operation` per op (plan path). There is no direct call to `houdini_runtime` in tool handler code outside of query operations.
+4. **Validation before mutation.** Every `execute_workflow_transaction` call goes through `ValidationEngine.validate_operations()` and `RuntimeConstraints.validate_transaction()` before any bridge interaction.
+5. **Approval gate on dangerous plans.** Plans with `requires_approval=True` return `status="pending_approval"` without executing. The caller must supply an `approver` identity to proceed.
+6. **Session events, not raw text.** `MCPSession.record_event()` accepts only valid event types from `SESSION_EVENT_TYPES`. User messages and LLM output are never stored in session history.
+7. **Tool dispatch never raises.** `dispatch_tool()` wraps all handler execution in `try/except`. Exceptions are captured and returned as `{"ok": False, "error": str(exc)}` — the transport process never crashes due to a tool failure.
+
+### 19.12 Forbidden tool surface (test-enforced)
+
+The `test_mcp_tool_registry.py::test_forbidden_tools_not_present` test fails loudly if any of these names appear in the registered tool set. This prevents accidental exposure of raw bridge methods:
+
+```python
+FORBIDDEN_TOOLS = {
+    "create_node", "set_parm", "set_parms", "run_python",
+    "run_code", "delete_node", "raw_houdini_execute",
+    "connect_nodes", "cook_node",
+}
+```
+
+Any new tool registration must not use these names, even as aliases.
+
+### 19.13 Test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_mcp_transport.py` | Singleton, not_running on creation, register_tool/multiple, stats structure, shutdown, `_require_mcp_server` raises when unavailable, `_run_async` with fully mocked mcp SDK, running flag cleared after `_run_async`, `run_stdio` calls `asyncio.run`, thread-safe concurrent registration |
+| `tests/unit/test_mcp_tool_registry.py` | Singleton, `register_all_tools` count == 11, all expected tools present, forbidden tools absent, tools have required fields, categories are semantic only, passes to transport, dispatch known/unknown/exception/non-dict, handler happy paths (mocked runtimes), stats by category (3+3+3+2) |
+| `tests/unit/test_mcp_session.py` | Singleton, create_session UUID format, client_id with/without, two sessions distinct, get_session keys, nonexistent returns None, not closed by default, close marks closed, update active_goals/current_plan, update ignores non-mutable, record event valid/invalid normalised, history timestamps, list_sessions, active_session_count, stats counts, to_dict copies not references |
+| `tests/unit/test_runtime_bootstrap.py` | initialize_runtime structure, loads at least some modules, ok with forced module errors, get_runtime_capabilities list + graceful, get_available_templates list of strings + graceful, get_available_operations includes builtins + graceful, get_bootstrap_data full key set, JSON-serialisable |
+| `tests/unit/test_runtime_prompt_context.py` | execution_rules_block (header, all rules, count == len), recommended_flow_block (header, 8 steps), tool_guide (all 11 tool names, 4 category headers), system_prompt (runtime_name, runtime_type, rules, flow, tools, initialize_first, preview before execute ordering, no-direct-houdini mention, idempotent), scene_context_block (None, empty, full, networks, truncation at 5+, selection, HDAs), contextual_prompt shorter than system_prompt |
+
+**Pattern for transport tests:** monkey-patch `mod._Server`, `mod._stdio_server`, and `mod._mcp_types` with mock objects. Use an `asynccontextmanager` fake `stdio_server` that yields `(MagicMock(), MagicMock())`. Always restore the originals in `finally`. No live `mcp` SDK required.
+
+**Pattern for tool registry handler tests:** use `unittest.mock.patch` on the specific runtime module that the handler imports inside its function body (e.g. `patch("src.runtime.runtime_bootstrap.initialize_runtime", ...)`). This avoids importing the full runtime dependency chain in tests.
+
+**Pattern for session tests:** use an `autouse=True` fixture that calls `reset_sessions_for_tests()` before and after each test.
+
+### 19.14 `src/runtime/__init__.py` additions
+
+The 6 new modules are added to `__all__` and documented in the module docstring with `(§19)` annotations. They are loaded by the existing `__getattr__` lazy loader — no eager imports at startup.
+
+```python
+"runtime_identity",       # (§19) Operational identity constants
+"runtime_bootstrap",      # (§19) Runtime warm-up + bootstrap payload
+"runtime_prompt_context", # (§19) System prompt + scene context generators
+"mcp_session",            # (§19) Connected LLM session lifecycle
+"mcp_tool_registry",      # (§19) MCP-exposed semantic tool registry
+"mcp_transport",          # (§19) MCP stdio transport (Server + message loop)
+```
+
+### 19.15 Tier 6 deferred items (NOT in this work)
+
+- **HTTP/SSE transport.** `MCPTransport` currently implements stdio only. An SSE transport for remote AI clients over HTTPS requires the mcp SDK's server-side SSE APIs + authentication middleware.
+- **Multi-session concurrency.** The current implementation accepts one stdio connection at a time (one `asyncio.run()` call). Multiple simultaneous AI clients would require the transport to route each connection's session to a distinct `SessionManager` entry and fan out dispatch concurrently.
+- **Session persistence across reconnects.** Sessions are in-memory only; reconnecting clients start a fresh session. A persistent session store (keyed by `client_id`) would restore goals and pending approvals across process restarts.
+- **Auto-session recording in tool handlers.** Currently, `record_session_event` is called explicitly only in the `initialize_runtime_context` handler. Wiring all 11 handlers to auto-record `"tool_called"` events would give a complete per-session audit trail without manual per-handler effort.
+- **`query_examples` live resolution.** The current handler returns static example strings. A future version could query `PlanningMemory` + `SemanticMemory` to surface the most successful real past executions as dynamic examples.

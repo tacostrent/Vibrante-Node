@@ -1,0 +1,19 @@
+{
+    "node_id": "mcp_call_tool",
+    "name": "MCP: Call Tool",
+    "description": "Invoke a tool on a registered MCP server. Arguments are passed as a JSON string and parsed into a dict before the call. Outputs the raw result, a pre-serialised JSON string for downstream LLM prompts, and an is_error flag for branching. Requires an upstream MCP: Server Init node with a matching server_name.",
+    "category": "MCP",
+    "icon_path": null,
+    "use_exec": true,
+    "inputs": [
+        {"name": "server_name", "type": "string", "widget_type": "text", "default": "default"},
+        {"name": "tool_name", "type": "string", "widget_type": "text", "default": ""},
+        {"name": "arguments_json", "type": "string", "widget_type": "text", "default": "{}"}
+    ],
+    "outputs": [
+        {"name": "result", "type": "any"},
+        {"name": "result_json", "type": "string"},
+        {"name": "is_error", "type": "bool"}
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime import mcp_runtime\n\nclass MCPCallToolNode(BaseNode):\n    name = \"MCP: Call Tool\"\n    category = \"MCP\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"server_name\", \"string\", widget_type=\"text\", default=\"default\")\n        self.add_input(\"tool_name\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"arguments_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"result\", \"any\")\n        self.add_output(\"result_json\", \"string\")\n        self.add_output(\"is_error\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        server_name = (inputs.get(\"server_name\") or \"default\").strip() or \"default\"\n        tool_name = (inputs.get(\"tool_name\") or \"\").strip()\n        if not tool_name:\n            self.log_error(\"tool_name is required.\")\n            return {\"result\": None, \"result_json\": \"\", \"is_error\": True, \"exec_out\": True}\n\n        raw_args = inputs.get(\"arguments_json\") or \"{}\"\n        if isinstance(raw_args, dict):\n            arguments = raw_args\n        else:\n            try:\n                arguments = json.loads(raw_args) if raw_args.strip() else {}\n            except json.JSONDecodeError as exc:\n                self.log_error(f\"arguments_json is not valid JSON: {exc}. Defaulting to {{}}.\")\n                arguments = {}\n            if not isinstance(arguments, dict):\n                self.log_error(\"arguments_json must decode to a JSON object. Defaulting to {}.\")\n                arguments = {}\n\n        try:\n            result = await mcp_runtime.call_tool(server_name, tool_name, arguments)\n        except Exception as exc:\n            self.log_error(f\"MCP call_tool failed: {exc}\")\n            return {\"result\": None, \"result_json\": \"\", \"is_error\": True, \"exec_out\": True}\n\n        is_error = bool(result.get(\"is_error\"))\n        if is_error:\n            self.log_error(f\"MCP tool '{tool_name}' returned an error.\")\n        else:\n            self.log_info(f\"MCP tool '{tool_name}' completed.\")\n        return {\n            \"result\": result.get(\"result\"),\n            \"result_json\": result.get(\"result_json\") or \"\",\n            \"is_error\": is_error,\n            \"exec_out\": True,\n        }\n\ndef register_node():\n    return MCPCallToolNode\n"
+}

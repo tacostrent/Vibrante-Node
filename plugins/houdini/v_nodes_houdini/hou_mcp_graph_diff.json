@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_graph_diff",
+    "name": "Houdini MCP: Graph Diff",
+    "description": "Read the runtime's dirty-state ledger for the current workflow execution and return a structured diff (created / deleted / modified / cooked / connections_changed / flags_changed). Source of truth is scene_cache.get_dirty_nodes() — populated by the transaction node and by direct calls to houdini_runtime.execute_operation. No live Houdini queries are performed; this is fast even on large scenes. clear_after_read drains the ledger so the next diff starts fresh.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini_icon.png",
+    "use_exec": true,
+    "inputs": [
+        {"name": "clear_after_read", "type": "bool", "widget_type": "bool", "default": true}
+    ],
+    "outputs": [
+        {"name": "diff", "type": "any"},
+        {"name": "diff_json", "type": "string"},
+        {"name": "created", "type": "list"},
+        {"name": "deleted", "type": "list"},
+        {"name": "modified", "type": "list"},
+        {"name": "cooked", "type": "list"},
+        {"name": "connections_changed", "type": "list"},
+        {"name": "flags_changed", "type": "list"},
+        {"name": "total_changes", "type": "int"}
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.scene_cache import get_scene_cache\n\nclass HouMCPGraphDiffNode(BaseNode):\n    name = \"Houdini MCP: Graph Diff\"\n    category = \"Houdini\"\n\n    def __init__(self):\n        super().__init__()\n        self.icon_path = \"icons/houdini_icon.png\"\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"clear_after_read\", \"bool\", widget_type=\"bool\", default=True)\n        self.add_output(\"diff\", \"any\")\n        self.add_output(\"diff_json\", \"string\")\n        self.add_output(\"created\", \"list\")\n        self.add_output(\"deleted\", \"list\")\n        self.add_output(\"modified\", \"list\")\n        self.add_output(\"cooked\", \"list\")\n        self.add_output(\"connections_changed\", \"list\")\n        self.add_output(\"flags_changed\", \"list\")\n        self.add_output(\"total_changes\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        cache = get_scene_cache()\n        try:\n            diff = cache.get_dirty_nodes()\n        except Exception as exc:\n            self.log_error(f\"graph_diff read failed: {exc}\")\n            empty = {\"created\": [], \"deleted\": [], \"modified\": [], \"cooked\": [], \"connections_changed\": [], \"flags_changed\": []}\n            return {\"diff\": empty, \"diff_json\": json.dumps(empty), \"created\": [], \"deleted\": [], \"modified\": [], \"cooked\": [], \"connections_changed\": [], \"flags_changed\": [], \"total_changes\": 0, \"exec_out\": True}\n\n        clear = bool(inputs.get(\"clear_after_read\", True))\n        if clear:\n            try:\n                cache.clear_dirty_state()\n            except Exception as exc:\n                self.log_error(f\"clear_dirty_state failed: {exc}\")\n\n        total = sum(len(diff.get(k, [])) for k in (\"created\", \"deleted\", \"modified\", \"cooked\", \"connections_changed\", \"flags_changed\"))\n        self.log_info(f\"graph_diff: {total} change(s) since last read.\")\n        return {\n            \"diff\": diff,\n            \"diff_json\": json.dumps(diff, indent=2, sort_keys=True, default=str),\n            \"created\": list(diff.get(\"created\") or []),\n            \"deleted\": list(diff.get(\"deleted\") or []),\n            \"modified\": list(diff.get(\"modified\") or []),\n            \"cooked\": list(diff.get(\"cooked\") or []),\n            \"connections_changed\": list(diff.get(\"connections_changed\") or []),\n            \"flags_changed\": list(diff.get(\"flags_changed\") or []),\n            \"total_changes\": total,\n            \"exec_out\": True,\n        }\n\ndef register_node():\n    return HouMCPGraphDiffNode\n"
+}

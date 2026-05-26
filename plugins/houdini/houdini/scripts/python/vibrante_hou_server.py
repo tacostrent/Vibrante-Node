@@ -312,6 +312,47 @@ def _cmd_get_completions(params):
         return {"error": str(e), "members": []}
 
 
+def _cmd_get_selection(params):
+    """Return the list of currently selected node paths.
+
+    Headless / batch Houdini does not support hou.selectedNodes() — guard
+    so the runtime's scene_context aggregator can call this safely in any
+    session mode.
+    """
+    selected = getattr(hou, "selectedNodes", None)
+    if selected is None or not callable(selected):
+        return {"paths": []}
+    try:
+        nodes = selected()
+    except (AttributeError, hou.OperationFailed):
+        return {"paths": []}
+    return {"paths": [n.path() for n in nodes]}
+
+
+def _cmd_network_summary(params):
+    """Children of `path` returned with name + type + path + category.
+
+    Single round-trip alternative to calling `children` + `node_info` per
+    child. Used by the runtime scene_context layer.
+    """
+    parent = hou.node(params.get("path", "/obj"))
+    if not parent:
+        raise ValueError(f"Node not found: {params.get('path')}")
+    out = []
+    for c in parent.children():
+        try:
+            category = c.type().category().name()
+        except Exception:
+            category = ""
+        out.append({
+            "name": c.name(),
+            "type": c.type().name(),
+            "path": c.path(),
+            "category": category,
+        })
+    return out
+
+
 def _cmd_call(params):
     """Call an arbitrary Houdini API method dynamically."""
     path = params["path"] # e.g. "node", "hipFile.save"
@@ -369,6 +410,8 @@ _COMMANDS = {
     "set_frame":          _cmd_set_frame,
     "set_playback_range": _cmd_set_playback_range,
     "get_completions":    _cmd_get_completions,
+    "get_selection":      _cmd_get_selection,
+    "network_summary":    _cmd_network_summary,
     "call":               _cmd_call,
 }
 

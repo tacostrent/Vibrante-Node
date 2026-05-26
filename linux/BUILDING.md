@@ -88,13 +88,13 @@ in `linux/build/cache/` after the first download).
 bash linux/appimage/build_appimage.sh
 
 # Specify a pre-built wheel explicitly:
-bash linux/appimage/build_appimage.sh --wheel dist/vibrante_node-2.3.0-py3-none-any.whl
+bash linux/appimage/build_appimage.sh --wheel dist/vibrante_node-2.4.0-py3-none-any.whl
 
 # Reproducible build (frozen timestamps):
 SOURCE_DATE_EPOCH=0 bash linux/appimage/build_appimage.sh
 
 # Output:
-#   linux/build/Vibrante-Node-2.3.0-x86_64.AppImage
+#   linux/build/Vibrante-Node-2.4.0-x86_64.AppImage
 ```
 
 ### What the script does
@@ -145,13 +145,13 @@ sudo dnf install wget fuse fuse-libs
 bash linux/deb/build_deb.sh
 
 # Specify wheel explicitly:
-bash linux/deb/build_deb.sh --wheel dist/vibrante_node-2.3.0-py3-none-any.whl
+bash linux/deb/build_deb.sh --wheel dist/vibrante_node-2.4.0-py3-none-any.whl
 
 # Specify version explicitly (if wheel filename differs):
-bash linux/deb/build_deb.sh --version 2.3.0
+bash linux/deb/build_deb.sh --version 2.4.0
 
 # Output:
-#   linux/build/vibrante-node_2.3.0_amd64.deb
+#   linux/build/vibrante-node_2.4.0_amd64.deb
 ```
 
 ### What the script does
@@ -181,7 +181,7 @@ bash linux/deb/build_deb.sh --version 2.3.0
 
 ## Version bump checklist
 
-When bumping the version (e.g., 2.3.0 → 2.4.0), update these files
+When bumping the version (e.g., 2.4.0 → 2.4.0), update these files
 **in addition** to the list in the root CLAUDE.md §10.18:
 
 | File | What to change |
