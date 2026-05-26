@@ -2,56 +2,78 @@
 
 **Version:** v2.4.0 | [User Guide](USER_GUIDE.md) | [Node Builder API](NODE_BUILDER_API.md) | [Automation API](AUTOMATION_API.md) | [Technical Reference](DOCUMENTATION.md)
 
-This guide describes the internal architecture of Vibrante-Node: the execution engine, node registry, serialization system, Qt threading model, environment management, and plugin architecture. It is written for contributors, pipeline TDs, and developers who need to understand what happens between the user pressing Run and the last node completing.
+This guide describes the internal architecture of Vibrante-Node: the execution engine, node registry, serialization system, Qt threading model, runtime layer, environment management, and plugin architecture. It is written for contributors, pipeline TDs, and developers who need to understand what happens between a user pressing Run (or an automation script triggering execution) and the last node completing.
 
 ---
 
 ## Contents
 
 1. [Architecture Layers](#1-architecture-layers)
-2. [Execution Engine — NetworkExecutor](#2-execution-engine)
-3. [Event Loop Integration](#3-event-loop-integration)
-4. [Data Flow and Propagation](#4-data-flow-and-propagation)
-5. [Execution Ordering](#5-execution-ordering)
-6. [Loop Execution](#6-loop-execution)
-7. [GroupNode Sub-Executor](#7-groupnode-sub-executor)
-8. [Bypass and Init-First Handling](#8-bypass-and-init-first-handling)
-9. [Error Propagation and Cancellation](#9-error-propagation-and-cancellation)
-10. [Node Registry System](#10-node-registry-system)
-11. [Serialization System](#11-serialization-system)
-12. [Qt Frontend Architecture](#12-qt-frontend-architecture)
-13. [Thread Safety — MainThreadDispatcher](#13-thread-safety)
-14. [Environment System — EnvManager](#14-environment-system)
-15. [Plugin Architecture — Houdini](#15-plugin-architecture)
-16. [Performance Considerations](#16-performance-considerations)
+2. [Runtime Layer — AI Orchestration (Tiers 1–6)](#2-runtime-layer)
+3. [Execution Engine — NetworkExecutor](#3-execution-engine)
+4. [Event Loop Integration](#4-event-loop-integration)
+5. [Data Flow and Propagation](#5-data-flow-and-propagation)
+6. [Execution Ordering](#6-execution-ordering)
+7. [Loop Execution](#7-loop-execution)
+8. [GroupNode Sub-Executor](#8-groupnode-sub-executor)
+9. [Bypass and Init-First Handling](#9-bypass-and-init-first-handling)
+10. [Error Propagation and Cancellation](#10-error-propagation-and-cancellation)
+11. [Node Registry System](#11-node-registry-system)
+12. [Serialization System](#12-serialization-system)
+13. [Qt Frontend Architecture](#13-qt-frontend-architecture)
+14. [Thread Safety — MainThreadDispatcher](#14-thread-safety)
+15. [Environment System — EnvManager](#15-environment-system)
+16. [Plugin Architecture — Houdini](#16-plugin-architecture)
+17. [Performance Considerations](#17-performance-considerations)
 
 ---
 
 ## 1. Architecture Layers
 
-Vibrante-Node is organized into four layers. Dependencies flow top-to-bottom; no lower layer imports from a higher one.
+Vibrante-Node is organized into four required layers plus one optional extension. Dependencies flow top-to-bottom — no lower layer imports from a higher one. The Runtime Extensions are optional and additive: they call into Core and Utils but are not imported by them.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  UI Layer  (src/ui/)                                 │
-│  Qt canvas, panels, dialogs, node widgets, toolbars  │
-├─────────────────────────────────────────────────────┤
-│  Core Layer  (src/core/)                             │
-│  Execution engine, graph manager, node registry      │
-├─────────────────────────────────────────────────────┤
-│  Nodes Layer  (src/nodes/)                           │
-│  BaseNode, builtins, JSON-compiled dynamic nodes     │
-├─────────────────────────────────────────────────────┤
-│  Utils Layer  (src/utils/)                           │
-│  HouBridge, EnvManager, PrismCore, qt_compat,        │
-│  async runtime, config manager                       │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  UI Layer  (src/ui/)                                     │
+│  Qt canvas, panels, dialogs, node widgets, toolbars      │
+│  — not imported in headless/MCP server mode              │
+├─────────────────────────────────────────────────────────┤
+│  Core Layer  (src/core/)                                 │
+│  Execution engine, graph manager, node registry          │
+├─────────────────────────────────────────────────────────┤
+│  Nodes Layer  (src/nodes/)                               │
+│  BaseNode, builtins, JSON-compiled dynamic nodes         │
+├─────────────────────────────────────────────────────────┤
+│  Utils Layer  (src/utils/)                               │
+│  HouBridge, EnvManager, PrismCore, qt_compat,            │
+│  async runtime, config manager                           │
+├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
+│  Runtime Extensions  (src/runtime/)  ← optional          │
+│  MCP server, AI planning, transaction system,            │
+│  validation, analytics  (Tiers 1–6, 40+ modules)        │
+└─────────────────────────────────────────────────────────┘
 ```
+
+The Runtime Extensions are an optional addition in v2.4.0 — `scripts/run_vibrante_mcp.py` starts the full runtime without importing Qt.
 
 ### Key Files
 
 | File | Responsibility |
 |------|---------------|
+| `scripts/run_vibrante_mcp.py` | MCP server entry point (headless mode) |
+| `src/runtime/mcp_transport.py` | MCP stdio server — list/call tool handlers |
+| `src/runtime/mcp_tool_registry.py` | 12 semantic MCP tools, `register_all_tools()` |
+| `src/runtime/semantic_execution.py` | `SemanticExecutor` — intent → ops → transaction |
+| `src/runtime/ai_planner.py` | `AIPlanner` — NL → structured execution plan |
+| `src/runtime/intent_parser.py` | `IntentParser` — keyword → intent with LLM enhancement |
+| `src/runtime/transaction_manager.py` | `TransactionManager` — begin/record/commit/rollback |
+| `src/runtime/houdini_runtime.py` | `scene_context()`, `build_node_chain()`, rollback handlers |
+| `src/runtime/validation_engine.py` | `ValidationEngine` — pre-execution structural validation |
+| `src/runtime/runtime_constraints.py` | `RuntimeConstraints` — protected paths, forbidden ops |
+| `src/runtime/scene_cache.py` | `SceneCache` — TTL cache + dirty tracking |
+| `src/runtime/runtime_identity.py` | Constants: tool names, execution rules, identity |
+| `src/runtime/runtime_bootstrap.py` | Singleton warm-up; structured bootstrap data |
+| `src/runtime/mcp_session.py` | `SessionManager` — per-connection session lifecycle |
 | `src/core/engine.py` | `NetworkExecutor` — the async execution engine |
 | `src/core/graph.py` | `GraphManager` — topological sort, entry-node detection |
 | `src/core/registry.py` | `NodeRegistry` — node type registration, hot-reload |
@@ -69,7 +91,96 @@ Vibrante-Node is organized into four layers. Dependencies flow top-to-bottom; no
 
 ---
 
-## 2. Execution Engine — NetworkExecutor
+## 2. Runtime Layer — AI Orchestration (Tiers 1–6)
+
+The `src/runtime/` module is the orchestration seam between AI/graph nodes and the Houdini bridge. It operates fully independently of the Qt UI and can be started headlessly via `scripts/run_vibrante_mcp.py`.
+
+### Design Rules (Non-Negotiable)
+
+1. **MCP is transport only.** The MCP server receives tool calls and routes them through the runtime; it never delegates scene understanding or planning to an LLM directly.
+2. **No arbitrary Python execution.** AI-facing nodes and tools never accept a `code`/`python`/`script` argument. All execution is structured, validated, deterministic.
+3. **Validation before mutation.** Every op list is shape-checked by `ValidationEngine` and policy-gated by `RuntimeConstraints` before any bridge interaction.
+4. **Transaction boundary.** All mutations route through `TransactionManager.begin_transaction` → `execute_operation` → `commit_transaction` / `rollback_transaction`.
+5. **Context first.** `scene_context()` provides the structured snapshot that AI agents read before acting.
+
+### Tier Summary
+
+| Tier | Modules | What it adds |
+|---|---|---|
+| 1 | `mcp_runtime`, `houdini_runtime`, `scene_cache` | MCP client sessions, scene context, node chain builder |
+| 2 | `transaction_manager`, `scene_cache` (dirty) | Transaction lifecycle, rollback, dirty tracking, graph diff |
+| 2.5 | `dependency_graph`, `validation_engine`, `audit_store`, `execution_scheduler` | Dependency tracking, pre-execution validation, audit log, serialized execution queue |
+| 2.75 | `capability_registry`, `resource_estimator`, `runtime_constraints`, `workflow_templates`, `semantic_registry`, `semantic_execution` | Semantic op registry, constraint policies, deterministic workflow templates, full semantic executor |
+| 3 | `llm_provider`, `intent_parser`, `contextual_reasoning`, `ai_planner`, `plan_validator`, `approval_pipeline`, `planning_memory` | Controlled AI planning pipeline with approval gate |
+| 4 | `agent_runtime`, `distributed_runtime`, `multi_dcc_runtime`, `knowledge_graph`, `workflow_federation`, `runtime_federation_api` | Supervised agents, distributed workers, multi-DCC routing, federated workflows |
+| 5 | `workflow_optimizer`, `runtime_analytics`, `predictive_execution`, `recommendation_engine`, `execution_quality`, `studio_knowledge` | Advisory analytics — no execution authority |
+| 6 | `runtime_identity`, `runtime_bootstrap`, `runtime_prompt_context`, `mcp_session`, `mcp_tool_registry`, `mcp_transport` | Full MCP server: 12 semantic tools, stdio transport, session management |
+
+### MCP Transport Architecture (Tier 6)
+
+```
+External AI client (Claude Desktop / Codex CLI / Cursor)
+    ↓  stdin/stdout (MCP stdio protocol)
+MCPTransport._run_async()
+    ├── app.list_tools()  → MCPToolRegistry.list_tools()
+    └── app.call_tool()   → MCPToolRegistry.dispatch_tool(name, args)
+                                    ↓
+                          tool handler function
+                                    ↓
+                          SemanticExecutor / TransactionManager / houdini_runtime
+                                    ↓
+                          returns TextContent(type="text", text=json.dumps(result))
+```
+
+The MCP SDK is imported lazily on first `run_stdio()` call (`_require_mcp_server()`). Importing `mcp_transport` at startup costs nothing.
+
+`dispatch_tool` never raises — all exceptions are caught and returned as `{"ok": False, "error": str(exc)}`. The transport process never crashes due to a tool failure.
+
+### Forbidden Tool Surface
+
+The `mcp_tool_registry` must never register these names (test-enforced in `test_mcp_tool_registry.py`):
+
+```python
+FORBIDDEN_TOOLS = {
+    "create_node", "set_parm", "set_parms", "run_python",
+    "run_code", "delete_node", "raw_houdini_execute",
+    "connect_nodes", "cook_node",
+}
+```
+
+### Execution Safety Invariants
+
+All PRs touching `src/runtime/` must verify:
+
+1. `AgentRuntime.submit_proposal()` returns a plan; it never calls `execute_operation` directly.
+2. `DistributedRuntime._execute_local()` calls `RuntimeConstraints.validate_transaction()` and `ValidationEngine.validate_operations()` before any bridge interaction.
+3. `execute_workflow_transaction` tool handler: plans with `ok=False` are rejected; plans with `requires_approval=True` return `pending_approval` unless `approver` is supplied.
+4. No Tier 5 module calls `get_bridge()`, `houdini_runtime`, `TransactionManager`, or `ExecutionScheduler.enqueue()`.
+5. Built-in MCP server tools cannot be deregistered (`deregister_tool()` raises `ValueError` for built-ins).
+
+### Adding a New MCP Tool
+
+1. Write an `async` handler function. It must return a `dict` (or any JSON-serializable value); exceptions are caught by `dispatch_tool`.
+2. Create a `ToolDefinition(name, description, inputSchema, handler, category)`.
+3. Call `registry.register_tool(defn)` inside `register_all_tools()` in `mcp_tool_registry.py`.
+4. Add the name to `MCP_TOOL_NAMES` in `runtime_identity.py`.
+5. Add the name to `EXPECTED_TOOLS` in `tests/unit/test_mcp_tool_registry.py`.
+6. Check that the name is not in `FORBIDDEN_TOOLS`.
+
+### Scene Cache Invalidation Rule
+
+Any function in `houdini_runtime.py` or a rollback handler that mutates Houdini state **must** call:
+
+```python
+from src.runtime.scene_cache import get_scene_cache
+get_scene_cache().invalidate("scene_context::")
+```
+
+before returning. `build_node_chain` and all rollback handlers in `_ROLLBACK_HANDLERS` already follow this pattern — copy it when adding new mutating operations.
+
+---
+
+## 3. Execution Engine — NetworkExecutor
 
 `NetworkExecutor` (`src/core/engine.py`) is the central execution engine. It is a `QObject` (not a `QThread`) and runs entirely on the Qt main thread.
 
@@ -121,7 +232,7 @@ For each `NodeInstanceModel` in the workflow:
 
 ---
 
-## 3. Event Loop Integration
+## 4. Event Loop Integration
 
 Qt and asyncio each require ownership of the thread's event loop. Vibrante-Node bridges them with `_EventLoopRunner`, a zero-delay `QTimer` that drives the asyncio loop from inside Qt's event loop.
 
@@ -141,7 +252,7 @@ This scheme interleaves Qt events and asyncio tasks with zero blocking. The prac
 
 ---
 
-## 4. Data Flow and Propagation
+## 5. Data Flow and Propagation
 
 ### Wire Model
 
@@ -165,7 +276,7 @@ During parameter changes (user typing in a widget), `NodeWidget._update_param()`
 
 ---
 
-## 5. Execution Ordering
+## 6. Execution Ordering
 
 ### Entry Node Detection
 
@@ -195,7 +306,7 @@ When a workflow contains only data-only nodes (no exec pins anywhere), `GraphMan
 
 ---
 
-## 6. Loop Execution
+## 7. Loop Execution
 
 ### For Loop
 
@@ -213,7 +324,7 @@ The `loop_break` node checks a boolean condition and, if `True`, sets an interna
 
 ---
 
-## 7. GroupNode Sub-Executor
+## 8. GroupNode Sub-Executor
 
 `GroupNode` (defined in `src/nodes/builtins/group_node.py`) stores a full `WorkflowModel` in its `parameters["__workflow__"]`. When the engine executes a GroupNode:
 
@@ -233,7 +344,7 @@ Inner-graph log messages are forwarded to the outer `MainWindow` log panel.
 
 ---
 
-## 8. Bypass and Init-First Handling
+## 9. Bypass and Init-First Handling
 
 ### Bypass
 
@@ -255,7 +366,7 @@ This guarantees that authentication nodes and server-connect nodes are fully ins
 
 ---
 
-## 9. Error Propagation and Cancellation
+## 10. Error Propagation and Cancellation
 
 ### Unhandled Exceptions
 
@@ -285,7 +396,7 @@ The `asyncio.Task.cancel()` API is also used for immediate cancellation of nodes
 
 ---
 
-## 10. Node Registry System
+## 11. Node Registry System
 
 ### Loading
 
@@ -329,7 +440,7 @@ The `asyncio.Task.cancel()` API is also used for immediate cancellation of nodes
 
 ---
 
-## 11. Serialization System
+## 12. Serialization System
 
 ### WorkflowModel
 
@@ -384,7 +495,7 @@ class ConnectionModel(BaseModel):
 
 ---
 
-## 12. Qt Frontend Architecture
+## 13. Qt Frontend Architecture
 
 ### QGraphicsScene — NodeScene
 
@@ -414,7 +525,7 @@ Dirty state: `push_history()` sets `_dirty = True` and emits `dirty_changed(True
 
 ---
 
-## 13. Thread Safety — MainThreadDispatcher
+## 14. Thread Safety — MainThreadDispatcher
 
 The asyncio execution engine and Qt UI both run on the same OS thread (the Qt main thread). However, `asyncio` coroutines can be interleaved with each other and with Qt slots. This creates one specific hazard:
 
@@ -435,7 +546,7 @@ _main_dispatcher.post(self._propagate_all_outputs)
 
 ---
 
-## 14. Environment System — EnvManager
+## 15. Environment System — EnvManager
 
 `EnvManager` (`src/utils/env_manager.py`) is a singleton that manages all environment configuration. It is initialized once at startup via `env_manager.initialize()` in `src/main.py`.
 
@@ -484,7 +595,7 @@ env_manager.import_settings(data)
 
 ---
 
-## 15. Plugin Architecture — Houdini
+## 16. Plugin Architecture — Houdini
 
 The Houdini integration consists of two sides: code running inside Houdini and the Vibrante-Node subprocess.
 
@@ -535,7 +646,7 @@ When the user clicks **Vibrante-Node → Launch** in Houdini:
 
 ---
 
-## 16. Performance Considerations
+## 17. Performance Considerations
 
 ### CPU-Bound Work
 
@@ -585,8 +696,10 @@ Every keystroke in a widget triggers `_propagate_all_outputs()`. For deeply conn
 **See also:**
 
 - [Node Builder API](NODE_BUILDER_API.md) — `BaseNode` contract, port system, lifecycle hooks
-- [Automation API](AUTOMATION_API.md) — `NodeRegistry` hot-reload, scene manipulation from scripts
-- [Technical Reference](DOCUMENTATION.md) — complete signal catalogue, model schemas, API signatures
+- [Automation API](AUTOMATION_API.md) — `NodeRegistry` hot-reload, scene manipulation from scripts, MCP runtime API
+- [Technical Reference](DOCUMENTATION.md) — complete signal catalogue, model schemas, MCP tool reference
+- `src/runtime/` — Runtime Layer source (40+ modules, Tiers 1–6)
+- `scripts/run_vibrante_mcp.py` — MCP server entry point
 - `src/core/engine.py` — `NetworkExecutor` source
 - `src/core/registry.py` — `NodeRegistry` source
 - `src/core/models.py` — Pydantic models source

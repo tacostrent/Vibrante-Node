@@ -10,7 +10,7 @@ Full release notes for each version: see `RELEASE_vX.Y.Z.md` / `releases/` direc
 
 ## [v2.4.0] — 2026-05-26
 
-**Type:** Minor — complete AI orchestration MCP runtime, 26 new nodes, bug fixes
+**Type:** Minor — 26 new workflow nodes, runtime extensions layer (Tiers 1–6), bug fixes
 
 ### Added
 - Complete `src/runtime/` module: AI orchestration runtime spanning Tiers 1–6 (40+ modules). MCP client sessions, transaction system, AI planning pipeline, distributed execution, Tier 5 advisory analytics, Tier 6 MCP server.
