@@ -53,7 +53,7 @@ BUILD_DIR="${REPO_ROOT}/linux/build"
 CACHE_DIR="${BUILD_DIR}/cache"
 APPIMAGE_DIR="${SCRIPT_DIR}"
 
-PYTHON_VERSION="3.10.14"
+PYTHON_VERSION="3.10.19"
 SKIP_DOWNLOAD=0
 WHEEL_PATH=""
 APP_VERSION=""
@@ -129,8 +129,10 @@ APPIMAGETOOL="${CACHE_DIR}/appimagetool-x86_64.AppImage"
 
 if [[ ! -f "${APPIMAGETOOL}" ]]; then
     log "Downloading appimagetool..."
+    # Use a pinned release for CI reproducibility; fallback to the continuous build
     APPIMAGETOOL_URL="https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
-    wget -q --show-progress -O "${APPIMAGETOOL}" "${APPIMAGETOOL_URL}"
+    wget -q --show-progress --tries=5 --timeout=60 --waitretry=15 -O "${APPIMAGETOOL}" "${APPIMAGETOOL_URL}" \
+        || { log "Primary URL failed, retrying via curl..."; curl -fL --retry 5 --retry-delay 15 -o "${APPIMAGETOOL}" "${APPIMAGETOOL_URL}"; }
     chmod +x "${APPIMAGETOOL}"
     log "appimagetool downloaded to ${APPIMAGETOOL}"
 else
@@ -150,7 +152,8 @@ PYTHON_APPIMAGE_URL="https://github.com/niess/python-appimage/releases/download/
 
 if [[ ! -f "${PYTHON_APPIMAGE_CACHED}" ]] && [[ "${SKIP_DOWNLOAD}" -eq 0 ]]; then
     log "Downloading Python ${PYTHON_VERSION} base AppImage..."
-    wget -q --show-progress -O "${PYTHON_APPIMAGE_CACHED}" "${PYTHON_APPIMAGE_URL}"
+    wget -q --show-progress --tries=5 --timeout=120 --waitretry=15 -O "${PYTHON_APPIMAGE_CACHED}" "${PYTHON_APPIMAGE_URL}" \
+        || { log "wget failed, retrying via curl..."; curl -fL --retry 5 --retry-delay 15 -o "${PYTHON_APPIMAGE_CACHED}" "${PYTHON_APPIMAGE_URL}"; }
     chmod +x "${PYTHON_APPIMAGE_CACHED}"
     log "Cached at ${PYTHON_APPIMAGE_CACHED}"
 elif [[ ! -f "${PYTHON_APPIMAGE_CACHED}" ]]; then
