@@ -10,6 +10,9 @@ on:
         required: true
         default: "v2.4.0"
 
+permissions:
+  contents: write
+
 jobs:
   build-linux:
     name: Build AppImage + .deb
@@ -38,7 +41,7 @@ jobs:
       - name: Install AppImage + .deb prerequisites
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y wget fuse libfuse2 dpkg-dev
+          sudo apt-get install -y wget curl fuse libfuse2 dpkg-dev
 
       - name: Build AppImage
         run: |
