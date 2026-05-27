@@ -201,6 +201,15 @@ python src/main.py
 - **AI Planning Pipeline** — natural language → plan → preview → approved execution; no arbitrary scene mutation
 - **26 New Nodes** — 3 generic MCP client nodes + 23 Houdini AI nodes (`hou_mcp_scene_context`, `hou_mcp_transaction`, `hou_mcp_ai_plan`, `hou_mcp_ai_execute`, and more)
 
+### Production Semantic Intelligence *(Advanced, v2.4.0)*
+
+- **Goal Decomposition** — "create cinematic explosion scene" automatically expands to 6 ordered workflows and 34 staged operations via deterministic keyword matching
+- **Semantic Vocabulary** — 14 cinematic workflows catalogued with stage sequences, artistic goals, synonyms, and orchestration hints (`config/semantic_vocabulary.json`)
+- **Workflow Packs** — 10 JSON blueprints across `fx_pack`, `lighting_pack`, `camera_pack`, `render_pack` defining exact stage-by-stage production sequences
+- **Artistic Constraints** — per-workflow required and advisory constraints enforced at review time (motion blur, EXR output, emission AOV, cryptomatte, world-unit depth)
+- **Cinematic Review Engine** — generates specific production critique per stage ("smoke breakup lacks variation", "depth pass not in world units") — not generic success messages
+- **Runtime Narration** — `[Planning]`, `[Execution]`, `[Review]` blocks replace opaque "running..." status with specific orchestration reasoning
+
 ---
 
 ## Execution Modes

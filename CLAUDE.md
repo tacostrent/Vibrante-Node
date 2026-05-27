@@ -1,4 +1,4 @@
-# Vibrante-Node — Developer Guide for Claude
+﻿# Vibrante-Node — Developer Guide for Claude
 
 ---
 
@@ -4235,3 +4235,137 @@ The 6 new modules are added to `__all__` and documented in the module docstring 
 - **Session persistence across reconnects.** Sessions are in-memory only; reconnecting clients start a fresh session. A persistent session store (keyed by `client_id`) would restore goals and pending approvals across process restarts.
 - **Auto-session recording in tool handlers.** Currently, `record_session_event` is called explicitly only in the `initialize_runtime_context` handler. Wiring all 11 handlers to auto-record `"tool_called"` events would give a complete per-session audit trail without manual per-handler effort.
 - **`query_examples` live resolution.** The current handler returns static example strings. A future version could query `PlanningMemory` + `SemanticMemory` to surface the most successful real past executions as dynamic examples.
+
+---
+
+## 20. Production Semantic Intelligence Layer (Tier 2.9)
+
+Tier 2.9 adds **deterministic cinematic production intelligence** on top of the existing runtime. This layer prevents large cinematic goals from collapsing into random orchestration by converting natural language cinematic intents into ordered, staged workflow sequences with specific artistic critique.
+
+The key distinction from Tier 3 (AI Planning) is that **all modules in this tier are deterministic** â€” no LLMs, no probabilistic reasoning. An LLM names an intent; the semantic intelligence layer converts it into a production-correct execution plan without any LLM involvement.
+
+### 20.1 Architecture
+
+```
+LLM ("create cinematic explosion scene")
+    â†’ GoalDecomposer (deterministic keyword + composite matching)
+    â†’ ordered workflow list (6 workflows, 34 stages)
+    â†’ ValidationEngine â†’ TransactionManager â†’ houdini_runtime.execute_operation
+    â†’ ReviewEngine (specific per-stage artistic critique)
+    â†’ RuntimeNarration ([Planning]/[Execution]/[Review] blocks)
+```
+
+**Non-negotiable design rules:**
+1. **No LLM calls** â€” all decomposition is keyword matching and vocabulary lookup.
+2. **No bridge calls** â€” all modules are pure in-memory.
+3. **Deterministic** â€” same input always produces same output.
+4. **Specific critique** â€” review engine must never return "Execution successful" for cinematic work.
+
+### 20.2 New runtime modules
+
+```
+src/runtime/
+    goal_decomposer.py    â† cinematic goal â†’ ordered workflow + stage sequence
+    review_engine.py      â† specific per-stage artistic production critique
+    scene_awareness.py    â† terrain scale, renderer, lighting, FX type analysis
+    runtime_narration.py  â† [Runtime]/[Planning]/[Execution]/[Review] narration blocks
+```
+
+### 20.3 Semantic vocabulary and workflow packs
+
+```
+config/
+    semantic_vocabulary.json   â† 14 cinematic workflows with stage descriptions,
+                                  synonyms, artistic goals, keyword_index
+    artistic_constraints.json  â† per-workflow required (blocking) + recommended
+                                  (advisory) constraints for orchestration review
+
+semantic_packs/
+    fx_pack/
+        cinematic_explosion.json   â† 9-stage pyro + smoke FX blueprint
+        rolling_dust_wave.json     â† 5-stage ground pressure dust
+        secondary_debris.json      â† 6-stage RBD debris scatter
+        layered_smoke.json         â† 5-stage smoke column with breakup
+    lighting_pack/
+        arnold_cinematic_lighting.json  â† 7-stage cinematic Arnold rig
+        volumetric_depth_setup.json     â† 5-stage volumetric contrast
+    camera_pack/
+        cinematic_push_in.json     â† 5-stage push-in with anticipation
+        impact_shake.json          â† 4-stage shake decay
+    render_pack/
+        arnold_render_ready.json   â† 7-stage Arnold production render setup
+        cinematic_aov_setup.json   â† 9-pass AOV configuration
+```
+
+### 20.4 Goal Decomposer (`src.runtime.goal_decomposer`)
+
+Converts natural language cinematic goals into ordered workflow + stage sequences. Singleton, deterministic, no I/O.
+
+**Decomposition priority:**
+1. `context["workflow_id"]` forced override â€” confidence 1.0
+2. Composite goal match (multi-workflow high-level goals) â€” confidence 0.95
+3. Single/multi keyword match against `_GOAL_KEYWORDS` â€” confidence 0.85/0.9
+4. `semantic_vocabulary.json` keyword_index enrichment â€” fallback
+
+**Supported composite goals:** `cinematic explosion scene`, `full explosion`, `explosion with camera`, `night explosion`, `missile strike`, `render ready`, `full render setup`, `lighting setup`.
+
+**Singleton:** `get_goal_decomposer()` / `reset_goal_decomposer_for_tests()`.
+
+### 20.5 Review Engine (`src.runtime.review_engine`)
+
+Generates specific cinematic production critique. Returns per-stage artistic feedback, never generic status strings.
+
+**Critique specificity requirements:**
+- Stage `smoke_evolution`: "Smoke breakup lacks variation" â€” NOT "Stage completed"
+- Stage `output_driver`: "Output is not EXR" â€” NOT "Check output settings"
+- Stage `motion_blur_config`: "Volume motion blur is OFF" â€” NOT "Motion blur issue"
+- Stage `sampling_configuration`: "AA samples too low for final render" â€” NOT "Check sampling"
+
+**Singleton:** `get_review_engine()` / `reset_review_engine_for_tests()`.
+
+### 20.6 Scene Awareness (`src.runtime.scene_awareness`)
+
+Analyzes `scene_context` dicts for production-relevant metrics. No bridge calls, no LLM.
+
+**Detected attributes:** renderer (Arnold/Karma/Mantra/Redshift/VRay), lighting environment (HDRI, three-point, night practical, physical sky), FX types (pyro, RBD, FLIP, particles), cameras, frame range, FPS.
+
+**Singleton:** `get_scene_awareness()` / `reset_scene_awareness_for_tests()`.
+
+### 20.7 Runtime Narration (`src.runtime.runtime_narration`)
+
+Labeled narration blocks replacing opaque "running..." status.
+
+**Block labels:** `[Runtime]`, `[Planning]`, `[Validation]`, `[Preview]`, `[Execution]`, `[Review]`
+
+**Singleton:** `get_runtime_narration()` / `reset_runtime_narration_for_tests()`.
+
+### 20.8 Cinematic orchestration rules (enforced via runtime_prompt_context)
+
+`get_cinematic_orchestration_block()` injects these rules into every LLM system prompt:
+
+1. Decompose large cinematic goals into ordered stage sequences before executing.
+2. Never execute a cinematic workflow as a single operation â€” always use staged execution.
+3. Use `plan_scene` to decompose "create explosion scene" into specific ordered workflow stages.
+4. Stage dependencies are real â€” `terrain_prep` MUST precede `pyro_source`; lighting MUST precede render.
+5. Artistic constraints are non-negotiable â€” motion blur, EXR output, emission AOV are required.
+6. After cinematic execution, always call `review_execution` â€” "Execution successful" is NOT acceptable.
+7. Production-ready means: specific stages passed, specific criteria met â€” not just "no errors".
+
+### 20.9 Test conventions
+
+| File | Coverage |
+|---|---|
+| `tests/unit/test_goal_decomposer.py` | Singleton, composite goals, keyword matching, forced override, stage deduplication, sequence_goals, stats, confidence levels |
+| `tests/unit/test_review_engine.py` | Singleton, specific critiques (EXR, AA samples, emission AOV, cryptomatte), production_ready, summarize, stats |
+| `tests/unit/test_scene_awareness.py` | Singleton, renderer detection, FX types, lighting analysis, camera detection, production hints, warnings, render cost estimation |
+| `tests/unit/test_runtime_narration.py` | Singleton, all 6 block types, decomposition/review/validation/preview narration, log management, stats |
+
+All 136 tests are no-bridge, no-LLM, no-Houdini. Pure deterministic unit tests.
+
+### 20.10 Deferred items (NOT in this work)
+
+- **Semantic pack hot-reload** â€” the JSON blueprints in `semantic_packs/` are read once on demand; a file-watcher for live reload is deferred.
+- **`GoalDecomposer` vector similarity** â€” keyword matching is exact string matching; embedding-based fuzzy matching would reduce missed goals.
+- **`ReviewEngine` LLM-enhanced critique** â€” the review engine is deterministic only; an optional LLM pass could enrich critique text for complex multi-stage failures.
+- **`SceneAwareness` live bridge queries** â€” terrain scale and camera distance estimates are heuristic-only; bridge calls to read actual node bounding boxes would make them precise.
+- **`RuntimeNarration` persistence** â€” the narration log is in-memory only; JSONL persistence for session replay is deferred.

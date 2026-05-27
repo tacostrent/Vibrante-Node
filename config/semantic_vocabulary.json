@@ -1,0 +1,370 @@
+{
+  "version": "1.0.0",
+  "description": "Production semantic vocabulary for Vibrante cinematic orchestration. Defines known workflow identities, their orchestration purpose, and artistic intent. Claude must choose from these known workflows — never invent arbitrary node graphs.",
+  "usage": "Load via SemanticVocabulary.load(). Use vocabulary entries to guide plan_scene, goal decomposition, and review scoring.",
+
+  "workflows": {
+
+    "cinematic_explosion": {
+      "category": "fx",
+      "label": "Cinematic Explosion",
+      "description": "Full-scale cinematic explosion with fireball, billowing smoke, pressure-wave dust and secondary debris. Designed for film/VFX shot context.",
+      "orchestration_purpose": "Primary destruction FX — detonation event, missile/bomb impact, structural collapse initiation.",
+      "required_stages": [
+        "terrain_prep",
+        "pyro_source",
+        "fireball_core",
+        "smoke_evolution",
+        "pressure_wave",
+        "secondary_debris",
+        "dust_interaction",
+        "lighting_setup",
+        "camera_framing",
+        "render_setup"
+      ],
+      "stage_descriptions": {
+        "terrain_prep": "Analyze and prepare ground geometry for interaction — grid, collision, ground-scatter seeding.",
+        "pyro_source": "Pyro source sphere/cluster defining the ignition volume, radius, and initial temperature/density seed values.",
+        "fireball_core": "Dense fireball simulation — high temperature, luminance, tight radius that expands outward in frames 1–30.",
+        "smoke_evolution": "Layered smoke rising from fireball — temperature cooling, turbulence, buoyancy, breakup variation at 3+ scales.",
+        "pressure_wave": "Radial ground-level pressure/dust displacement wave — ring-shaped, ground-plane constrained, fast early / slow decay.",
+        "secondary_debris": "Rigid-body debris — rock, metal, organic fragments launched outward from epicenter with variation in scale/rotation.",
+        "dust_interaction": "Ground dust disturbed by pressure wave — thin layer, swept outward, interacts with debris.",
+        "lighting_setup": "Cinematic explosion lighting — key/rim from fireball with orange-to-white gradient, secondary fill, volumetric shadows.",
+        "camera_framing": "Anticipation move + recoil shake + slow-motion reveal pull-out for cinematic read.",
+        "render_setup": "Arnold / Karma render setup — AOVs, motion blur, volume sampling, depth-of-field, tone-mapping."
+      },
+      "artistic_goals": [
+        "Fireball must read as luminous, expanding, hot — not a flat sphere.",
+        "Smoke must have asymmetric billowing — no uniform puffball.",
+        "Pressure wave must be visible at ground level.",
+        "Debris must vary in scale — large boulders near, fine particles far.",
+        "Camera must anticipate the event and recoil on impact.",
+        "Final frame must be cinematic — readable silhouette against sky."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "scale_reference": "Explosion radius 5–25m for hero shot. Scale up for distance shots.",
+      "execution_notes": "Always decompose — do not attempt in a single orchestration step. Fireball before smoke, smoke before lighting, lighting before camera.",
+      "minimum_stages_for_review": 5,
+      "synonyms": ["explosion", "blast", "detonation", "bomb", "big bang", "kaboom", "fireball scene", "destruction"]
+    },
+
+    "missile_impact": {
+      "category": "fx",
+      "label": "Missile Impact",
+      "description": "High-velocity projectile ground-strike FX — fast initial flash, crater ejecta, rising smoke column, shockwave.",
+      "orchestration_purpose": "Combat/military FX, sci-fi destruction, action sequence impact.",
+      "required_stages": [
+        "impact_flash",
+        "crater_formation",
+        "ejecta_burst",
+        "smoke_column",
+        "shockwave_ring",
+        "lighting_setup",
+        "camera_framing"
+      ],
+      "artistic_goals": [
+        "Flash must be extremely fast — 2–4 frames of peak luminance.",
+        "Ejecta must have high directionality — outward and upward cone.",
+        "Smoke column must rise with momentum — not diffuse immediately.",
+        "Shockwave ring must be visible at ground plane."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "execution_notes": "Impact event is fast — prioritize temporal precision. Use sub-frame timing for flash.",
+      "synonyms": ["missile", "rocket hit", "projectile impact", "bomb hit", "strike", "impact"]
+    },
+
+    "debris_field": {
+      "category": "fx",
+      "label": "Secondary Debris Field",
+      "description": "Rigid-body debris — rock, concrete, metal — distributed outward from an explosion epicenter.",
+      "orchestration_purpose": "Secondary FX layer for any explosion or structural collapse. Adds ground-level detail and cinematic scale.",
+      "required_stages": [
+        "debris_source_geo",
+        "voronoi_fracture",
+        "initial_velocity_seed",
+        "rigid_body_sim",
+        "scatter_distribution",
+        "dust_tail"
+      ],
+      "artistic_goals": [
+        "Debris must have scale variation — hero chunks near camera, fine rubble far.",
+        "Tumbling motion must feel physically weighted.",
+        "Dust tail on large pieces for visual trail."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "synonyms": ["debris", "rubble", "shrapnel", "fragments", "rocks flying", "chunks"]
+    },
+
+    "dust_wave": {
+      "category": "fx",
+      "label": "Rolling Dust Wave",
+      "description": "Ground-level rolling dust displacement wave driven by a pressure source. Reads as atmospheric scale.",
+      "orchestration_purpose": "Secondary atmospheric layer for explosions, vehicle impacts, landslides. Adds ground-level cinematic depth.",
+      "required_stages": [
+        "ground_interaction_setup",
+        "dust_source",
+        "wave_propagation",
+        "thin_layer_advection",
+        "dissipation_control"
+      ],
+      "artistic_goals": [
+        "Wave must have sharp leading edge and soft trailing dissipation.",
+        "Thin layer hugging the ground — no more than 2m high initially.",
+        "Interaction with terrain variation — wave wraps around obstacles.",
+        "Color should match terrain — sandy, earthy, not clean white."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "synonyms": ["dust wave", "rolling dust", "ground dust", "shockwave dust", "dust displacement"]
+    },
+
+    "smoke_column": {
+      "category": "fx",
+      "label": "Smoke Column",
+      "description": "Rising column of billowing smoke from a burning source. Fully animated with buoyancy, turbulence, and breakup.",
+      "orchestration_purpose": "Long-duration post-ignition FX. Background atmosphere, slow-burn destruction aftermath.",
+      "required_stages": [
+        "burn_source",
+        "initial_column",
+        "turbulence_layers",
+        "breakup_variation",
+        "sky_dissipation"
+      ],
+      "artistic_goals": [
+        "Column must narrow at base and billow outward higher up.",
+        "Three turbulence scales: micro, mid, macro.",
+        "Dark at base (dense), lighter at top (sparse).",
+        "No perfect symmetry at any stage."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "synonyms": ["smoke column", "smoke pillar", "rising smoke", "billowing smoke", "fire aftermath smoke"]
+    },
+
+    "fuel_fireball": {
+      "category": "fx",
+      "label": "Fuel Fireball",
+      "description": "Petroleum/fuel combustion fireball — rolling, sticky, dark-smoke-edged orange-red fireball.",
+      "orchestration_purpose": "Vehicle fire, fuel tank explosion, gas cloud ignition.",
+      "required_stages": [
+        "fuel_source_geo",
+        "combustion_setup",
+        "rolling_fireball",
+        "dark_smoke_boundary",
+        "secondary_ignition"
+      ],
+      "artistic_goals": [
+        "Deep orange-red core, black smoke at outer edges.",
+        "Rolling, churning motion — not uniform expansion.",
+        "Sticky surface feel — fuel-wet appearance.",
+        "Multiple ignition points for organic read."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "synonyms": ["fuel fire", "oil fire", "gas explosion", "vehicle fire", "petrochemical fire"]
+    },
+
+    "arnold_cinematic_lighting": {
+      "category": "lighting",
+      "label": "Arnold Cinematic Lighting",
+      "description": "Production-quality Arnold lighting for cinematic FX shots — key/rim separation, volumetric scatter, atmosphere.",
+      "orchestration_purpose": "Primary lighting pass for hero FX shots. Required before any render setup.",
+      "required_stages": [
+        "sky_hdri_or_skydome",
+        "key_light_placement",
+        "rim_light_placement",
+        "fill_light",
+        "volumetric_atmosphere",
+        "shadow_control",
+        "exposure_balance"
+      ],
+      "artistic_goals": [
+        "Clear key/fill ratio — cinematic contrast, not flat.",
+        "Rim separation on hero elements from background.",
+        "Volumetric scatter in atmosphere — air feels thick.",
+        "Shadows must have penumbra — no hard-edged shadows on organic elements.",
+        "Exposure balanced — highlights hold detail, shadows are readable."
+      ],
+      "renderer_compatibility": ["arnold"],
+      "execution_notes": "Requires Arnold renderer. Must be set up before render_setup stage.",
+      "synonyms": ["arnold lighting", "cinematic lighting", "film lighting", "production lighting", "hero lighting"]
+    },
+
+    "volumetric_contrast_lighting": {
+      "category": "lighting",
+      "label": "Volumetric Contrast Lighting",
+      "description": "High-contrast volumetric lighting for explosion and smoke environments — godrays, volumetric shadows.",
+      "orchestration_purpose": "Enhance depth and drama in volumetric FX elements — smoke, dust, fire.",
+      "required_stages": [
+        "volume_skydome",
+        "directional_key",
+        "volumetric_shadows",
+        "godrays_setup",
+        "secondary_bounce"
+      ],
+      "artistic_goals": [
+        "Godrays visible through smoke — light scattering feel.",
+        "Volumetric shadows cast from pyro onto ground.",
+        "Strong directionality — not ambient-only.",
+        "Color temperature variation — warm key, cool fill."
+      ],
+      "renderer_compatibility": ["arnold", "karma"],
+      "synonyms": ["volumetric lighting", "godrays", "volume shadows", "atmospheric lighting", "dramatic lighting"]
+    },
+
+    "night_explosion_lighting": {
+      "category": "lighting",
+      "label": "Night Explosion Lighting",
+      "description": "Explosion lighting in night/low-key environment — fire as primary light source, deep shadows.",
+      "orchestration_purpose": "Night-time combat scenes, nocturnal FX shots, dramatic contrast shots.",
+      "required_stages": [
+        "ambient_moonlight_base",
+        "fire_emission_light",
+        "secondary_fill",
+        "lens_flare_optional",
+        "deep_shadow_setup"
+      ],
+      "artistic_goals": [
+        "Fire is the PRIMARY light source — ground and nearby objects lit orange-red.",
+        "Deep blacks outside of fire radius.",
+        "Falloff must be physically motivated — sharp distance rolloff.",
+        "Night sky visible — no over-lit atmosphere."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "synonyms": ["night lighting", "dark scene lighting", "nocturnal explosion", "fire as light source"]
+    },
+
+    "cinematic_push_in": {
+      "category": "camera",
+      "label": "Cinematic Push In",
+      "description": "Anticipation-hold-push camera move toward a FX event. Classic film camera move for impact revelation.",
+      "orchestration_purpose": "Hero FX reveal. Builds tension before detonation, holds on impact, pushes through aftermath.",
+      "required_stages": [
+        "start_position",
+        "anticipation_hold",
+        "event_trigger_point",
+        "push_in_path",
+        "slow_motion_end"
+      ],
+      "artistic_goals": [
+        "Anticipation hold must be minimum 12 frames before event.",
+        "Push speed must accelerate — not constant velocity.",
+        "Framing must maintain readable silhouette of FX element.",
+        "Slight rotation during push for parallax depth."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "execution_notes": "Camera must be set up after FX elements are placed — requires scene bounds knowledge.",
+      "synonyms": ["push in", "dolly in", "camera push", "reveal camera", "camera move in"]
+    },
+
+    "impact_handheld": {
+      "category": "camera",
+      "label": "Impact Handheld Shake",
+      "description": "Simulated handheld camera recoil on impact — fast violent shake decaying to residual tremor.",
+      "orchestration_purpose": "Ground-camera perspective on close-range explosion or impact event.",
+      "required_stages": [
+        "pre_event_slight_float",
+        "impact_violent_shake",
+        "decay_oscillation",
+        "settle_residual"
+      ],
+      "artistic_goals": [
+        "Impact frame must have maximum displacement — 5–10% of frame height.",
+        "Decay must feel physically weighted — not linear.",
+        "High-frequency component on impact, low-frequency residual.",
+        "Camera cannot return to exact original position — slight permanent drift."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "synonyms": ["handheld", "camera shake", "impact shake", "recoil camera", "shaky cam"]
+    },
+
+    "slow_motion_reveal": {
+      "category": "camera",
+      "label": "Slow Motion Reveal",
+      "description": "High-frame-rate slow-motion pass on FX element — reveals detail invisible at normal speed.",
+      "orchestration_purpose": "Hero detail pass — fireball, debris, pressure wave leading edge.",
+      "required_stages": [
+        "time_scale_setup",
+        "motion_blur_config",
+        "frame_range_extension",
+        "rack_focus_optional"
+      ],
+      "artistic_goals": [
+        "Time scale must be 0.1x or lower for cinematic slow-mo.",
+        "Motion blur must be enabled — frozen-in-time look is wrong.",
+        "Frame range must be extended to match time scale factor.",
+        "Focus must follow hero element through frame."
+      ],
+      "renderer_compatibility": ["arnold", "karma", "mantra"],
+      "synonyms": ["slow motion", "slow mo", "high speed camera", "frame rate slow", "time remapping"]
+    },
+
+    "arnold_render_ready": {
+      "category": "render",
+      "label": "Arnold Render Ready",
+      "description": "Full Arnold render setup — sampling, AOVs, motion blur, volume sampling, output drivers.",
+      "orchestration_purpose": "Production render pass configuration. Must be final stage before submitting to farm.",
+      "required_stages": [
+        "arnold_rop_setup",
+        "sampling_configuration",
+        "aov_setup",
+        "motion_blur_config",
+        "volume_step_size",
+        "output_driver",
+        "farm_submission_prep"
+      ],
+      "artistic_goals": [
+        "AA samples 8+ for final. 3–4 for preview.",
+        "Motion blur must be ON — object and volume blur.",
+        "Volume step size appropriate to simulation density.",
+        "All required AOVs active: beauty, diffuse, specular, emission, depth, normal."
+      ],
+      "renderer_compatibility": ["arnold"],
+      "execution_notes": "Requires Arnold license. Check capability registry before setup.",
+      "synonyms": ["arnold render", "render setup", "arnold output", "final render", "farm render"]
+    },
+
+    "cinematic_aov_setup": {
+      "category": "render",
+      "label": "Cinematic AOV Setup",
+      "description": "Multi-pass AOV configuration for cinematic composite — all passes needed for professional grade comp.",
+      "orchestration_purpose": "Compositing layer setup. Enables downstream color grade and FX enhancement in Nuke/Flame.",
+      "required_stages": [
+        "beauty_pass",
+        "diffuse_indirect",
+        "specular_pass",
+        "emission_pass",
+        "volume_scatter",
+        "depth_pass",
+        "normal_pass",
+        "motion_vector_pass",
+        "cryptomatte"
+      ],
+      "artistic_goals": [
+        "All volumetric elements must have separate emission AOV.",
+        "Cryptomatte for per-element masking in comp.",
+        "Motion vectors in world space for post motion-blur compositing.",
+        "Depth in world units — not normalized.",
+        "16-bit or 32-bit EXR only — no 8-bit passes."
+      ],
+      "renderer_compatibility": ["arnold", "karma"],
+      "synonyms": ["aov", "render passes", "multi-pass", "composite passes", "nuke passes"]
+    }
+  },
+
+  "keyword_index": {
+    "explosion":       ["cinematic_explosion", "missile_impact", "fuel_fireball"],
+    "smoke":           ["smoke_column", "cinematic_explosion", "fuel_fireball"],
+    "debris":          ["debris_field", "cinematic_explosion", "missile_impact"],
+    "dust":            ["dust_wave", "cinematic_explosion"],
+    "fire":            ["fuel_fireball", "cinematic_explosion", "missile_impact"],
+    "lighting":        ["arnold_cinematic_lighting", "volumetric_contrast_lighting", "night_explosion_lighting"],
+    "arnold":          ["arnold_cinematic_lighting", "arnold_render_ready", "cinematic_aov_setup"],
+    "camera":          ["cinematic_push_in", "impact_handheld", "slow_motion_reveal"],
+    "render":          ["arnold_render_ready", "cinematic_aov_setup"],
+    "volumetric":      ["volumetric_contrast_lighting", "smoke_column", "cinematic_explosion"],
+    "cinematic":       ["cinematic_explosion", "arnold_cinematic_lighting", "cinematic_push_in", "slow_motion_reveal"],
+    "aov":             ["cinematic_aov_setup", "arnold_render_ready"],
+    "shake":           ["impact_handheld"],
+    "slow motion":     ["slow_motion_reveal"],
+    "night":           ["night_explosion_lighting"]
+  }
+}

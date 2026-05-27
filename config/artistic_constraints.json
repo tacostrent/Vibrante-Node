@@ -1,0 +1,295 @@
+{
+  "version": "1.0.0",
+  "description": "Artistic quality constraints for cinematic orchestration. These constraints influence planning, validation, review scoring, and execution guidance. Violating a REQUIRED constraint is a blocking error. Violating a RECOMMENDED constraint generates a review warning.",
+
+  "global": {
+    "description": "Constraints that apply to every cinematic orchestration regardless of workflow type.",
+    "required": [
+      "Never generate uniform, symmetric FX — always introduce variation at multiple scales.",
+      "Never use default parameter values for simulation nodes in hero shots.",
+      "Always decompose multi-stage FX goals — never single-shot full-scene generation.",
+      "Simulation always precedes lighting which always precedes camera which always precedes render.",
+      "Every volume element must have at least one turbulence or noise layer."
+    ],
+    "recommended": [
+      "Prefer layered workflows over monolithic node networks.",
+      "Preview before executing — always validate resource cost.",
+      "Use semantic workflow names when logging — not raw node types."
+    ]
+  },
+
+  "workflows": {
+
+    "cinematic_explosion": {
+      "required": [
+        "Fireball must have minimum 3 distinct temperature zones: core, mid, outer.",
+        "Smoke must have asymmetric breakup — no uniform puffball allowed.",
+        "Pressure-wave dust must be present at ground level.",
+        "Secondary debris must be present — minimum 2 scale categories.",
+        "Cinematic lighting is required — default lighting is not acceptable.",
+        "Ground interaction must be simulated — explosion cannot float above terrain.",
+        "Fireball must precede smoke in orchestration order.",
+        "Smoke simulation must have at least 2 turbulence frequency layers."
+      ],
+      "recommended": [
+        "Consider camera anticipation hold of at least 12 frames before event.",
+        "Add pressure wave timing offset of 8–15 frames after fireball peak.",
+        "Include secondary ignition from debris impacts.",
+        "Use volumetric lighting to enhance smoke depth.",
+        "Slow-motion reveal camera pass for hero detail shots."
+      ],
+      "scale_constraints": {
+        "minimum_radius_m": 2.0,
+        "recommended_radius_m": 8.0,
+        "large_scale_radius_m": 25.0,
+        "description": "Explosion radius drives simulation resolution and camera distance."
+      },
+      "timing_constraints": {
+        "fireball_peak_frames": [5, 25],
+        "smoke_onset_frames": [10, 30],
+        "pressure_wave_frames": [3, 12],
+        "full_evolution_frames": [60, 240],
+        "description": "All timing in frames at 24fps. Adjust proportionally for other rates."
+      },
+      "review_criteria": [
+        "Fireball reads as luminous and hot — not a flat sphere.",
+        "Smoke has visible asymmetry and scale variation.",
+        "Pressure wave visible at ground plane.",
+        "Debris scale varies — not uniform size.",
+        "Camera has anticipation and recoil.",
+        "Lighting creates cinematic contrast — not flat ambient."
+      ]
+    },
+
+    "missile_impact": {
+      "required": [
+        "Impact flash must be 2–6 frames maximum — no slow extended flash.",
+        "Ejecta must have outward-upward cone directionality.",
+        "Smoke column must have initial upward momentum.",
+        "Shockwave ring must be present at ground plane."
+      ],
+      "recommended": [
+        "Sub-frame motion blur on fast-moving ejecta.",
+        "Dark smoke boundary for fuel-type impacts.",
+        "Camera positioned at ground level for maximum impact read."
+      ],
+      "timing_constraints": {
+        "flash_peak_frames": [1, 4],
+        "ejecta_burst_frames": [2, 15],
+        "smoke_column_frames": [10, 60],
+        "shockwave_frames": [2, 20]
+      },
+      "review_criteria": [
+        "Flash is fast — not slow or extended.",
+        "Ejecta travels outward and upward — not just upward.",
+        "Smoke column has upward momentum.",
+        "Shockwave ring is visible."
+      ]
+    },
+
+    "debris_field": {
+      "required": [
+        "Debris must have minimum 3 distinct scale categories (hero, mid, fine).",
+        "Tumbling rotation must be present — no translation-only motion.",
+        "Distribution must be uneven — not radially uniform.",
+        "Closest debris pieces must be largest — perspective scale correctness."
+      ],
+      "recommended": [
+        "Dust trail on large pieces for visual trail.",
+        "Secondary bounce simulation for large hero chunks.",
+        "Material variation — not all pieces same surface type."
+      ],
+      "scale_constraints": {
+        "hero_chunk_size_m": [0.3, 2.0],
+        "mid_chunk_size_m": [0.05, 0.3],
+        "fine_particle_size_m": [0.001, 0.05]
+      },
+      "review_criteria": [
+        "Three distinct scale categories visible.",
+        "Pieces tumble — not just translate.",
+        "Distribution is uneven.",
+        "Large pieces near camera, small pieces far."
+      ]
+    },
+
+    "dust_wave": {
+      "required": [
+        "Wave must hug ground — initial height maximum 2m.",
+        "Leading edge must be sharp — not diffuse from start.",
+        "Dissipation must be gradual — not instant cutoff.",
+        "Color must match terrain context — not pure white."
+      ],
+      "recommended": [
+        "Terrain-following deformation on leading edge.",
+        "Thin secondary layer at 0.2m height for ground-hugging feel.",
+        "Wind influence for directional asymmetry."
+      ],
+      "timing_constraints": {
+        "wave_onset_frames": [3, 12],
+        "peak_height_frames": [15, 45],
+        "dissipation_frames": [45, 180]
+      },
+      "review_criteria": [
+        "Wave hugs ground — not floating.",
+        "Sharp leading edge.",
+        "Gradual dissipation.",
+        "Color matches terrain."
+      ]
+    },
+
+    "arnold_cinematic_lighting": {
+      "required": [
+        "Key-to-fill ratio must be minimum 4:1 for cinematic contrast.",
+        "Rim light must separate hero elements from background.",
+        "Volumetric atmosphere must be present — no flat lit volumes.",
+        "Shadow penumbra must be present — no hard-edge shadows on organic elements.",
+        "Exposure must be set explicitly — do not rely on Arnold defaults."
+      ],
+      "recommended": [
+        "Use HDRI for base environmental lighting before adding hero lights.",
+        "Warm key + cool fill for classic cinematic look.",
+        "Light linking to control which elements receive which lights.",
+        "AI denoiser for preview renders."
+      ],
+      "technical_requirements": {
+        "renderer": "arnold",
+        "minimum_samples_preview": 3,
+        "minimum_samples_final": 8,
+        "volumetric_step_size": "adaptive",
+        "shadow_type": "ray_traced"
+      },
+      "review_criteria": [
+        "Clear key/fill separation — not flat.",
+        "Rim light visible on hero elements.",
+        "Volumetric depth visible in atmosphere.",
+        "Shadows have penumbra.",
+        "Exposure is balanced — highlights and shadows both readable."
+      ]
+    },
+
+    "volumetric_contrast_lighting": {
+      "required": [
+        "Godrays must be visible through smoke/dust volumes.",
+        "Volumetric shadows must be cast from pyro onto ground.",
+        "Light must have strong directional character — not ambient only.",
+        "Color temperature must vary — warm vs. cool separation."
+      ],
+      "recommended": [
+        "Directional light angle matched to HDRI key direction.",
+        "Light scattering coefficient tuned per volume density.",
+        "Secondary bounce fill to recover shadow detail."
+      ],
+      "review_criteria": [
+        "Godrays visible through volume.",
+        "Volumetric shadows on ground.",
+        "Strong directionality — not ambient.",
+        "Color temperature separation."
+      ]
+    },
+
+    "cinematic_push_in": {
+      "required": [
+        "Anticipation hold must be minimum 12 frames before event.",
+        "Camera velocity must accelerate — not constant.",
+        "Hero element must be framed in readable position throughout move.",
+        "Slight rotation during push creates parallax depth.",
+        "Camera must not exceed FX bounding volume."
+      ],
+      "recommended": [
+        "Ease-in and ease-out on camera path.",
+        "Slight Dutch tilt on recoil for impact emphasis.",
+        "Frame range at least 3x the push duration for settle."
+      ],
+      "timing_constraints": {
+        "anticipation_frames": [12, 48],
+        "push_duration_frames": [24, 96],
+        "settle_frames": [12, 36]
+      },
+      "review_criteria": [
+        "Anticipation hold present and minimum 12 frames.",
+        "Velocity accelerates — not constant.",
+        "Hero framing maintained.",
+        "Parallax visible through move."
+      ]
+    },
+
+    "impact_handheld": {
+      "required": [
+        "Impact frame must have maximum displacement — 5–10% of frame height.",
+        "Decay must feel physically weighted — not linear falloff.",
+        "High-frequency component on impact, low-frequency on residual.",
+        "Camera must not return exactly to pre-impact position."
+      ],
+      "recommended": [
+        "Add subtle focus breathing on impact frame.",
+        "Micro-jitter on pre-event anticipation build.",
+        "Slightly different shake axis for each impact event."
+      ],
+      "review_criteria": [
+        "Impact displacement is significant.",
+        "Decay is weighted — not linear.",
+        "High vs low frequency character changes.",
+        "Permanent drift from pre-event position."
+      ]
+    },
+
+    "arnold_render_ready": {
+      "required": [
+        "AA samples minimum 3 for preview, 8 for final.",
+        "Motion blur must be enabled — not disabled.",
+        "Volume step size must be explicitly set — not auto.",
+        "Output directory must be set — not default temp path.",
+        "Frame range must match simulation range."
+      ],
+      "recommended": [
+        "Enable AI denoiser for faster preview convergence.",
+        "Adaptive sampling with low noise threshold for volume.",
+        "Tile size 64x64 for GPU render, 32x32 for CPU.",
+        "Check memory estimate before final submission."
+      ],
+      "technical_requirements": {
+        "renderer": "arnold",
+        "output_format": "exr",
+        "bit_depth": 16,
+        "color_space": "linear"
+      },
+      "review_criteria": [
+        "AA samples set appropriately.",
+        "Motion blur active.",
+        "Volume step size is explicit.",
+        "Output path is set.",
+        "Frame range matches simulation."
+      ]
+    },
+
+    "cinematic_aov_setup": {
+      "required": [
+        "Beauty pass must be present.",
+        "Emission AOV required for all volumetric elements.",
+        "Cryptomatte required for per-element masking.",
+        "Depth pass must be in world units — not normalized.",
+        "All passes must be 16-bit or 32-bit EXR — no 8-bit."
+      ],
+      "recommended": [
+        "Separate diffuse and specular indirect passes for relighting flexibility.",
+        "Motion vector pass in world space for post motion blur.",
+        "Normal pass in world space for relighting in comp.",
+        "Separate AOV per major FX element — smoke, fire, debris."
+      ],
+      "review_criteria": [
+        "Beauty pass present.",
+        "Emission AOV active for volumetrics.",
+        "Cryptomatte configured.",
+        "Depth in world units.",
+        "All passes are EXR — not PNG/JPG."
+      ]
+    }
+  },
+
+  "constraint_categories": {
+    "required": "Blocking — orchestration must satisfy this before proceeding.",
+    "recommended": "Advisory — review will flag if violated but execution continues.",
+    "technical_requirements": "Hard system requirements — missing capabilities block the workflow.",
+    "review_criteria": "Review engine scoring dimensions — each maps to a review comment."
+  }
+}

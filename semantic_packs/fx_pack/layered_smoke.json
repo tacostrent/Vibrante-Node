@@ -1,0 +1,89 @@
+{
+  "workflow_id": "layered_smoke",
+  "workflow_name": "Layered Smoke Column",
+  "pack": "fx_pack",
+  "version": "1.0.0",
+  "description": "Rising column of billowing smoke with three turbulence scales. Asymmetric breakup, density gradient, and sky dissipation.",
+  "renderer_requirements": ["arnold", "karma", "mantra"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "burn_source",
+      "label": "Burn Source Volume",
+      "description": "Define the temperature and density source for smoke generation.",
+      "dependencies": [],
+      "orchestration_hints": ["Temperature source: 400–800K at base. Smoke emits below 300K."],
+      "artistic_constraints": ["Source volume radius drives column diameter. 0.5–3.0m radius."]
+    },
+    {
+      "stage_id": "initial_column",
+      "label": "Initial Column Rise",
+      "description": "Simulate initial upward momentum of smoke column.",
+      "dependencies": ["burn_source"],
+      "orchestration_hints": [
+        "Buoyancy: 0.8–1.5 (temperature-driven rise).",
+        "Initial rise velocity: 3–8 m/s.",
+        "Column must narrow slightly as it rises 2–5m."
+      ],
+      "artistic_constraints": [
+        "Column narrows at base (pinch effect).",
+        "Velocity must not be constant — slight acceleration as heat pushes up.",
+        "Dark dense smoke at base — lighter sparse at 5m height."
+      ]
+    },
+    {
+      "stage_id": "turbulence_layers",
+      "label": "Multi-Scale Turbulence",
+      "description": "Apply three turbulence frequency layers for organic breakup.",
+      "dependencies": ["initial_column"],
+      "orchestration_hints": [
+        "Macro turbulence: wavelength 8–15m, amplitude 2–4m.",
+        "Mid turbulence: wavelength 1–3m, amplitude 0.3–0.8m.",
+        "Micro turbulence: wavelength 0.1–0.5m, amplitude 0.02–0.1m."
+      ],
+      "artistic_constraints": [
+        "All three turbulence layers required — no exceptions.",
+        "Macro drives large billow shape.",
+        "Mid creates billow sub-divisions.",
+        "Micro adds surface detail."
+      ]
+    },
+    {
+      "stage_id": "breakup_variation",
+      "label": "Breakup and Asymmetry",
+      "description": "Add directional wind and asymmetric variation to prevent uniform column.",
+      "dependencies": ["turbulence_layers"],
+      "orchestration_hints": [
+        "Add wind field: 0.5–2 m/s in consistent horizontal direction.",
+        "Wind causes column to lean — more cinematic than vertical.",
+        "Add wind variation over time — gusts every 24–48 frames."
+      ],
+      "artistic_constraints": [
+        "Column must lean in wind direction above 10m height.",
+        "No two identical frames — variation must be constant.",
+        "Periodic large billow release every 30–60 frames."
+      ]
+    },
+    {
+      "stage_id": "sky_dissipation",
+      "label": "Sky Dissipation",
+      "description": "Control how smoke dissipates at upper altitude — gradual fade to transparent.",
+      "dependencies": ["breakup_variation"],
+      "artistic_constraints": [
+        "Density must reach zero by maximum altitude.",
+        "Dissipation must be gradual — not sharp cutoff.",
+        "Wisps and tendrils at upper edge — not a uniform cap."
+      ]
+    }
+  ],
+
+  "execution_order": ["burn_source", "initial_column", "turbulence_layers", "breakup_variation", "sky_dissipation"],
+
+  "review_expectations": {
+    "column_shape": "Pinch at base, billow outward, lean in wind. Not straight vertical cylinder.",
+    "turbulence": "Three scales visible. Micro, mid, macro all contribute.",
+    "asymmetry": "Column leans. Billows irregular. No two frames identical.",
+    "density_gradient": "Dark dense base, lighter transparent top.",
+    "dissipation": "Wisps at top — gradual fade. No hard cap."
+  }
+}

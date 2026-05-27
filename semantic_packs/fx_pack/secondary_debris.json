@@ -1,0 +1,110 @@
+{
+  "workflow_id": "secondary_debris",
+  "workflow_name": "Secondary Debris Field",
+  "pack": "fx_pack",
+  "version": "1.0.0",
+  "description": "Rigid-body debris field — rock, concrete, metal fragments distributed outward from explosion epicenter. Adds ground-level detail and cinematic scale.",
+  "renderer_requirements": ["arnold", "karma", "mantra"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "debris_source_geo",
+      "label": "Debris Source Geometry",
+      "description": "Create or reference the source geometry that will be fractured.",
+      "operations": [
+        {"op": "create_node", "parent": "/obj", "type": "geo", "name": "debris_source_geo"}
+      ],
+      "dependencies": [],
+      "orchestration_hints": ["Use existing structural geometry if available. Otherwise use a sphere or box as proxy."]
+    },
+    {
+      "stage_id": "voronoi_fracture",
+      "label": "Voronoi Fracture",
+      "description": "Procedurally fracture source geometry into debris pieces with scale variation.",
+      "dependencies": ["debris_source_geo"],
+      "orchestration_hints": [
+        "Low density fracture (10–30 pieces) for hero chunks.",
+        "High density fracture (200–1000 pieces) for fine rubble.",
+        "Use two-pass fracture for scale variation."
+      ],
+      "artistic_constraints": [
+        "Minimum 3 scale categories: hero (0.3–2.0m), mid (0.05–0.3m), fine (<0.05m).",
+        "Scale distribution: 5% hero, 25% mid, 70% fine by count.",
+        "Interior faces should have different material from exterior."
+      ]
+    },
+    {
+      "stage_id": "initial_velocity_seed",
+      "label": "Initial Velocity Distribution",
+      "description": "Apply initial outward velocity to debris pieces from epicenter.",
+      "dependencies": ["voronoi_fracture"],
+      "orchestration_hints": [
+        "Velocity = normalize(piece_centroid - epicenter) * speed_multiplier.",
+        "Speed variation: 8–20 m/s for hero, 15–40 m/s for fine.",
+        "Add 3–10 m/s upward component.",
+        "Add random angular velocity for tumbling."
+      ],
+      "artistic_constraints": [
+        "Large pieces: lower speed (8–15 m/s) — heavy.",
+        "Fine particles: higher speed (20–40 m/s) — light.",
+        "Angular velocity: 0.5–3 rad/s per axis.",
+        "No pieces should have zero velocity."
+      ]
+    },
+    {
+      "stage_id": "rigid_body_sim",
+      "label": "Rigid Body Simulation",
+      "description": "Simulate RBD physics with terrain collision and piece-to-piece interaction.",
+      "dependencies": ["initial_velocity_seed"],
+      "orchestration_hints": [
+        "RBD Solver inside DOP network.",
+        "Collision against terrain geometry (static object).",
+        "Friction: 0.6–0.8 for rocky debris.",
+        "Restitution (bounciness): 0.2–0.4."
+      ],
+      "artistic_constraints": [
+        "All pieces must have tumbling rotation on first ground contact.",
+        "Secondary bounce required for hero chunks.",
+        "Pieces must settle — simulation minimum 60 frames after impact."
+      ]
+    },
+    {
+      "stage_id": "scatter_distribution",
+      "label": "Fine Particle Scatter Distribution",
+      "description": "Add scattered fine particles for dense near-field rubble field.",
+      "dependencies": ["rigid_body_sim"],
+      "orchestration_hints": [
+        "Use scatter SOP to place instanced fine pieces on ground near epicenter.",
+        "Density falls off with distance from epicenter.",
+        "Orient pieces along ground normal."
+      ],
+      "artistic_constraints": [
+        "Highest density within 5m of epicenter.",
+        "Random rotation — no aligned pieces.",
+        "Scale variation ±30% per instance."
+      ]
+    },
+    {
+      "stage_id": "dust_tail",
+      "label": "Debris Dust Trails",
+      "description": "Thin dust trails from large hero chunks as they fly through air.",
+      "dependencies": ["rigid_body_sim"],
+      "artistic_constraints": [
+        "Only on hero chunks (>0.3m) — not fine particles.",
+        "Trail length proportional to velocity.",
+        "Rapid dissipation — trail should not outlast piece travel time."
+      ]
+    }
+  ],
+
+  "execution_order": ["debris_source_geo", "voronoi_fracture", "initial_velocity_seed", "rigid_body_sim", "scatter_distribution", "dust_tail"],
+
+  "review_expectations": {
+    "scale_variation": "Three clearly distinct scale categories visible.",
+    "motion": "All pieces tumble — no translation-only motion.",
+    "distribution": "Uneven spatial distribution — not radially uniform.",
+    "distance_scaling": "Largest pieces near camera, finest far.",
+    "secondary_bounce": "Hero chunks bounce on ground contact.",
+    "dust_trails": "Large pieces leave visible dust trails."
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "workflow_id": "cinematic_push_in",
+  "workflow_name": "Cinematic Push In Camera",
+  "pack": "camera_pack",
+  "version": "1.0.0",
+  "description": "Anticipation-hold-push camera move toward a FX event. Classic film camera move for impact revelation and dramatic tension.",
+  "renderer_requirements": ["arnold", "karma", "mantra"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "start_position",
+      "label": "Camera Start Position",
+      "description": "Place camera at starting position — back, elevated slightly, hero element in lower third.",
+      "operations": [
+        {"op": "create_node", "parent": "/obj", "type": "cam", "name": "hero_cam"}
+      ],
+      "dependencies": [],
+      "orchestration_hints": [
+        "Camera start: 20–40m from FX epicenter.",
+        "Elevation: 1.5–4m (eye level to low crane).",
+        "Lens: 35–50mm for push-in feel. Avoid very wide.",
+        "Hero element in lower-center or lower-third of frame."
+      ],
+      "artistic_constraints": [
+        "Start position must keep hero element readable.",
+        "Sky must be visible in upper portion of frame for backdrop."
+      ]
+    },
+    {
+      "stage_id": "anticipation_hold",
+      "label": "Anticipation Hold",
+      "description": "Camera holds still before event — builds tension.",
+      "dependencies": ["start_position"],
+      "orchestration_hints": [
+        "Hold duration: 12–48 frames minimum.",
+        "Micro-jitter optional — subtle breathing motion 0.01–0.05m amplitude.",
+        "Camera focus on hero element pre-event."
+      ],
+      "artistic_constraints": [
+        "MINIMUM 12 frames of hold — not less.",
+        "No gross movement during hold.",
+        "Slight depth-of-field focus on hero element."
+      ],
+      "timing_constraints": {"minimum_frames": 12, "recommended_frames": 24}
+    },
+    {
+      "stage_id": "event_trigger_point",
+      "label": "Event Trigger Frame",
+      "description": "Frame at which explosion/event begins. Camera hold ends here.",
+      "dependencies": ["anticipation_hold"],
+      "orchestration_hints": ["Keyframe at event frame. Push begins on this frame or 2 frames after."]
+    },
+    {
+      "stage_id": "push_in_path",
+      "label": "Push In Move",
+      "description": "Camera accelerates toward FX element after event trigger.",
+      "dependencies": ["event_trigger_point"],
+      "orchestration_hints": [
+        "Ease-in from held position. Acceleration builds over 8–12 frames.",
+        "Path curves slightly — not dead-straight push.",
+        "Slight Y-axis rotation during push (parallax).",
+        "Push duration: 24–96 frames.",
+        "Final frame: camera 5–15m from epicenter."
+      ],
+      "artistic_constraints": [
+        "Velocity must accelerate — not constant speed.",
+        "Slight rotation during push creates parallax depth.",
+        "Hero element must remain in frame throughout push.",
+        "Camera must not enter the FX bounding volume."
+      ]
+    },
+    {
+      "stage_id": "slow_motion_end",
+      "label": "Slow Motion Reveal at End",
+      "description": "Optional slow-motion reveal as camera reaches closest approach.",
+      "dependencies": ["push_in_path"],
+      "orchestration_hints": [
+        "Time scale: 0.2–0.5x on final 24–48 frames.",
+        "Frame range must be extended to match time scale.",
+        "Motion blur enabled — not frozen look."
+      ],
+      "artistic_constraints": [
+        "Motion blur must be ON during slow-motion.",
+        "Frame range must account for time scale extension."
+      ]
+    }
+  ],
+
+  "execution_order": ["start_position", "anticipation_hold", "event_trigger_point", "push_in_path", "slow_motion_end"],
+
+  "review_expectations": {
+    "anticipation": "Hold minimum 12 frames. Tension builds.",
+    "acceleration": "Push velocity accelerates — not constant. Ease-in.",
+    "parallax": "Slight rotation during push creates depth.",
+    "framing": "Hero element readable throughout move.",
+    "slow_motion": "Smooth time scale transition. Motion blur present."
+  }
+}

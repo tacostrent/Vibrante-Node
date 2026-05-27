@@ -1,0 +1,93 @@
+{
+  "workflow_id": "rolling_dust_wave",
+  "workflow_name": "Rolling Dust Wave",
+  "pack": "fx_pack",
+  "version": "1.0.0",
+  "description": "Ground-level rolling dust displacement wave driven by a pressure source. Reads as atmospheric scale. Secondary layer for explosions, vehicle impacts, and landslides.",
+  "renderer_requirements": ["arnold", "karma", "mantra"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "ground_interaction_setup",
+      "label": "Ground Interaction Setup",
+      "description": "Prepare terrain collision geometry and pressure source reference.",
+      "operations": [
+        {"op": "create_node", "parent": "/obj", "type": "geo", "name": "dust_ground_geo"}
+      ],
+      "dependencies": [],
+      "artistic_constraints": ["Ground mesh must be minimum 30m radius from epicenter."]
+    },
+    {
+      "stage_id": "dust_source",
+      "label": "Dust Source Volume",
+      "description": "Define the pressure source volume that drives the dust displacement.",
+      "dependencies": ["ground_interaction_setup"],
+      "orchestration_hints": [
+        "Source should be at ground level — Y = 0 or terrain height.",
+        "Initial radius matches explosion radius.",
+        "Source emits low-density high-velocity particles outward."
+      ],
+      "artistic_constraints": [
+        "Source must be at or below 0.5m height.",
+        "Initial density: 0.8. Velocity: 15–25 m/s outward."
+      ]
+    },
+    {
+      "stage_id": "wave_propagation",
+      "label": "Wave Propagation Simulation",
+      "description": "Simulate the radial propagation of the dust wave from source outward.",
+      "dependencies": ["dust_source"],
+      "orchestration_hints": [
+        "Use pyro solver with high initial velocity and rapid dissipation.",
+        "Velocity field drives wave propagation — not buoyancy.",
+        "Ground constraint prevents upward movement beyond 2m initially."
+      ],
+      "artistic_constraints": [
+        "Wave must hug ground — initial height maximum 2m.",
+        "Sharp leading edge — turbulence frequency minimum 4Hz at leading edge.",
+        "Wave speed: 15–25 m/s at onset."
+      ]
+    },
+    {
+      "stage_id": "thin_layer_advection",
+      "label": "Thin Layer Ground Advection",
+      "description": "Secondary thin dust layer at 0.1–0.2m height that hugs terrain surface.",
+      "dependencies": ["wave_propagation"],
+      "orchestration_hints": [
+        "Separate thin solver or low-buoyancy second pyro pass.",
+        "This layer gives the ground-hugging read on close shots."
+      ],
+      "artistic_constraints": [
+        "Height maximum 0.3m.",
+        "High forward velocity — matches primary wave speed.",
+        "Color: 20% darker than primary wave dust."
+      ]
+    },
+    {
+      "stage_id": "dissipation_control",
+      "label": "Dissipation and Trailing Edge",
+      "description": "Control the gradual trailing dissipation of the dust wave.",
+      "dependencies": ["wave_propagation"],
+      "orchestration_hints": [
+        "Trailing edge should dissipate over 60–120 frames.",
+        "No sharp cutoff — density must fade gradually.",
+        "Wind influence adds slight asymmetry to dissipation."
+      ],
+      "artistic_constraints": [
+        "Trailing dissipation minimum 60 frames.",
+        "Final density must reach near-zero — no lingering wall of dust.",
+        "Color lightens as density decreases."
+      ]
+    }
+  ],
+
+  "execution_order": ["ground_interaction_setup", "dust_source", "wave_propagation", "thin_layer_advection", "dissipation_control"],
+
+  "review_expectations": {
+    "leading_edge": "Sharp and fast. Reads as a pressure-driven physical wave.",
+    "ground_hugging": "Wave hugs terrain — not floating. Thin layer visible at 0.1m height.",
+    "trailing_edge": "Gradual dissipation over 60+ frames. Not a hard cutoff.",
+    "color": "Matches terrain color — sandy/earthy. Not pure white.",
+    "scale": "Feels atmospheric — not small or unconvincing."
+  }
+}
