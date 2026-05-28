@@ -1,0 +1,25 @@
+{
+    "node_id": "scene_intent_extractor",
+    "name": "scene_intent_extractor",
+    "description": "Extracts a structured SceneIntent from a natural language scene description. Uses keyword extraction (deterministic) with optional LLM enhancement. NEVER returns free-form text — outputs validated SceneIntent JSON only.",
+    "category": "AI",
+    "icon_path": null,
+    "use_exec": true,
+    "inputs": [
+        { "name": "prompt",           "type": "string", "widget_type": "text",     "options": null, "default": "" },
+        { "name": "extra_context",    "type": "any",    "widget_type": null,        "options": null, "default": null },
+        { "name": "skip_enrichment",  "type": "bool",   "widget_type": "checkbox", "options": null, "default": false },
+        { "name": "exec_in",          "type": "any",    "widget_type": null,        "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "intent_json",    "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "intent",         "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "ok",             "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "confidence",     "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "errors",         "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "warnings",       "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "pipeline_stages","type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",       "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.semantic.scene_intent_extractor import get_scene_intent_extractor\n\n\nclass Scene_Intent_Extractor(BaseNode):\n    name = \"scene_intent_extractor\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"prompt\",          \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"extra_context\",   \"any\")\n        self.add_input(\"skip_enrichment\", \"bool\",   widget_type=\"checkbox\", default=False)\n        self.add_output(\"intent_json\",     \"string\")\n        self.add_output(\"intent\",          \"any\")\n        self.add_output(\"ok\",              \"bool\")\n        self.add_output(\"confidence\",      \"float\")\n        self.add_output(\"errors\",          \"any\")\n        self.add_output(\"warnings\",        \"any\")\n        self.add_output(\"pipeline_stages\", \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        prompt = inputs.get(\"prompt\", \"\") or \"\"\n        if not prompt.strip():\n            self.log_error(\"scene_intent_extractor: 'prompt' is required.\")\n            return {\n                \"intent_json\":     \"{}\",\n                \"intent\":          None,\n                \"ok\":              False,\n                \"confidence\":      0.0,\n                \"errors\":          [\"'prompt' input is empty\"],\n                \"warnings\":        [],\n                \"pipeline_stages\": [],\n                \"exec_out\":        True,\n            }\n\n        extra_context   = inputs.get(\"extra_context\") or {}\n        skip_enrichment = bool(inputs.get(\"skip_enrichment\", False))\n\n        try:\n            extractor = get_scene_intent_extractor()\n            result    = await extractor.extract(\n                prompt,\n                extra_context=extra_context if extra_context else None,\n                skip_enrichment=skip_enrichment,\n            )\n\n            intent_dict = result.intent.to_dict() if result.intent else {}\n            intent_json = json.dumps(intent_dict, indent=2, ensure_ascii=False)\n\n            return {\n                \"intent_json\":     intent_json,\n                \"intent\":          intent_dict,\n                \"ok\":              result.ok,\n                \"confidence\":      result.intent.confidence if result.intent else 0.0,\n                \"errors\":          list(result.errors),\n                \"warnings\":        list(result.warnings),\n                \"pipeline_stages\": list(result.pipeline_stages),\n                \"exec_out\":        True,\n            }\n\n        except Exception as exc:\n            self.log_error(f\"scene_intent_extractor failed: {exc}\")\n            return {\n                \"intent_json\":     \"{}\",\n                \"intent\":          None,\n                \"ok\":              False,\n                \"confidence\":      0.0,\n                \"errors\":          [str(exc)],\n                \"warnings\":        [],\n                \"pipeline_stages\": [],\n                \"exec_out\":        True,\n            }\n\n\ndef register_node():\n    return Scene_Intent_Extractor\n"
+}
