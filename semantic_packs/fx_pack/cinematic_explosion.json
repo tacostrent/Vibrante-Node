@@ -1,0 +1,217 @@
+{
+  "workflow_id": "cinematic_explosion",
+  "workflow_name": "Cinematic Explosion",
+  "pack": "fx_pack",
+  "version": "1.0.0",
+  "description": "Full-scale cinematic explosion — fireball, layered smoke, pressure-wave dust, and secondary debris. Designed for film/VFX hero shots.",
+  "renderer_requirements": ["arnold", "karma", "mantra"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "terrain_prep",
+      "label": "Terrain Preparation",
+      "description": "Prepare ground geometry for explosion interaction. Ground collision is required — explosion cannot float above terrain.",
+      "operations": [
+        {"op": "create_node", "parent": "/obj", "type": "geo", "name": "terrain_geo",
+         "notes": "Use existing terrain if available. Otherwise create flat grid minimum 50m x 50m."},
+        {"op": "create_node", "parent": "/obj/terrain_geo", "type": "grid", "name": "ground_grid",
+         "params": {"sizex": "50", "sizey": "50", "rows": "100", "cols": "100"}}
+      ],
+      "dependencies": [],
+      "outputs": ["terrain_path"],
+      "validation": "Terrain geometry must exist at /obj/terrain_geo before proceeding."
+    },
+    {
+      "stage_id": "pyro_source",
+      "label": "Pyro Source Setup",
+      "description": "Create the ignition volume that seeds the fireball simulation. Defines explosion scale and seed energy.",
+      "operations": [
+        {"op": "build_node_chain", "spec": {
+          "intent": "pyro_source_setup",
+          "nodes": [
+            {"id": "geo",    "parent": "/obj",           "type": "geo",     "name": "pyro_source_geo"},
+            {"id": "sphere", "parent": "/obj/pyro_source_geo", "type": "sphere", "name": "ignition_sphere",
+             "params": {"radx": "2.0", "rady": "2.0", "radz": "2.0"}},
+            {"id": "src",    "parent": "/obj/pyro_source_geo", "type": "pyro_source", "name": "pyro_src1"}
+          ],
+          "connections": [{"from": "sphere", "to": "src", "out": 0, "in": 0}],
+          "layout": true
+        }}
+      ],
+      "dependencies": [],
+      "outputs": ["pyro_source_path"],
+      "artistic_constraints": [
+        "Ignition sphere radius 2–8m depending on explosion scale.",
+        "Source must emit temperature > 800 and density > 0.5 at ignition."
+      ]
+    },
+    {
+      "stage_id": "fireball_core",
+      "label": "Fireball Core Simulation",
+      "description": "Dense fireball — high temperature, luminance, expanding radius. Frames 1–30 peak.",
+      "operations": [
+        {"op": "create_node", "parent": "/obj", "type": "dopnet", "name": "fireball_dop",
+         "notes": "DOP network for pyro fireball simulation."}
+      ],
+      "dependencies": ["pyro_source"],
+      "outputs": ["fireball_dop_path"],
+      "orchestration_hints": [
+        "Use pyro solver with buoyancy > 1.0 for upward expansion.",
+        "Temperature dissipation: slow — fireball must persist minimum 30 frames.",
+        "Combustion model: temperature-based.",
+        "Add turbulence noise at 3 frequency bands: 0.5, 1.0, 2.5 Hz."
+      ],
+      "artistic_constraints": [
+        "Fireball must have 3 temperature zones: core (>1500), mid (500–1500), outer (<500).",
+        "No uniform sphere — turbulence must break the shape by frame 5.",
+        "Peak luminance at frame 8–15."
+      ]
+    },
+    {
+      "stage_id": "smoke_evolution",
+      "label": "Smoke Evolution Layer",
+      "description": "Billowing smoke rising from fireball — temperature cooling, turbulence, breakup variation at 3+ scales.",
+      "dependencies": ["fireball_core"],
+      "outputs": ["smoke_sim_path"],
+      "orchestration_hints": [
+        "Continue pyro simulation — do not create new DOP for smoke.",
+        "Smoke appears when temperature drops below 300.",
+        "Add large-scale turbulence (wavelength 4–8m) for billow breakup.",
+        "Buoyancy decreases as temperature falls — smoke slows as it rises."
+      ],
+      "artistic_constraints": [
+        "Smoke must have asymmetric breakup — add directional wind bias.",
+        "Three turbulence scales: micro (0.1m), mid (1m), macro (5m).",
+        "Dark at base (dense), lighter at top (sparse). Density gradient required.",
+        "No perfect symmetry at any stage.",
+        "Smoke must persist minimum 120 frames."
+      ]
+    },
+    {
+      "stage_id": "pressure_wave",
+      "label": "Pressure Wave Dust",
+      "description": "Radial ground-level pressure/dust displacement wave. Fast early, slow decay.",
+      "dependencies": ["fireball_core"],
+      "outputs": ["dust_wave_path"],
+      "timing": {"onset_frames": [3, 12], "peak_frames": [8, 20]},
+      "artistic_constraints": [
+        "Wave must hug ground — initial height maximum 2m.",
+        "Sharp leading edge — not diffuse from start.",
+        "Color must match terrain — sandy/earthy, not white.",
+        "Wave speed: 15–25m/s at onset, decaying."
+      ]
+    },
+    {
+      "stage_id": "secondary_debris",
+      "label": "Secondary Debris Field",
+      "description": "Rigid-body debris launched from epicenter — rock, concrete, metal. Multiple scale categories.",
+      "dependencies": ["pyro_source"],
+      "outputs": ["debris_sim_path"],
+      "orchestration_hints": [
+        "Use voronoi fracture for debris generation.",
+        "RBD solver with collision against terrain.",
+        "Initial velocity: 8–20m/s outward, 3–10m/s upward.",
+        "Add angular velocity for tumbling."
+      ],
+      "artistic_constraints": [
+        "Hero chunks: 0.3–2.0m — near camera.",
+        "Mid-scale: 0.05–0.3m — mid distance.",
+        "Fine particles: < 0.05m — far field.",
+        "All pieces must have tumbling rotation — no translation-only motion.",
+        "Closest pieces must be largest."
+      ]
+    },
+    {
+      "stage_id": "lighting_setup",
+      "label": "Cinematic Lighting",
+      "description": "Set up cinematic lighting for the explosion shot. Required before render.",
+      "dependencies": ["fireball_core"],
+      "outputs": ["lighting_rig_path"],
+      "orchestration_hints": [
+        "Use semantic workflow: arnold_cinematic_lighting.",
+        "Key light from explosion direction — warm orange-red.",
+        "Rim from opposite — cool blue/white.",
+        "Add volume scatter atmosphere."
+      ],
+      "artistic_constraints": [
+        "Key-to-fill ratio minimum 4:1.",
+        "Volumetric atmosphere required.",
+        "Shadows must have penumbra.",
+        "Fireball must emit light that illuminates nearby ground."
+      ]
+    },
+    {
+      "stage_id": "camera_framing",
+      "label": "Camera Framing",
+      "description": "Set up camera with cinematic push-in and impact shake.",
+      "dependencies": ["lighting_setup"],
+      "outputs": ["camera_path"],
+      "orchestration_hints": [
+        "Use semantic workflow: cinematic_push_in.",
+        "Anticipation hold: minimum 12 frames before event.",
+        "Post-event: add impact shake via impact_handheld workflow.",
+        "Hero element must be readable throughout move."
+      ],
+      "artistic_constraints": [
+        "Anticipation hold minimum 12 frames.",
+        "Push velocity must accelerate — not constant.",
+        "Final frame must have readable FX silhouette against sky."
+      ]
+    },
+    {
+      "stage_id": "render_setup",
+      "label": "Render Configuration",
+      "description": "Configure Arnold render with AOVs, motion blur, volume sampling.",
+      "dependencies": ["camera_framing"],
+      "outputs": ["render_rop_path"],
+      "orchestration_hints": [
+        "Use semantic workflow: arnold_render_ready.",
+        "Set up cinematic_aov_setup after render ROP.",
+        "Enable motion blur — volume and object.",
+        "Volume step size: 0.1m for preview, 0.02m for final."
+      ],
+      "artistic_constraints": [
+        "AA samples: 4 preview, 8 final.",
+        "Motion blur must be ON.",
+        "All AOVs configured: beauty, emission, depth, cryptomatte.",
+        "Output format: EXR 16-bit or 32-bit."
+      ]
+    }
+  ],
+
+  "stage_dependency_graph": {
+    "terrain_prep": [],
+    "pyro_source": [],
+    "fireball_core": ["pyro_source"],
+    "smoke_evolution": ["fireball_core"],
+    "pressure_wave": ["fireball_core"],
+    "secondary_debris": ["pyro_source"],
+    "lighting_setup": ["fireball_core"],
+    "camera_framing": ["lighting_setup"],
+    "render_setup": ["camera_framing"]
+  },
+
+  "execution_order": [
+    "terrain_prep",
+    "pyro_source",
+    "fireball_core",
+    "smoke_evolution",
+    "pressure_wave",
+    "secondary_debris",
+    "lighting_setup",
+    "camera_framing",
+    "render_setup"
+  ],
+
+  "review_expectations": {
+    "fireball": "Luminous, expanding, hot — not a flat sphere. Three temperature zones visible.",
+    "smoke": "Asymmetric billowing — no uniform puffball. Scale variation visible.",
+    "pressure_wave": "Visible at ground level. Sharp leading edge.",
+    "debris": "Multiple scale categories. Tumbling rotation. Large near, small far.",
+    "lighting": "Cinematic contrast. Volumetric depth. Fireball illuminates ground.",
+    "camera": "Anticipation hold. Push-in with acceleration. Impact recoil.",
+    "render": "Motion blur active. AOVs configured. EXR output."
+  },
+
+  "orchestration_notes": "Always decompose this workflow into stages. Never attempt full-scene generation in a single step. Minimum viable result requires stages 1–5 (through secondary_debris). Full cinematic result requires all 9 stages. For close-up hero shots, prioritize smoke_evolution quality over debris quantity."
+}

@@ -1,0 +1,82 @@
+{
+  "workflow_id": "impact_shake",
+  "workflow_name": "Impact Handheld Camera Shake",
+  "pack": "camera_pack",
+  "version": "1.0.0",
+  "description": "Simulated handheld camera recoil on impact — fast violent shake decaying to residual tremor. Adds physicality and ground-level presence.",
+  "renderer_requirements": ["arnold", "karma", "mantra"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "pre_event_slight_float",
+      "label": "Pre-Event Micro Float",
+      "description": "Very subtle camera float before impact — simulates handheld breathing.",
+      "dependencies": [],
+      "orchestration_hints": [
+        "Amplitude: 0.005–0.02m. Very subtle.",
+        "Frequency: 0.5–1.5 Hz.",
+        "Random noise on all three axes + rotation."
+      ],
+      "artistic_constraints": ["Must be subtle — not obvious. Sets up 'handheld' feel."]
+    },
+    {
+      "stage_id": "impact_violent_shake",
+      "label": "Impact Violent Shake",
+      "description": "Maximum displacement on impact frame — violent high-frequency shake.",
+      "dependencies": ["pre_event_slight_float"],
+      "orchestration_hints": [
+        "Impact frame: maximum displacement.",
+        "Amplitude: 0.05–0.15m (5–15% of typical frame height).",
+        "Frequency: 8–20 Hz (very fast, high energy).",
+        "Duration: 4–12 frames of peak shake."
+      ],
+      "artistic_constraints": [
+        "Impact frame must have maximum displacement.",
+        "Camera rotation displacement: 1–5 degrees on impact.",
+        "Both translation and rotation must shake."
+      ]
+    },
+    {
+      "stage_id": "decay_oscillation",
+      "label": "Decay Oscillation",
+      "description": "Shake decays from high-frequency violent to low-frequency residual tremor.",
+      "dependencies": ["impact_violent_shake"],
+      "orchestration_hints": [
+        "Exponential decay — half-life 12–24 frames.",
+        "Frequency drops as amplitude falls.",
+        "Final residual: 0.5–1.5 Hz at 0.002–0.01m amplitude."
+      ],
+      "artistic_constraints": [
+        "Decay must feel physically weighted — not linear falloff.",
+        "Frequency should drop during decay — high-to-low.",
+        "Multiple oscillation cycles before settling."
+      ]
+    },
+    {
+      "stage_id": "settle_residual",
+      "label": "Residual Tremor Settle",
+      "description": "Final residual camera tremor — camera does not return to exact pre-impact position.",
+      "dependencies": ["decay_oscillation"],
+      "orchestration_hints": [
+        "Permanent offset: 0.01–0.05m from pre-impact position.",
+        "Very low frequency residual: 0.1–0.5 Hz.",
+        "Asymmetric — not centered."
+      ],
+      "artistic_constraints": [
+        "Camera must NOT return exactly to pre-impact position.",
+        "Slight permanent drift is required.",
+        "Residual tremor persists minimum 60 frames after peak."
+      ]
+    }
+  ],
+
+  "execution_order": ["pre_event_slight_float", "impact_violent_shake", "decay_oscillation", "settle_residual"],
+
+  "review_expectations": {
+    "impact": "Maximum displacement on impact frame. Violent and immediate.",
+    "decay": "Physically weighted decay. Not linear. Frequency drops.",
+    "residual": "Residual tremor persists 60+ frames. Camera has permanent drift.",
+    "rotation": "Both translation and rotation shake — not just translation.",
+    "feel": "Feels physical and grounded — not procedural or uniform."
+  }
+}

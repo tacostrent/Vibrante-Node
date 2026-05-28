@@ -1,0 +1,135 @@
+{
+  "workflow_id": "arnold_render_ready",
+  "workflow_name": "Arnold Render Ready",
+  "pack": "render_pack",
+  "version": "1.0.0",
+  "description": "Full Arnold render setup — sampling, motion blur, volume step size, output drivers. Final stage before farm submission.",
+  "renderer_requirements": ["arnold"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "arnold_rop_setup",
+      "label": "Arnold ROP Node",
+      "description": "Create and configure the Arnold ROP (output node) in /out context.",
+      "operations": [
+        {"op": "create_node", "parent": "/out", "type": "arnold", "name": "arnold_render"}
+      ],
+      "dependencies": [],
+      "orchestration_hints": ["Single Arnold ROP at /out/arnold_render. Configure all settings on this node."]
+    },
+    {
+      "stage_id": "sampling_configuration",
+      "label": "Sampling Configuration",
+      "description": "Set AA samples and adaptive sampling thresholds.",
+      "dependencies": ["arnold_rop_setup"],
+      "orchestration_hints": [
+        "Preview: AA samples 3, diffuse/specular 2.",
+        "Final: AA samples 8, diffuse/specular 4, volume indirect 4.",
+        "Enable adaptive sampling with noise threshold 0.015 for final.",
+        "Clamp indirect 10.0 to reduce fireflies."
+      ],
+      "artistic_constraints": [
+        "AA minimum 3 for preview — not 1 or 2.",
+        "AA minimum 8 for final — not less.",
+        "Adaptive sampling on for final — saves render time."
+      ]
+    },
+    {
+      "stage_id": "aov_setup",
+      "label": "AOV Configuration",
+      "description": "Configure all required render passes.",
+      "dependencies": ["arnold_rop_setup"],
+      "orchestration_hints": [
+        "Required AOVs: beauty (RGBA), diffuse_indirect, specular, emission, N (normal), P (position), Z (depth), motionvector.",
+        "Cryptomatte: cryptomatte_object, cryptomatte_material.",
+        "Volume AOVs: volume_scattering, volume_opacity."
+      ],
+      "artistic_constraints": [
+        "All required AOVs must be present.",
+        "Emission AOV required for all scenes with volumetric FX.",
+        "Cryptomatte required — enables per-element masking in comp.",
+        "Depth must be in world units (Z pass) — not normalized."
+      ]
+    },
+    {
+      "stage_id": "motion_blur_config",
+      "label": "Motion Blur Configuration",
+      "description": "Enable and configure motion blur — object and volume.",
+      "dependencies": ["arnold_rop_setup"],
+      "orchestration_hints": [
+        "Enable motion blur in Arnold render settings.",
+        "Shutter time: 0.5 (180 degree shutter equivalent).",
+        "Enable deformation blur for pyro volumes.",
+        "Volume velocity blur: enabled.",
+        "Motion steps: 2 for preview, 4 for final."
+      ],
+      "artistic_constraints": [
+        "Motion blur MUST be enabled — no exceptions for cinematic work.",
+        "Volume motion blur required for pyro.",
+        "Fast-moving debris requires 4+ motion steps."
+      ]
+    },
+    {
+      "stage_id": "volume_step_size",
+      "label": "Volume Step Size",
+      "description": "Set volume sampling step size for pyro resolution.",
+      "dependencies": ["arnold_rop_setup"],
+      "orchestration_hints": [
+        "Preview: volume step size 0.1m.",
+        "Final: volume step size 0.02m.",
+        "Auto step size: disabled — set explicitly.",
+        "Max steps: 1000 for dense pyro."
+      ],
+      "artistic_constraints": [
+        "Step size must be set explicitly — not auto.",
+        "Preview step too small = long render. Final step too large = banding.",
+        "Match step size to pyro simulation voxel size."
+      ]
+    },
+    {
+      "stage_id": "output_driver",
+      "label": "Output Path and Format",
+      "description": "Configure output file path, format, and frame range.",
+      "dependencies": ["arnold_rop_setup"],
+      "orchestration_hints": [
+        "Output format: EXR (OpenEXR). 16-bit half float for beauty, 32-bit for depth/motion.",
+        "Naming convention: $HIP/render/$OS/$F4.exr",
+        "Frame range: match to simulation range.",
+        "Single frame for preview, full range for final."
+      ],
+      "artistic_constraints": [
+        "EXR only — no PNG/JPG/TIFF for production renders.",
+        "Output directory must be set — not default temp.",
+        "Frame range must be specified — not default [0,1]."
+      ]
+    },
+    {
+      "stage_id": "farm_submission_prep",
+      "label": "Farm Submission Preparation",
+      "description": "Final checks before submitting to render farm.",
+      "dependencies": ["output_driver"],
+      "orchestration_hints": [
+        "Verify all file paths resolve correctly.",
+        "Check memory estimate — alert if > 12GB per frame.",
+        "Confirm all dependencies (HDAs, textures, caches) accessible from farm.",
+        "Save HIP before submission."
+      ],
+      "artistic_constraints": [
+        "Memory estimate must be checked — not ignored.",
+        "All paths must be absolute or farm-accessible UNC paths.",
+        "HIP must be saved before farm submission."
+      ]
+    }
+  ],
+
+  "execution_order": ["arnold_rop_setup", "sampling_configuration", "aov_setup", "motion_blur_config", "volume_step_size", "output_driver", "farm_submission_prep"],
+
+  "review_expectations": {
+    "sampling": "AA samples appropriate for quality tier. Adaptive enabled for final.",
+    "aovs": "All required AOVs present. Cryptomatte configured.",
+    "motion_blur": "Motion blur ON. Volume velocity blur enabled.",
+    "volume_step": "Step size explicitly set. Matches sim voxel size.",
+    "output": "EXR format. Output path set. Frame range correct.",
+    "farm_ready": "Memory estimated. Paths verified. HIP saved."
+  }
+}

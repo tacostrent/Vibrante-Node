@@ -1,0 +1,112 @@
+{
+  "workflow_id": "cinematic_aov_setup",
+  "workflow_name": "Cinematic AOV Setup",
+  "pack": "render_pack",
+  "version": "1.0.0",
+  "description": "Multi-pass AOV configuration for cinematic composite — all passes needed for professional-grade comp in Nuke/Flame. 16-bit/32-bit EXR only.",
+  "renderer_requirements": ["arnold", "karma"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "beauty_pass",
+      "label": "Beauty (RGBA) Pass",
+      "description": "Full combined beauty pass — the final composite-ready image.",
+      "orchestration_hints": ["beauty (RGBA4) — primary output. Always present."],
+      "artistic_constraints": ["Must be present. 16-bit minimum."]
+    },
+    {
+      "stage_id": "diffuse_indirect",
+      "label": "Diffuse and Indirect",
+      "description": "Separate direct diffuse, indirect diffuse for relighting flexibility.",
+      "orchestration_hints": [
+        "diffuse_direct (RGB)",
+        "diffuse_indirect (RGB)",
+        "Separation enables relighting in comp without re-render."
+      ]
+    },
+    {
+      "stage_id": "specular_pass",
+      "label": "Specular Pass",
+      "description": "Specular highlight contribution for comp control.",
+      "orchestration_hints": ["specular_direct (RGB), specular_indirect (RGB)."]
+    },
+    {
+      "stage_id": "emission_pass",
+      "label": "Emission Pass",
+      "description": "Emissive surface and volume emission — required for all volumetric FX.",
+      "orchestration_hints": [
+        "emission (RGB) — surface emission.",
+        "volume_scattering (RGB) — for pyro/smoke.",
+        "volume_opacity (single) — opacity of volume elements."
+      ],
+      "artistic_constraints": [
+        "emission AOV REQUIRED for all scenes with pyro/fire/smoke.",
+        "Enables fire intensity control in comp."
+      ]
+    },
+    {
+      "stage_id": "volume_scatter",
+      "label": "Volume Scatter and Transmission",
+      "description": "Volume-specific AOVs for compositing flexibility on volumetric elements.",
+      "orchestration_hints": [
+        "volume_direct (RGB)",
+        "volume_indirect (RGB)",
+        "volume_opacity (single)"
+      ]
+    },
+    {
+      "stage_id": "depth_pass",
+      "label": "Depth Pass (World Units)",
+      "description": "Z-depth in world-space units for depth-of-field and Z-composite.",
+      "orchestration_hints": ["Z (float) — distance from camera to surface in world units (meters).", "32-bit float required for this pass."],
+      "artistic_constraints": [
+        "MUST be in world units — not normalized 0–1.",
+        "32-bit float — not 16-bit.",
+        "Used for depth-of-field in comp and Z-composite keying."
+      ]
+    },
+    {
+      "stage_id": "normal_pass",
+      "label": "Normal Pass",
+      "description": "World-space surface normals for relighting and material override in comp.",
+      "orchestration_hints": ["N (RGB) — world space normal. Range -1 to 1 remapped to 0–1 in EXR."]
+    },
+    {
+      "stage_id": "motion_vector_pass",
+      "label": "Motion Vector Pass",
+      "description": "World-space motion vectors for post-motion-blur compositing.",
+      "orchestration_hints": [
+        "motionvector (RGB) — motion in screen space pixels.",
+        "Enable vector motion blur in comp using this pass.",
+        "Eliminates need for re-render if motion blur needs adjustment."
+      ],
+      "artistic_constraints": ["World-space vectors — not screen-space normalized."]
+    },
+    {
+      "stage_id": "cryptomatte",
+      "label": "Cryptomatte",
+      "description": "Per-element matte for clean isolation in comp without rotoscoping.",
+      "orchestration_hints": [
+        "cryptomatte_object — per-object matte.",
+        "cryptomatte_material — per-material matte.",
+        "cryptomatte_asset — per-asset group matte (if shot has asset hierarchy)."
+      ],
+      "artistic_constraints": [
+        "REQUIRED — cryptomatte enables per-element color grading.",
+        "Set up before any render — cannot be added in post."
+      ]
+    }
+  ],
+
+  "execution_order": ["beauty_pass", "diffuse_indirect", "specular_pass", "emission_pass", "volume_scatter", "depth_pass", "normal_pass", "motion_vector_pass", "cryptomatte"],
+
+  "review_expectations": {
+    "beauty": "RGBA beauty pass present.",
+    "diffuse_specular": "Direct/indirect splits present for relighting.",
+    "emission": "Emission AOV active — visible in render output.",
+    "volume": "Volume scattering and opacity passes present.",
+    "depth": "Z pass in world units. 32-bit float.",
+    "motion": "Motion vector pass present and world-space.",
+    "cryptomatte": "Cryptomatte configured. Per-object and per-material."
+  }
+}

@@ -52,6 +52,11 @@ external services. Modules:
     mcp_tool_registry        — semantic tool registry + 11 MCP handlers (§19)
     mcp_transport            — stdio MCP transport wrapping the mcp SDK (§19)
 
+    goal_decomposer          — cinematic goal → ordered workflow + stage sequence (§20)
+    review_engine            — specific cinematic production review feedback (§20)
+    scene_awareness          — terrain scale, renderer, lighting analysis (§20)
+    runtime_narration        — [Runtime]/[Planning]/[Execution]/[Review] narration (§20)
+
 Import order note (Tier 2 constraint):
     houdini_runtime registers rollback handlers with transaction_manager at
     import time. houdini_runtime.py imports transaction_manager directly at
@@ -72,6 +77,7 @@ Callers import the submodule they need directly:
     from src.runtime import orchestration_heuristics, recommendation_engine
     from src.runtime import resource_optimizer, failure_intelligence, execution_quality
     from src.runtime import studio_knowledge
+    from src.runtime import goal_decomposer, review_engine, scene_awareness, runtime_narration
     from src.runtime.scene_cache import get_scene_cache
 """
 
@@ -126,6 +132,11 @@ __all__ = [
     "mcp_session",
     "mcp_tool_registry",
     "mcp_transport",
+    # Production Semantic Intelligence (§20)
+    "goal_decomposer",
+    "review_engine",
+    "scene_awareness",
+    "runtime_narration",
 ]
 
 

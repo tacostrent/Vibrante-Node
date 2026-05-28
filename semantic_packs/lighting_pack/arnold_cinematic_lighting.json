@@ -1,0 +1,125 @@
+{
+  "workflow_id": "arnold_cinematic_lighting",
+  "workflow_name": "Arnold Cinematic Lighting",
+  "pack": "lighting_pack",
+  "version": "1.0.0",
+  "description": "Production-quality Arnold lighting for cinematic FX shots — key/rim separation, volumetric scatter, atmospheric depth.",
+  "renderer_requirements": ["arnold"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "sky_hdri_or_skydome",
+      "label": "Sky / HDRI Base",
+      "description": "Establish base environmental lighting from sky or HDRI.",
+      "operations": [
+        {"op": "create_node", "parent": "/obj", "type": "geo", "name": "env_light_geo",
+         "notes": "Arnold skydome light at /obj level."}
+      ],
+      "orchestration_hints": [
+        "Use Arnold SkyDomeLightNode if HDRI available.",
+        "Otherwise use procedural sky (ai_physical_sky).",
+        "Intensity 0.3–0.8 for explosion context — not overpowering."
+      ],
+      "artistic_constraints": ["Sky exposure must not overpower hero FX lighting.", "HDRI rotation must match sun direction."]
+    },
+    {
+      "stage_id": "key_light_placement",
+      "label": "Key Light",
+      "description": "Primary cinematic key light — warm side fill from explosion direction.",
+      "orchestration_hints": [
+        "Directional or area light at 30–60 degree elevation.",
+        "Color temperature: 3200–4500K (warm orange for explosion context).",
+        "Intensity: 4.0–8.0 relative to fill."
+      ],
+      "artistic_constraints": [
+        "Key-to-fill ratio minimum 4:1.",
+        "Must come from the direction of the explosion source.",
+        "Shadow must be ray-traced — no shadow maps."
+      ]
+    },
+    {
+      "stage_id": "rim_light_placement",
+      "label": "Rim Light",
+      "description": "Back rim light to separate hero elements from background.",
+      "orchestration_hints": [
+        "Opposite side from key — 160–200 degree from key.",
+        "Color: cool blue/white (6000–8000K).",
+        "Intensity: 1.5–3.0. Strong enough to create visible rim."
+      ],
+      "artistic_constraints": [
+        "Rim must be visible on hero FX element silhouette.",
+        "Light linking — rim hits FX only, not terrain."
+      ]
+    },
+    {
+      "stage_id": "fill_light",
+      "label": "Fill Light",
+      "description": "Soft ambient fill to recover shadow detail without destroying contrast.",
+      "orchestration_hints": [
+        "Large soft source — area light or dome contribution.",
+        "Intensity 0.5–1.5 (1/4 to 1/6 of key).",
+        "Color: desaturated neutral."
+      ],
+      "artistic_constraints": [
+        "Fill must preserve shadow contrast — not fill shadows to black.",
+        "No fill specular contribution — avoid flat look."
+      ]
+    },
+    {
+      "stage_id": "volumetric_atmosphere",
+      "label": "Volumetric Atmosphere",
+      "description": "Add volumetric scatter to atmosphere — air feels thick and cinematic.",
+      "orchestration_hints": [
+        "Arnold atmosphere shader or Houdini atmosphere volume.",
+        "Density: 0.05–0.15 (light scatter, not fog).",
+        "Enabled only on directional lights — not fill."
+      ],
+      "artistic_constraints": [
+        "Volumetric must be present — flat atmosphere not acceptable.",
+        "Godrays visible through smoke.",
+        "Scatter must contribute to color — warm in key direction."
+      ]
+    },
+    {
+      "stage_id": "shadow_control",
+      "label": "Shadow Control",
+      "description": "Configure shadow properties for cinematic feel.",
+      "orchestration_hints": [
+        "Shadow density: 0.85–0.95 — not pure black.",
+        "Light radius/angle drives softness.",
+        "Large source = soft penumbra on organic elements."
+      ],
+      "artistic_constraints": [
+        "No hard-edge shadows on smoke or debris.",
+        "Ground shadows must have visible penumbra."
+      ]
+    },
+    {
+      "stage_id": "exposure_balance",
+      "label": "Exposure Balance",
+      "description": "Set final exposure — highlights hold detail, shadows readable.",
+      "orchestration_hints": [
+        "Arnold exposure in camera node or render settings.",
+        "Target: fireball luminance near 1.0–2.0 (allow bloom).",
+        "Ground: 0.1–0.3.",
+        "Sky: 0.4–0.7."
+      ],
+      "artistic_constraints": [
+        "Fireball may blow out slightly — expected.",
+        "Ground must not be pure black.",
+        "No clipping in AOV passes — use exposure, not gamma."
+      ]
+    }
+  ],
+
+  "execution_order": ["sky_hdri_or_skydome", "key_light_placement", "rim_light_placement", "fill_light", "volumetric_atmosphere", "shadow_control", "exposure_balance"],
+
+  "review_expectations": {
+    "contrast": "Clear key/fill separation. Not flat ambient lighting.",
+    "rim": "Rim light visible on hero FX silhouette.",
+    "volumetric": "Atmosphere scatter visible — air feels thick.",
+    "shadows": "Penumbra on organic elements. Ground shadows readable.",
+    "exposure": "Highlights hold some detail. Shadows not pure black.",
+    "color": "Warm key, cool rim. Color temperature separation."
+  }
+}

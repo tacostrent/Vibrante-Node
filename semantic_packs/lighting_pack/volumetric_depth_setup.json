@@ -1,0 +1,78 @@
+{
+  "workflow_id": "volumetric_depth_setup",
+  "workflow_name": "Volumetric Depth Lighting",
+  "pack": "lighting_pack",
+  "version": "1.0.0",
+  "description": "High-contrast volumetric lighting for explosion and smoke environments — godrays, volumetric shadows, atmospheric depth.",
+  "renderer_requirements": ["arnold", "karma"],
+
+  "orchestration_stages": [
+    {
+      "stage_id": "volume_skydome",
+      "label": "Volume-Enabled Sky Base",
+      "description": "Sky setup with volume scatter contribution enabled.",
+      "dependencies": [],
+      "orchestration_hints": ["Enable volume contribution on sky. Low intensity — 0.2–0.5."]
+    },
+    {
+      "stage_id": "directional_key",
+      "label": "Strong Directional Key",
+      "description": "High-intensity directional light for godray production.",
+      "dependencies": ["volume_skydome"],
+      "orchestration_hints": [
+        "Directional light at 30–50 degree angle.",
+        "High intensity — 5.0–12.0.",
+        "Volume contribution ENABLED — this drives godrays.",
+        "Color: warm 4000–5000K."
+      ],
+      "artistic_constraints": ["Strong directionality required. Not diffuse ambient."]
+    },
+    {
+      "stage_id": "volumetric_shadows",
+      "label": "Volumetric Shadow Casting",
+      "description": "Configure volumes to cast visible shadows onto ground and each other.",
+      "dependencies": ["directional_key"],
+      "orchestration_hints": [
+        "Enable volume shadow casting in Arnold render settings.",
+        "Shadow density multiplier: 1.5–2.0 inside volume."
+      ],
+      "artistic_constraints": [
+        "Pyro volume must cast visible shadow onto ground.",
+        "Shadow edge must be soft — not sharp."
+      ]
+    },
+    {
+      "stage_id": "godrays_setup",
+      "label": "Godray Configuration",
+      "description": "Configure atmosphere scatter to produce visible godrays through smoke.",
+      "dependencies": ["directional_key"],
+      "orchestration_hints": [
+        "Atmosphere scatter density: 0.08–0.2.",
+        "Phase function: anisotropic (Mie scatter) — forward scattering.",
+        "Godrays appear where light passes through gaps in smoke."
+      ],
+      "artistic_constraints": [
+        "Godrays must be visible through smoke layer.",
+        "Not overpowering — subtle depth enhancement.",
+        "Color tinted by atmosphere density."
+      ]
+    },
+    {
+      "stage_id": "secondary_bounce",
+      "label": "Secondary Bounce Fill",
+      "description": "GI bounce fill from ground to recover shadow detail.",
+      "dependencies": ["volumetric_shadows"],
+      "orchestration_hints": ["Enable GI bounce minimum 2. Ground bounce fills smoke underside."],
+      "artistic_constraints": ["Smoke underside must not be pure black. Faint warm bounce expected."]
+    }
+  ],
+
+  "execution_order": ["volume_skydome", "directional_key", "volumetric_shadows", "godrays_setup", "secondary_bounce"],
+
+  "review_expectations": {
+    "godrays": "Godrays visible through smoke gaps. Directional and light-source-consistent.",
+    "volume_shadows": "Pyro volume casts visible shadow on ground. Edge is soft.",
+    "directionality": "Strong directional character. Not ambient-only.",
+    "color": "Warm in key direction, cooler in shadow. Color temperature separation."
+  }
+}

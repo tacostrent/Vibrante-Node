@@ -1,0 +1,96 @@
+{
+    "nodes": [
+        {
+            "instance_id": "a1b2c3d4-0001-4000-8000-000000000001",
+            "node_id": "scene_intent_extractor",
+            "position": [-200.0, 0.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "prompt": "Write your scene description here...",
+                "extra_context": null,
+                "skip_enrichment": false,
+                "intent_json": "",
+                "intent": null,
+                "ok": false,
+                "confidence": 0.0,
+                "errors": [],
+                "warnings": [],
+                "pipeline_stages": []
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1b2c3d4-0002-4000-8000-000000000002",
+            "node_id": "console_print",
+            "position": [260.0, -120.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "data": "",
+                "out": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1b2c3d4-0003-4000-8000-000000000003",
+            "node_id": "console_print",
+            "position": [260.0, 60.0],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "data": "",
+                "out": ""
+            },
+            "state": "idle"
+        }
+    ],
+    "connections": [
+        {
+            "id": "c0000001-0000-4000-8000-000000000001",
+            "from_node": "a1b2c3d4-0001-4000-8000-000000000001",
+            "from_port": "exec_out",
+            "to_node": "a1b2c3d4-0002-4000-8000-000000000002",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "c0000001-0000-4000-8000-000000000002",
+            "from_node": "a1b2c3d4-0002-4000-8000-000000000002",
+            "from_port": "exec_out",
+            "to_node": "a1b2c3d4-0003-4000-8000-000000000003",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "c0000001-0000-4000-8000-000000000003",
+            "from_node": "a1b2c3d4-0001-4000-8000-000000000001",
+            "from_port": "intent_json",
+            "to_node": "a1b2c3d4-0002-4000-8000-000000000002",
+            "to_port": "data",
+            "is_exec": false
+        },
+        {
+            "id": "c0000001-0000-4000-8000-000000000004",
+            "from_node": "a1b2c3d4-0001-4000-8000-000000000001",
+            "from_port": "warnings",
+            "to_node": "a1b2c3d4-0003-4000-8000-000000000003",
+            "to_port": "data",
+            "is_exec": false
+        }
+    ],
+    "sticky_notes": [
+        {
+            "id": "note-0001-0000-4000-8000-000000000001",
+            "position": [-200.0, -180.0],
+            "size": [700.0, 120.0],
+            "text": "Semantic Scene Intent Pipeline — Phase 1\n\nType a natural language scene description into the 'prompt' field of scene_intent_extractor.\nThe node extracts a validated, enriched SceneIntent JSON.\n\nExamples:\n  'Apocalyptic city at night after a missile strike with heavy smoke'\n  'Desert sandstorm at golden hour with sparse vegetation'\n  'Arctic mountain range at dawn with fog and snow'",
+            "color": "#e8f4fd"
+        }
+    ],
+    "backdrops": [],
+    "metadata": {
+        "name": "Semantic Scene Intent — Phase 1",
+        "description": "Extracts a structured SceneIntent from a natural language prompt. Uses deterministic keyword extraction with optional LLM enhancement."
+    }
+}
