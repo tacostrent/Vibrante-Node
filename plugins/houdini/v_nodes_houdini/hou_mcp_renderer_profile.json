@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_renderer_profile",
+    "name": "hou_mcp_renderer_profile",
+    "description": "Get renderer-aware material class mappings for Arnold (standard_surface), Karma (mtlxstandard_surface), or USD Preview Surface. Validates renderer support.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "renderer",      "type": "string", "widget_type": "text", "options": null, "default": "usd_preview_surface"},
+        {"name": "material_name", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",       "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "profile_json",         "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "material_mapping_json","type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "renderer_supported",   "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",             "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lookdev import get_renderer_profiles\nimport json\n\nclass Hou_Mcp_Renderer_Profile(BaseNode):\n    name = \"hou_mcp_renderer_profile\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"renderer\",      \"string\", widget_type=\"text\", default=\"usd_preview_surface\")\n        self.add_input(\"material_name\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"profile_json\",          \"string\")\n        self.add_output(\"material_mapping_json\", \"string\")\n        self.add_output(\"renderer_supported\",    \"bool\")\n\n    async def execute(self, inputs):\n        renderer      = str(inputs.get(\"renderer\",      \"usd_preview_surface\") or \"usd_preview_surface\")\n        material_name = str(inputs.get(\"material_name\", \"\") or \"\")\n        try:\n            profiles = get_renderer_profiles()\n            supported = profiles.validate_renderer_support(renderer)\n            profile   = profiles.get_profile(renderer)\n            mapping   = profiles.map_material(material_name, renderer) if material_name.strip() else {}\n            self.log_info(f\"Renderer profile: {renderer} → {profile.material_class} (supported={supported}).\")\n            return {\n                \"profile_json\":          json.dumps(profile.to_dict(), sort_keys=True, default=str),\n                \"material_mapping_json\": json.dumps(mapping, sort_keys=True, default=str),\n                \"renderer_supported\":    supported,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Renderer profile query failed: {exc}\")\n            return {\"profile_json\": \"{}\", \"material_mapping_json\": \"{}\", \"renderer_supported\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Renderer_Profile\n"
+}

@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_load_plan",
+    "name": "Houdini MCP: Load Plan",
+    "description": "Reads a saved scene plan JSON file from disk and extracts the operations array for use with hou_mcp_transaction. Accepts the full plan object {ok, intent, operations} or a bare operations array. Wire operations_json into hou_mcp_transaction's 'operations' input to execute the plan.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",    "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "plan_file",  "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",        "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "operations_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "intent",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "op_count",        "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "ok",              "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nimport os\n\nasync def execute(self, inputs):\n    plan_file = str(inputs.get('plan_file') or '').strip()\n    if not plan_file:\n        self.log_error('[LoadPlan] plan_file path is required.')\n        return {'operations_json': '[]', 'intent': '', 'op_count': 0, 'ok': False, 'exec_out': True}\n\n    if not os.path.isfile(plan_file):\n        self.log_error(f'[LoadPlan] File not found: {plan_file}')\n        return {'operations_json': '[]', 'intent': '', 'op_count': 0, 'ok': False, 'exec_out': True}\n\n    try:\n        with open(plan_file, 'r', encoding='utf-8') as f:\n            data = json.load(f)\n    except Exception as e:\n        self.log_error(f'[LoadPlan] Failed to read {plan_file}: {e}')\n        return {'operations_json': '[]', 'intent': '', 'op_count': 0, 'ok': False, 'exec_out': True}\n\n    # Accept {ok, intent, operations:[...]} wrapper OR a bare [...] array\n    if isinstance(data, list):\n        operations = data\n        intent = ''\n    elif isinstance(data, dict):\n        operations = data.get('operations', [])\n        intent = str(data.get('intent', ''))\n    else:\n        self.log_error(f'[LoadPlan] Unexpected JSON root type: {type(data).__name__}')\n        return {'operations_json': '[]', 'intent': '', 'op_count': 0, 'ok': False, 'exec_out': True}\n\n    if not isinstance(operations, list):\n        self.log_error('[LoadPlan] operations field is not a list.')\n        return {'operations_json': '[]', 'intent': intent, 'op_count': 0, 'ok': False, 'exec_out': True}\n\n    self.log_info(f'[LoadPlan] Loaded {len(operations)} operation(s) from {os.path.basename(plan_file)}')\n    if intent:\n        self.log_info(f'[LoadPlan] Intent: {intent}')\n\n    return {\n        'operations_json': json.dumps(operations),\n        'intent':          intent,\n        'op_count':        len(operations),\n        'ok':              True,\n        'exec_out':        True,\n    }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Load_Plan(BaseNode):\n        name = 'hou_mcp_load_plan'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Load_Plan"
+}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Technical Feature List — Vibrante-Node v2.4.0</title>
+<title>Technical Feature List — Vibrante-Node v2.5.0</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -49,7 +49,8 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="DOCUMENTATION.html">Technical Feature List</a>
   <hr style="border-color:#313244;margin:10px 18px">
   <h2 style="margin-top:8px">Release Notes</h2>
-  <a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
+  <a class="nav-release" href="RELEASE_v2.5.0.html">Release Notes v2.5.0</a>
+<a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
 <a class="nav-release" href="RELEASE_v2.3.0.html">Release Notes v2.3.0</a>
 <a class="nav-release" href="RELEASE_v2.2.1.html">Release Notes v2.2.1</a>
 <a class="nav-release" href="RELEASE_v2.2.0.html">Release Notes v2.2.0</a>
@@ -84,6 +85,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="#string" style="padding-left:32px">String</a>
 <a href="#data-structures" style="padding-left:32px">Data Structures</a>
 <a href="#houdini" style="padding-left:32px">Houdini</a>
+<a href="#mcp-generic-bundled-with-every-install" style="padding-left:32px">MCP (Generic — bundled with every install)</a>
 <a href="#maya-25-nodes-headless-action-pattern" style="padding-left:32px">Maya (25 nodes — headless action pattern)</a>
 <a href="#blender-21-nodes-headless-action-pattern" style="padding-left:32px">Blender (21 nodes — headless action pattern)</a>
 <a href="#prism-pipeline-62-nodes" style="padding-left:32px">Prism Pipeline (62 nodes)</a>
@@ -104,6 +106,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="#node-definition-json-schema" style="padding-left:32px">Node Definition JSON Schema</a>
 <a href="#5-environment-variables-reference" style="padding-left:18px">5. Environment Variables Reference</a>
 <a href="#built-in-variables" style="padding-left:32px">Built-in Variables</a>
+<a href="#mcp-runtime-variables" style="padding-left:32px">MCP Runtime Variables</a>
 <a href="#user-configurable-variables-envmanager" style="padding-left:32px">User-Configurable Variables (EnvManager)</a>
 <a href="#accessing-variables-in-nodes" style="padding-left:32px">Accessing Variables in Nodes</a>
 <a href="#6-scripting-console-api-reference" style="padding-left:18px">6. Scripting Console API Reference</a>
@@ -121,6 +124,20 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="#node-execution-states" style="padding-left:32px">Node Execution States</a>
 <a href="#execution-timing" style="padding-left:32px">Execution Timing</a>
 <a href="#11-error-index" style="padding-left:18px">11. Error Index</a>
+<a href="#12-runtime-layer-api-reference" style="padding-left:18px">12. Runtime Layer API Reference</a>
+<a href="#srcruntimemcp_runtime-mcp-client-registry" style="padding-left:32px">src.runtime.mcp_runtime — MCP Client Registry</a>
+<a href="#srcruntimehoudini_runtime-semantic-houdini-ops" style="padding-left:32px">src.runtime.houdini_runtime — Semantic Houdini Ops</a>
+<a href="#srcruntimescene_cache-per-run-cache" style="padding-left:32px">src.runtime.scene_cache — Per-Run Cache</a>
+<a href="#srcruntimetransaction_manager-transaction-lifecycle" style="padding-left:32px">src.runtime.transaction_manager — Transaction Lifecycle</a>
+<a href="#srcruntimesemantic_execution-semantic-executor" style="padding-left:32px">src.runtime.semantic_execution — Semantic Executor</a>
+<a href="#srcruntimevalidation_engine-pre-execution-validator" style="padding-left:32px">src.runtime.validation_engine — Pre-Execution Validator</a>
+<a href="#13-mcp-semantic-tools-reference" style="padding-left:18px">13. MCP Semantic Tools Reference</a>
+<a href="#runtime-tools" style="padding-left:32px">Runtime Tools</a>
+<a href="#knowledge-tools" style="padding-left:32px">Knowledge Tools</a>
+<a href="#planning-tools" style="padding-left:32px">Planning Tools</a>
+<a href="#execution-tools" style="padding-left:32px">Execution Tools</a>
+<a href="#additional-tool" style="padding-left:32px">Additional Tool</a>
+<a href="#forbidden-tool-surface" style="padding-left:32px">Forbidden Tool Surface</a>
 </nav>
 <main class="content">
 <h1 id="vibrante-node-technical-reference">Vibrante-Node — Technical Reference</h1>
@@ -140,6 +157,8 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <li><a href="#9-keyboard-shortcuts">Keyboard Shortcuts — Complete Table</a></li>
 <li><a href="#10-log-and-state-reference">Log Levels and Node States Reference</a></li>
 <li><a href="#11-error-index">Error Codes and Troubleshooting Index</a></li>
+<li><a href="#12-runtime-layer-api-reference">Runtime Layer API Reference</a></li>
+<li><a href="#13-mcp-semantic-tools-reference">MCP Semantic Tools Reference</a></li>
 </ol>
 <hr />
 <h2 id="1-node-library-full-index">1. Node Library — Full Index</h2>
@@ -258,14 +277,9 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </thead>
 <tbody>
 <tr>
-<td><code>add</code></td>
-<td>Math</td>
-<td>Add two numbers</td>
-</tr>
-<tr>
 <td><code>math_add</code></td>
 <td>Math</td>
-<td>Add with float inputs</td>
+<td>Add two numbers (renamed from <code>add</code> in v2.4.0)</td>
 </tr>
 <tr>
 <td><code>add_integers</code></td>
@@ -317,29 +331,24 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </thead>
 <tbody>
 <tr>
-<td><code>concat</code></td>
+<td><code>string_split</code></td>
 <td>String</td>
-<td>Concatenate two strings</td>
+<td>Split string by delimiter (was <code>split</code> pre-v2.4.0)</td>
 </tr>
 <tr>
-<td><code>split</code></td>
+<td><code>string_replace</code></td>
 <td>String</td>
-<td>Split string by delimiter</td>
+<td>String replacement (was <code>replace</code> pre-v2.4.0)</td>
 </tr>
 <tr>
-<td><code>replace</code></td>
+<td><code>string_lowercase</code></td>
 <td>String</td>
-<td>String replacement</td>
+<td>Convert to lowercase (was <code>lowercase</code> pre-v2.4.0)</td>
 </tr>
 <tr>
-<td><code>lowercase</code></td>
+<td><code>string_uppercase</code></td>
 <td>String</td>
-<td>Convert to lowercase</td>
-</tr>
-<tr>
-<td><code>uppercase</code></td>
-<td>String</td>
-<td>Convert to uppercase</td>
+<td>Convert to uppercase (was <code>uppercase</code> pre-v2.4.0)</td>
 </tr>
 <tr>
 <td><code>string_length</code></td>
@@ -348,6 +357,9 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><code>concat</code> and <code>multiply</code> were removed in v2.4.0 — no direct replacements.</p>
+</blockquote>
 <h3 id="data-structures">Data Structures</h3>
 <table>
 <thead>
@@ -449,6 +461,156 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <td><code>hou_sop_chain</code></td>
 <td>Houdini</td>
 <td>Build and cook a SOP chain</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI Orchestration nodes</strong> — require the Houdini plugin (<code>v_nodes_dir</code>); ship in <code>plugins/houdini/v_nodes_houdini/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Node ID</th>
+<th>Tier</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hou_mcp_scene_context</code></td>
+<td>1</td>
+<td>Structured scene snapshot (selection, networks, HDAs, render nodes) for LLM agents</td>
+</tr>
+<tr>
+<td><code>hou_mcp_build_node_chain</code></td>
+<td>1</td>
+<td>Build a Houdini network from a declarative JSON spec</td>
+</tr>
+<tr>
+<td><code>hou_mcp_transaction</code></td>
+<td>2</td>
+<td>Transactional execution boundary — commit or rollback on failure</td>
+</tr>
+<tr>
+<td><code>hou_mcp_graph_diff</code></td>
+<td>2</td>
+<td>Return diff of scene changes since last read (created/modified/deleted)</td>
+</tr>
+<tr>
+<td><code>hou_mcp_execution_preview</code></td>
+<td>2.5</td>
+<td>Preview operation impact without executing</td>
+</tr>
+<tr>
+<td><code>hou_mcp_replay_transaction</code></td>
+<td>2.5</td>
+<td>Deterministically replay a previously recorded transaction</td>
+</tr>
+<tr>
+<td><code>hou_mcp_semantic_execute</code></td>
+<td>2.75</td>
+<td>Translate a named intent to ops and execute via transaction system</td>
+</tr>
+<tr>
+<td><code>hou_mcp_runtime_capabilities</code></td>
+<td>2.75</td>
+<td>Query the capability registry (no bridge calls)</td>
+</tr>
+<tr>
+<td><code>hou_mcp_workflow_templates</code></td>
+<td>2.75</td>
+<td>Browse templates and/or resolve to concrete op lists</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_plan</code></td>
+<td>3</td>
+<td>NL prompt → parsed intent → context analysis → validated execution plan</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_preview</code></td>
+<td>3</td>
+<td>Validate an AI plan without executing — returns risk, errors, capability gaps</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_execute</code></td>
+<td>3</td>
+<td>Execute a validated AI plan via the transaction system with approval gate</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_review</code></td>
+<td>3</td>
+<td>Post-execution review — did execution match the original intent?</td>
+</tr>
+<tr>
+<td><code>hou_mcp_runtime_federation</code></td>
+<td>4</td>
+<td>Register and discover peer runtimes; exchange capabilities</td>
+</tr>
+<tr>
+<td><code>hou_mcp_distributed_execute</code></td>
+<td>4</td>
+<td>Execute operations on a distributed worker pool</td>
+</tr>
+<tr>
+<td><code>hou_mcp_agent_plan</code></td>
+<td>4</td>
+<td>Submit a supervised agent proposal (planning only — never executes directly)</td>
+</tr>
+<tr>
+<td><code>hou_mcp_remote_worker</code></td>
+<td>4</td>
+<td>Register, heartbeat, acquire, and release remote workers</td>
+</tr>
+<tr>
+<td><code>hou_mcp_knowledge_query</code></td>
+<td>4</td>
+<td>Query or update the production knowledge graph</td>
+</tr>
+<tr>
+<td><code>hou_mcp_runtime_analytics</code></td>
+<td>5</td>
+<td>Execution performance reports (advisory, no bridge calls)</td>
+</tr>
+<tr>
+<td><code>hou_mcp_predictive_execution</code></td>
+<td>5</td>
+<td>Heuristic failure prediction for a batch of operations</td>
+</tr>
+<tr>
+<td><code>hou_mcp_workflow_optimizer</code></td>
+<td>5</td>
+<td>Advisory execution path analysis and optimization tips</td>
+</tr>
+<tr>
+<td><code>hou_mcp_recommendation_engine</code></td>
+<td>5</td>
+<td>Advisory workflow, template, and strategy recommendations</td>
+</tr>
+<tr>
+<td><code>hou_mcp_execution_quality</code></td>
+<td>5</td>
+<td>Orchestration-level quality evaluation (efficiency, stability, correctness)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mcp-generic-bundled-with-every-install">MCP (Generic — bundled with every install)</h3>
+<table>
+<thead>
+<tr>
+<th>Node ID</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp_server_init</code></td>
+<td>Configure and open an MCP client session; cached by <code>server_name</code></td>
+</tr>
+<tr>
+<td><code>mcp_list_tools</code></td>
+<td>Enumerate tools on a registered MCP server</td>
+</tr>
+<tr>
+<td><code>mcp_call_tool</code></td>
+<td>Invoke any MCP tool with JSON arguments</td>
 </tr>
 </tbody>
 </table>
@@ -1167,6 +1329,43 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </tr>
 </tbody>
 </table>
+<h3 id="mcp-runtime-variables">MCP Runtime Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VIBRANTE_MCP_TIMEOUT</code></td>
+<td><code>30</code></td>
+<td>Per-call timeout in seconds for MCP client calls</td>
+</tr>
+<tr>
+<td><code>VIBRANTE_AUDIT_PATH</code></td>
+<td><code>~/.vibrante_node_audit.jsonl</code></td>
+<td>JSONL audit trail for transaction history</td>
+</tr>
+<tr>
+<td><code>VIBRANTE_SEMANTIC_MEMORY_PATH</code></td>
+<td>(in-memory)</td>
+<td>Persistent semantic memory store (JSONL)</td>
+</tr>
+<tr>
+<td><code>VIBRANTE_PLANNING_MEMORY_PATH</code></td>
+<td>(in-memory)</td>
+<td>Persistent planning event store (JSONL)</td>
+</tr>
+<tr>
+<td><code>VIBRANTE_STUDIO_KNOWLEDGE_PATH</code></td>
+<td>(in-memory)</td>
+<td>Studio pipeline pattern store (JSONL)</td>
+</tr>
+</tbody>
+</table>
 <h3 id="user-configurable-variables-envmanager">User-Configurable Variables (EnvManager)</h3>
 <table>
 <thead>
@@ -1559,6 +1758,18 @@ hip_path = os.environ.get(&quot;VIBRANTE_HIP_FILE&quot;, &quot;&quot;)
 <td>—</td>
 <td><code>{"hip_file", "houdini_version", "fps", "frame", "frame_range"}</code></td>
 <td></td>
+</tr>
+<tr>
+<td><code>get_selection()</code></td>
+<td>—</td>
+<td><code>{"paths": list[str]}</code></td>
+<td>Selected node paths; <code>[]</code> in headless (v2.4.0+)</td>
+</tr>
+<tr>
+<td><code>network_summary(path)</code></td>
+<td>str</td>
+<td><code>list[{"name", "type", "path", "category"}]</code></td>
+<td>Children with category in one round-trip (v2.4.0+)</td>
 </tr>
 </tbody>
 </table>
@@ -1956,6 +2167,456 @@ hip_path = os.environ.get(&quot;VIBRANTE_HIP_FILE&quot;, &quot;&quot;)
 </tbody>
 </table>
 <hr />
+<h2 id="12-runtime-layer-api-reference">12. Runtime Layer API Reference</h2>
+<p>The <code>src/runtime/</code> module is the orchestration seam between graph nodes and DCCs / MCP servers. All functions are async unless noted.</p>
+<h3 id="srcruntimemcp_runtime-mcp-client-registry"><code>src.runtime.mcp_runtime</code> — MCP Client Registry</h3>
+<pre><code class="language-python">from src.runtime import mcp_runtime
+
+await mcp_runtime.register_server(name, transport, config)
+# transport: &quot;stdio&quot; | &quot;sse&quot;
+# stdio config: {&quot;command&quot;: str, &quot;args&quot;: list, &quot;env&quot;: dict|None}
+# sse config:   {&quot;url&quot;: str, &quot;headers&quot;: dict|None}
+# returns: {&quot;connected&quot;: bool, &quot;server_info&quot;: {...}, &quot;capabilities&quot;: {...}}
+
+await mcp_runtime.list_tools(server_name)
+# returns: [{&quot;name&quot;, &quot;description&quot;, &quot;inputSchema&quot;}, ...]
+
+await mcp_runtime.call_tool(server_name, tool_name, arguments)
+# returns: {&quot;result&quot;: any, &quot;result_json&quot;: str, &quot;is_error&quot;: bool}
+
+await mcp_runtime.shutdown_server(server_name)
+await mcp_runtime.shutdown_all()
+mcp_runtime.shutdown_all_sync()          # sync wrapper — for closeEvent
+</code></pre>
+<p><strong>Lifecycle:</strong> Sessions persist across graph executions. Torn down only by <code>shutdown_server</code> / <code>shutdown_all</code>. <code>shutdown_all_sync()</code> is called automatically by <code>MainWindow.closeEvent</code>. Override timeout via <code>VIBRANTE_MCP_TIMEOUT</code> or <code>arguments["_timeout_sec"]</code>.</p>
+<h3 id="srcruntimehoudini_runtime-semantic-houdini-ops"><code>src.runtime.houdini_runtime</code> — Semantic Houdini Ops</h3>
+<pre><code class="language-python">from src.runtime import houdini_runtime
+
+context = await houdini_runtime.scene_context(
+    include_selection=True, include_assets=True,
+    include_render=True, force_refresh=False
+)
+# returns shape-stable dict:
+# {
+#   &quot;scene&quot;:     {&quot;hip_file&quot;, &quot;hip_name&quot;, &quot;houdini_version&quot;, &quot;fps&quot;, &quot;frame&quot;, &quot;frame_range&quot;},
+#   &quot;selection&quot;: [{&quot;path&quot;, &quot;type&quot;, &quot;category&quot;}, ...],
+#   &quot;networks&quot;:  {&quot;obj&quot;:[...], &quot;mat&quot;:[...], &quot;out&quot;:[...], ...},
+#   &quot;assets&quot;:    {&quot;hda_files&quot;: [...], &quot;definitions&quot;: [...]},
+#   &quot;render&quot;:    {&quot;render_nodes&quot;: [{&quot;path&quot;, &quot;type&quot;}, ...]}
+# }
+
+result = await houdini_runtime.build_node_chain(spec)
+# spec: {&quot;intent&quot;: str, &quot;nodes&quot;: [...], &quot;connections&quot;: [...], &quot;layout&quot;: bool, &quot;cook&quot;: bool}
+# returns: {&quot;ok&quot;: bool, &quot;error&quot;: str, &quot;created_paths&quot;: [...], &quot;id_to_path&quot;: {...}}
+
+result = await houdini_runtime.execute_operation(op)
+# op: {&quot;op&quot;: str, &quot;parent&quot;/&quot;node&quot;/...: str, ...}
+# returns recorded-operation dict: {&quot;op&quot;, &quot;params&quot;, &quot;result&quot;, &quot;snapshot&quot;, &quot;status&quot;, &quot;error&quot;, &quot;dirty&quot;, &quot;timestamp&quot;}
+</code></pre>
+<p><strong><code>execute_operation</code> invariant:</strong> never raises. Failures are captured in <code>status="failed"</code> + <code>error</code> fields.</p>
+<h3 id="srcruntimescene_cache-per-run-cache"><code>src.runtime.scene_cache</code> — Per-Run Cache</h3>
+<pre><code class="language-python">from src.runtime.scene_cache import get_scene_cache
+
+cache = get_scene_cache()
+cache.set(&quot;key&quot;, value, ttl_sec=5.0)
+cache.get(&quot;key&quot;)                          # None if missing or expired
+cache.invalidate(&quot;scene_context::&quot;)       # call after any mutating op
+cache.get_dirty_nodes()                   # dict[str, list] — sorted, JSON-serialisable
+cache.clear_dirty_state()
+cache.stats()
+</code></pre>
+<p><strong>Rule:</strong> every <code>houdini_runtime</code> function that mutates Houdini state MUST call <code>cache.invalidate("scene_context::")</code> before returning.</p>
+<h3 id="srcruntimetransaction_manager-transaction-lifecycle"><code>src.runtime.transaction_manager</code> — Transaction Lifecycle</h3>
+<pre><code class="language-python">from src.runtime.transaction_manager import get_transaction_manager
+
+mgr = get_transaction_manager()
+
+txn_id = mgr.begin_transaction(name, metadata={})
+mgr.record_operation(txn_id, recorded_op)
+mgr.commit_transaction(txn_id)
+mgr.rollback_transaction(txn_id)         # calls rollback handlers in reverse
+mgr.mark_failed(txn_id, error)
+txn = mgr.get_transaction(txn_id)        # full dict
+mgr.get_history(limit=50)               # newest-first list of dicts
+
+# Register a rollback handler (DCC-agnostic)
+mgr.register_rollback_handler(&quot;create_node&quot;, async_handler_fn)
+</code></pre>
+<p><strong>State machine:</strong> <code>pending → committed | rolled_back | failed</code> (all terminal). Rollback never raises — exceptions from handlers are captured in <code>rollback_errors</code>.</p>
+<h3 id="srcruntimesemantic_execution-semantic-executor"><code>src.runtime.semantic_execution</code> — Semantic Executor</h3>
+<pre><code class="language-python">from src.runtime.semantic_execution import get_semantic_executor
+
+executor = get_semantic_executor()
+
+# Translate only (no execution)
+plan = await executor.translate(intent_id, context)
+
+# Full execution pipeline
+result = await executor.execute(
+    intent_id, context,
+    dry_run=False, auto_commit=True, rollback_on_error=True
+)
+# Pipeline: SemanticRegistry → CapabilityRegistry → RuntimeConstraints →
+#           ValidationEngine → ResourceEstimator → TransactionManager → AuditStore
+</code></pre>
+<h3 id="srcruntimevalidation_engine-pre-execution-validator"><code>src.runtime.validation_engine</code> — Pre-Execution Validator</h3>
+<pre><code class="language-python">from src.runtime.validation_engine import get_validation_engine
+
+result = await get_validation_engine().validate_operations(operations)
+# result: {&quot;valid&quot;: bool, &quot;errors&quot;: [...], &quot;warnings&quot;: [...],
+#          &quot;risk_level&quot;: &quot;low&quot;|&quot;medium&quot;|&quot;high&quot;, &quot;op_count&quot;: int, &quot;summary&quot;: str}
+</code></pre>
+<p><strong>Risk weights:</strong> <code>delete_node=10</code>, <code>set_parms/connect_nodes/cook_node=1</code>, all others <code>0</code>. <code>low</code> &lt; 1, <code>medium</code> 1–9, <code>high</code> ≥ 10.</p>
+<hr />
+<h2 id="13-mcp-semantic-tools-reference">13. MCP Semantic Tools Reference</h2>
+<p>The MCP server exposes 12 semantic tools via <code>scripts/run_vibrante_mcp.py</code>. All tools route through the validation and transaction system — raw Houdini API names are never exposed.</p>
+<h3 id="runtime-tools">Runtime Tools</h3>
+<h4 id="initialize_runtime_context"><code>initialize_runtime_context</code></h4>
+<p>Warm up all runtime singletons and return the system prompt and bootstrap data. <strong>Call first in every session.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>client_id</code></td>
+<td>string (optional)</td>
+<td>AI client identifier for session tracking</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "bootstrap_data", "system_prompt", "session_id"}</code></p>
+<hr />
+<h4 id="query_runtime_state"><code>query_runtime_state</code></h4>
+<p>Current session state, active goals, pending approvals, and module health.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>session_id</code></td>
+<td>string (optional)</td>
+<td>Session to query; defaults to current</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "session", "active_goals", "pending_approvals", "module_status"}</code></p>
+<hr />
+<h4 id="query_scene_context"><code>query_scene_context</code></h4>
+<p>Structured snapshot of the live Houdini scene. Returns a shape-stable dict safe to use in LLM prompts.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>force_refresh</code></td>
+<td>bool</td>
+<td>Bypass 5-second cache</td>
+</tr>
+<tr>
+<td><code>include_selection</code></td>
+<td>bool</td>
+<td>Include selected node paths</td>
+</tr>
+<tr>
+<td><code>include_assets</code></td>
+<td>bool</td>
+<td>Include loaded HDA definitions</td>
+</tr>
+<tr>
+<td><code>include_render</code></td>
+<td>bool</td>
+<td>Include ROP node list</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "context": {"scene", "selection", "networks", "assets", "render"}, "context_json"}</code></p>
+<hr />
+<h3 id="knowledge-tools">Knowledge Tools</h3>
+<h4 id="query_capabilities"><code>query_capabilities</code></h4>
+<p>List what the runtime can currently do.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cap_type</code></td>
+<td>string (optional)</td>
+<td>Filter by type: <code>houdini_op</code>, <code>renderer</code>, <code>mcp_server</code>, etc.</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "capabilities": [{"id", "cap_type", "metadata"}, ...], "count"}</code></p>
+<hr />
+<h4 id="query_workflow_templates"><code>query_workflow_templates</code></h4>
+<p>Browse built-in workflow templates and optionally resolve one to a concrete op list.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>intent</code></td>
+<td>string (optional)</td>
+<td>Resolve this template to operations</td>
+</tr>
+<tr>
+<td><code>variables</code></td>
+<td>object (optional)</td>
+<td>Template substitution variables</td>
+</tr>
+<tr>
+<td><code>tag</code></td>
+<td>string (optional)</td>
+<td>Filter by tag (e.g. <code>"vfx"</code>, <code>"usd"</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "templates": [...], "resolved_operations"?: [...]}</code></p>
+<hr />
+<h4 id="query_examples"><code>query_examples</code></h4>
+<p>Built-in usage examples for common intents.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>intent</code></td>
+<td>string (optional)</td>
+<td>Return examples for this intent only</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "examples": [{"intent", "description", "operations": [...]}]}</code></p>
+<hr />
+<h3 id="planning-tools">Planning Tools</h3>
+<h4 id="plan_scene"><code>plan_scene</code></h4>
+<p>Translate a natural-language prompt into a validated execution plan. <strong>Never executes.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prompt</code></td>
+<td>string</td>
+<td>Natural-language description of what to build</td>
+</tr>
+<tr>
+<td><code>scene_context</code></td>
+<td>object (optional)</td>
+<td>Output from <code>query_scene_context</code> for richer planning</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "plan": {"plan_id", "intent", "operations", "requires_approval", "resource_estimate", "reasoning"}, "plan_json"}</code></p>
+<hr />
+<h4 id="preview_execution"><code>preview_execution</code></h4>
+<p>Validate and predict the risk of a batch of operations <strong>without executing</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>operations</code></td>
+<td>array</td>
+<td>List of structured operation dicts</td>
+</tr>
+<tr>
+<td><code>include_dependencies</code></td>
+<td>bool</td>
+<td>Include dependency impact analysis</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "valid", "risk_level", "errors", "warnings", "dependency_impact", "preview_json"}</code></p>
+<hr />
+<h4 id="validate_execution_plan"><code>validate_execution_plan</code></h4>
+<p>Structural and constraint validation only — no risk prediction.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>operations</code></td>
+<td>array</td>
+<td>Op list to validate</td>
+</tr>
+<tr>
+<td><code>max_op_count</code></td>
+<td>int (optional)</td>
+<td>Override default max (150)</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "valid", "errors", "warnings", "risk_level"}</code></p>
+<hr />
+<h3 id="execution-tools">Execution Tools</h3>
+<h4 id="execute_workflow_transaction"><code>execute_workflow_transaction</code></h4>
+<p>Execute a plan via the full transaction system. <strong>Requires prior <code>preview_execution</code> call for high-risk plans.</strong></p>
+<p>Two execution paths:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Input</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Named intent</td>
+<td><code>intent</code> + <code>context</code></td>
+<td>Routes through <code>SemanticExecutor.execute()</code> — full Tier 2.75 pipeline</td>
+</tr>
+<tr>
+<td>Plan JSON</td>
+<td><code>plan_json</code></td>
+<td>Safety gates → <code>TransactionManager</code> → <code>execute_operation</code> loop</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>intent</code></td>
+<td>string (optional)</td>
+<td>Named semantic operation (e.g. <code>"build_pyro_source"</code>)</td>
+</tr>
+<tr>
+<td><code>context</code></td>
+<td>object (optional)</td>
+<td>Context variables for intent resolution</td>
+</tr>
+<tr>
+<td><code>plan_json</code></td>
+<td>string (optional)</td>
+<td>JSON-serialised plan from <code>plan_scene</code></td>
+</tr>
+<tr>
+<td><code>dry_run</code></td>
+<td>bool</td>
+<td>Validate only — no execution</td>
+</tr>
+<tr>
+<td><code>auto_commit</code></td>
+<td>bool</td>
+<td>Commit on full success (default <code>true</code>)</td>
+</tr>
+<tr>
+<td><code>rollback_on_error</code></td>
+<td>bool</td>
+<td>Roll back on first failed op (default <code>true</code>)</td>
+</tr>
+<tr>
+<td><code>approver</code></td>
+<td>string (optional)</td>
+<td>Approver identity for high-risk plans</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "status", "transaction_id", "operations_executed", "rollback_performed", "graph_diff", "report_json"}</code></p>
+<p><strong>Safety gates:</strong> plans with <code>ok=False</code> are rejected. Plans with <code>requires_approval=True</code> return <code>status="pending_approval"</code> unless <code>approver</code> is supplied. All ops validated by <code>ValidationEngine</code> + <code>RuntimeConstraints</code> before any bridge call.</p>
+<hr />
+<h4 id="review_execution"><code>review_execution</code></h4>
+<p>Post-execution review — compares what actually happened against the original plan.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>plan_json</code></td>
+<td>string</td>
+<td>The plan that was executed</td>
+</tr>
+<tr>
+<td><code>execution_result_json</code></td>
+<td>string</td>
+<td>Output from <code>execute_workflow_transaction</code></td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "outcome", "intent_match_score", "findings", "recommendations", "diff_analysis"}</code></p>
+<hr />
+<h3 id="additional-tool">Additional Tool</h3>
+<h4 id="query_node_parameters"><code>query_node_parameters</code></h4>
+<p>Inspect the parameter schema of a Houdini node type or live node instance.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>node_path</code></td>
+<td>string</td>
+<td>Absolute Houdini node path (e.g. <code>/obj/geo1/sphere1</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Returns: <code>{"ok", "node_path", "node_type", "parameters": [{"name", "type", "value", "default"}, ...]}</code></p>
+<hr />
+<h3 id="forbidden-tool-surface">Forbidden Tool Surface</h3>
+<p>The following names are never registered as MCP tools and must not appear in the tool list. Any change that introduces them fails <code>test_mcp_tool_registry.py::test_forbidden_tools_not_present</code>:</p>
+<p><code>create_node</code>, <code>set_parm</code>, <code>set_parms</code>, <code>run_python</code>, <code>run_code</code>, <code>delete_node</code>, <code>raw_houdini_execute</code>, <code>connect_nodes</code>, <code>cook_node</code></p>
+<hr />
 <p><strong>Documentation map:</strong></p>
 <table>
 <thead>
@@ -2029,6 +2690,50 @@ hip_path = os.environ.get(&quot;VIBRANTE_HIP_FILE&quot;, &quot;&quot;)
 </tr>
 </tbody>
 </table>
+<p><strong>Runtime layer (src/runtime/):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp_runtime.py</code></td>
+<td>MCP client session registry (Tier 1)</td>
+</tr>
+<tr>
+<td><code>houdini_runtime.py</code></td>
+<td>Semantic Houdini ops: scene_context, build_node_chain, execute_operation (Tiers 1–2)</td>
+</tr>
+<tr>
+<td><code>scene_cache.py</code></td>
+<td>Per-run TTL cache + dirty tracking</td>
+</tr>
+<tr>
+<td><code>transaction_manager.py</code></td>
+<td>Transaction lifecycle + rollback dispatch (Tier 2)</td>
+</tr>
+<tr>
+<td><code>semantic_execution.py</code></td>
+<td>Full semantic translation + execution pipeline (Tier 2.75)</td>
+</tr>
+<tr>
+<td><code>ai_planner.py</code></td>
+<td>Plan generation from parsed intent + context (Tier 3)</td>
+</tr>
+<tr>
+<td><code>mcp_tool_registry.py</code></td>
+<td>All 12 MCP semantic tool handlers (Tier 6)</td>
+</tr>
+<tr>
+<td><code>mcp_transport.py</code></td>
+<td>MCP stdio server transport (Tier 6)</td>
+</tr>
+</tbody>
+</table>
+<p>Entry point for external AI clients: <code>scripts/run_vibrante_mcp.py</code></p>
 </main>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

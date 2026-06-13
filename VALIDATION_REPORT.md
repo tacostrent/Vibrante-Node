@@ -1,18 +1,18 @@
 # Documentation Validation Report
 
 **Errors:** 0  
-**Warnings:** 0  
-**Total findings:** 0
+**Warnings:** 7  
+**Total findings:** 7
 
 ## Code Example Summary
 
 | Status | Count |
 |--------|-------|
-| OK (non-integration) | 322 |
+| OK (non-integration) | 323 |
 | Integration (DCC/Prism) | 35 |
 | Python syntax errors | 0 |
 | JSON parse errors | 0 |
-| Skipped (non-checkable) | 106 |
+| Skipped (non-checkable) | 111 |
 
 ## Known Nodes in Source
 
@@ -202,6 +202,17 @@ variable_node
 while_loop
 ```
 
-## Findings
+## Findings by File
 
-_No findings — all checks passed._
+### `02_getting_started.md`
+
+- 🟡 **[node]** line 660: Node `initialize_runtime_context` mentioned in docs but not found in nodes/ or builtins.
+- 🟡 **[node]** line 661: Node `query_scene_context` mentioned in docs but not found in nodes/ or builtins.
+- 🟡 **[node]** line 662: Node `plan_scene` mentioned in docs but not found in nodes/ or builtins.
+
+### `06_backend_architecture.md`
+
+- 🟡 **[node]** line 741: Node `transaction_manager` mentioned in docs but not found in nodes/ or builtins.
+- 🟡 **[node]** line 741: Node `validation_engine` mentioned in docs but not found in nodes/ or builtins.
+- 🟡 **[node]** line 741: Node `runtime_constraints` mentioned in docs but not found in nodes/ or builtins.
+- 🟡 **[node]** line 768: Node `rollback_errors` mentioned in docs but not found in nodes/ or builtins.

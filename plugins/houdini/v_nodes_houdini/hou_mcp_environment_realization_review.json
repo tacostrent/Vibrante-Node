@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_environment_realization_review",
+    "name": "hou_mcp_environment_realization_review",
+    "description": "6-dimension quality review of an EnvironmentRealizationPlan: structural_completeness, architectural_validity, zone_accuracy, opening_quality, beam_quality, room_integrity. Returns overall_score, grade (A-F), and production_ready.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "plan_json", "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",   "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "review_json",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "overall_score",    "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "grade",            "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready", "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_realization import get_env_realization_review\n\nclass Hou_Mcp_Environment_Realization_Review(BaseNode):\n    name = \"hou_mcp_environment_realization_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"plan_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"review_json\")\n        self.add_output(\"overall_score\",    \"float\")\n        self.add_output(\"grade\")\n        self.add_output(\"production_ready\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw = (inputs.get(\"plan_json\") or \"\").strip()\n        try:\n            plan = json.loads(raw) if raw else {}\n        except Exception:\n            self.log_error(\"plan_json is not valid JSON.\")\n            return {\"review_json\": \"{}\", \"overall_score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n        try:\n            result = get_env_realization_review().review(plan)\n            return {\n                \"review_json\":      json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"overall_score\":    result.overall_score,\n                \"grade\":            result.grade,\n                \"production_ready\": result.production_ready,\n                \"exec_out\":         True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Environment review failed: {exc}\")\n            return {\"review_json\": \"{}\", \"overall_score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Environment_Realization_Review\n"
+}

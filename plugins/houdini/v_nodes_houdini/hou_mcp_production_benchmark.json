@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_production_benchmark",
+    "name": "Hou MCP Production Benchmark",
+    "description": "Compare a project's production score against the studio historical average. Returns performance classification (above_average / average / below_average), percentile estimate, and improvement recommendations. No bridge calls — advisory only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",       "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "project_id",    "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "project_score", "type": "float",  "widget_type": "float","options": null, "default": 0.0 },
+        { "name": "workflow",      "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "environment",   "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",        "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "benchmark_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "performance",     "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "studio_average",  "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "difference",      "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "percentile",      "type": "int",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    project_id    = str(inputs.get('project_id') or self.parameters.get('project_id', '') or 'unknown')\n    project_score = float(inputs.get('project_score') or self.parameters.get('project_score', 0.0) or 0.0)\n    workflow      = str(inputs.get('workflow') or self.parameters.get('workflow', '') or '')\n    environment   = str(inputs.get('environment') or self.parameters.get('environment', '') or '')\n\n    try:\n        from src.runtime.studio.production_benchmark import get_production_benchmark\n        bench = get_production_benchmark()\n        report = bench.generate_benchmark_report(\n            project_id=project_id,\n            project_score=project_score,\n            workflow=workflow,\n            environment=environment,\n        )\n\n        proj_bench = report.get('project_benchmark', {})\n        self.log_info(f'[ProductionBenchmark] {project_id}: {project_score:.2f} vs avg {proj_bench.get(\"studio_average\", 0):.2f} — {proj_bench.get(\"performance\")}')\n        return {\n            'benchmark_json': json.dumps(report, sort_keys=True),\n            'performance':    proj_bench.get('performance', 'unknown'),\n            'studio_average': proj_bench.get('studio_average', 0.0),\n            'difference':     proj_bench.get('difference', 0.0),\n            'percentile':     proj_bench.get('percentile', 50),\n            'exec_out':       True,\n        }\n    except Exception as e:\n        self.log_error(f'[ProductionBenchmark] {e}')\n        return {\n            'benchmark_json': json.dumps({'error': str(e)}),\n            'performance': 'unknown', 'studio_average': 0.0,\n            'difference': 0.0, 'percentile': 50, 'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Production_Benchmark(BaseNode):\n        name = 'hou_mcp_production_benchmark'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Production_Benchmark"
+}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>User Guide — Vibrante-Node v2.4.0</title>
+<title>User Guide — Vibrante-Node v2.5.0</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -49,7 +49,8 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="DOCUMENTATION.html">Technical Feature List</a>
   <hr style="border-color:#313244;margin:10px 18px">
   <h2 style="margin-top:8px">Release Notes</h2>
-  <a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
+  <a class="nav-release" href="RELEASE_v2.5.0.html">Release Notes v2.5.0</a>
+<a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
 <a class="nav-release" href="RELEASE_v2.3.0.html">Release Notes v2.3.0</a>
 <a class="nav-release" href="RELEASE_v2.2.1.html">Release Notes v2.2.1</a>
 <a class="nav-release" href="RELEASE_v2.2.0.html">Release Notes v2.2.0</a>
@@ -129,16 +130,20 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="#launching" style="padding-left:32px">Launching</a>
 <a href="#available-houdini-nodes" style="padding-left:32px">Available Houdini Nodes</a>
 <a href="#connection-behavior" style="padding-left:32px">Connection Behavior</a>
-<a href="#12-settings-and-environment" style="padding-left:18px">12. Settings and Environment</a>
+<a href="#12-ai-orchestration-mcp-runtime" style="padding-left:18px">12. AI Orchestration — MCP Runtime</a>
+<a href="#visual-workflow-orchestration" style="padding-left:32px">Visual Workflow Orchestration</a>
+<a href="#direct-runtime-orchestration-headless-mcp-server" style="padding-left:32px">Direct Runtime Orchestration — Headless MCP Server</a>
+<a href="#runtime-safety-rules" style="padding-left:32px">Runtime Safety Rules</a>
+<a href="#13-settings-and-environment" style="padding-left:18px">13. Settings and Environment</a>
 <a href="#preferences-dialog-edit-preferences-ctrl" style="padding-left:32px">Preferences Dialog — Edit → Preferences (Ctrl+,)</a>
 <a href="#import-and-export-settings" style="padding-left:32px">Import and Export Settings</a>
 <a href="#scripts-menu" style="padding-left:32px">Scripts Menu</a>
-<a href="#13-keyboard-shortcuts-reference" style="padding-left:18px">13. Keyboard Shortcuts Reference</a>
+<a href="#14-keyboard-shortcuts-reference" style="padding-left:18px">14. Keyboard Shortcuts Reference</a>
 <a href="#graph-navigation" style="padding-left:32px">Graph Navigation</a>
 <a href="#node-operations" style="padding-left:32px">Node Operations</a>
 <a href="#execution" style="padding-left:32px">Execution</a>
 <a href="#workflow-editing" style="padding-left:32px">Workflow Editing</a>
-<a href="#14-troubleshooting" style="padding-left:18px">14. Troubleshooting</a>
+<a href="#15-troubleshooting" style="padding-left:18px">15. Troubleshooting</a>
 </nav>
 <main class="content">
 <h1 id="vibrante-node-user-guide">Vibrante-Node — User Guide</h1>
@@ -157,9 +162,10 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <li><a href="#9-node-library-and-canvas-search">Node Library and Canvas Search</a></li>
 <li><a href="#10-prism-pipeline-integration">Prism Pipeline Integration</a></li>
 <li><a href="#11-houdini-integration">Houdini Integration</a></li>
-<li><a href="#12-settings-and-environment">Settings and Environment</a></li>
-<li><a href="#13-keyboard-shortcuts-reference">Keyboard Shortcuts Reference</a></li>
-<li><a href="#14-troubleshooting">Troubleshooting</a></li>
+<li><a href="#12-ai-orchestration">AI Orchestration — MCP Runtime</a></li>
+<li><a href="#13-settings-and-environment">Settings and Environment</a></li>
+<li><a href="#14-keyboard-shortcuts-reference">Keyboard Shortcuts Reference</a></li>
+<li><a href="#15-troubleshooting">Troubleshooting</a></li>
 </ol>
 <hr />
 <h2 id="1-interface-overview">1. Interface Overview</h2>
@@ -708,7 +714,7 @@ result = len(text.split())
 <hr />
 <h2 id="9-node-library-and-canvas-search">9. Node Library and Canvas Search</h2>
 <h3 id="library-categories">Library Categories</h3>
-<p>The Library panel organizes all 166+ bundled nodes into categories:</p>
+<p>The Library panel organizes all 200+ bundled nodes into categories:</p>
 <table>
 <thead>
 <tr>
@@ -731,19 +737,23 @@ result = len(text.split())
 </tr>
 <tr>
 <td>String</td>
-<td><code>concat</code>, <code>split</code>, <code>replace</code>, <code>lowercase</code>, <code>uppercase</code></td>
+<td><code>string_concat</code>, <code>string_split</code>, <code>string_lowercase</code>, <code>string_uppercase</code></td>
 </tr>
 <tr>
 <td>Math</td>
-<td><code>add</code>, <code>compare</code>, <code>math_abs</code></td>
+<td><code>math_add</code>, <code>compare</code>, <code>math_abs</code></td>
 </tr>
 <tr>
 <td>Logic</td>
 <td><code>logic_and</code>, <code>logic_compare</code></td>
 </tr>
 <tr>
+<td>MCP</td>
+<td><code>mcp_server_init</code>, <code>mcp_list_tools</code>, <code>mcp_call_tool</code> — generic MCP client nodes</td>
+</tr>
+<tr>
 <td>Houdini</td>
-<td>Live bridge nodes for open Houdini sessions</td>
+<td>Live bridge nodes + AI orchestration nodes (<code>hou_mcp_*</code>)</td>
 </tr>
 <tr>
 <td>Maya</td>
@@ -759,6 +769,9 @@ result = len(text.split())
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Note:</strong> Houdini AI orchestration nodes (<code>hou_mcp_*</code>) appear in the Houdini category only when the Houdini plugin is installed and <code>v_nodes_dir</code> includes <code>plugins/houdini/v_nodes_houdini/</code>.</p>
+</blockquote>
 <h3 id="canvas-search-ctrlf">Canvas Search — Ctrl+F</h3>
 <p>Press <code>Ctrl+F</code> to open a floating search bar centered at the top of the canvas. It filters all nodes currently on the canvas (not the library):</p>
 <ul>
@@ -920,7 +933,143 @@ result = len(text.split())
 <li>The client reconnects automatically on <code>BrokenPipeError</code>.</li>
 </ul>
 <hr />
-<h2 id="12-settings-and-environment">12. Settings and Environment</h2>
+<h2 id="12-ai-orchestration-mcp-runtime">12. AI Orchestration — MCP Runtime</h2>
+<p>Vibrante-Node v2.4.0 adds a complete AI orchestration runtime accessible in two ways: through visual node graphs (Visual Workflow Orchestration) and through a direct MCP server connection (Direct Runtime Orchestration).</p>
+<h3 id="visual-workflow-orchestration">Visual Workflow Orchestration</h3>
+<p>Use the <code>hou_mcp_*</code> node family inside a workflow to build AI-driven Houdini pipelines with visual debugging, step-by-step inspection, and interactive approval gates.</p>
+<p><strong>Generic MCP client nodes</strong> (bundled in all installations, <code>category: MCP</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp_server_init</code></td>
+<td>Connect to any MCP server by name. Supports stdio (subprocess) and SSE (HTTP) transports.</td>
+</tr>
+<tr>
+<td><code>mcp_list_tools</code></td>
+<td>List all tools available on a registered MCP server.</td>
+</tr>
+<tr>
+<td><code>mcp_call_tool</code></td>
+<td>Call any tool on a registered MCP server with JSON arguments.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Houdini AI orchestration nodes</strong> (<code>category: Houdini</code>, requires Houdini plugin):</p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hou_mcp_scene_context</code></td>
+<td>Read the current Houdini scene state as a structured snapshot (networks, selection, HDAs, render nodes). The linchpin node — read this before planning.</td>
+</tr>
+<tr>
+<td><code>hou_mcp_build_node_chain</code></td>
+<td>Build a Houdini network from a JSON spec: create nodes, set parameters, connect them, layout, optionally cook.</td>
+</tr>
+<tr>
+<td><code>hou_mcp_transaction</code></td>
+<td>Execute a batch of ops atomically. Validates all ops up front; rolls back on failure.</td>
+</tr>
+<tr>
+<td><code>hou_mcp_graph_diff</code></td>
+<td>Read the dirty-state ledger — what was created, modified, deleted, or connected since the last diff.</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_plan</code></td>
+<td>Parse a natural language prompt → intent → context analysis → structured execution plan. Never executes.</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_preview</code></td>
+<td>Validate an AI plan without executing: risk level, errors, dependency impact, capability gaps.</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_execute</code></td>
+<td>Execute a validated plan via the transaction system. Blocks on high-risk plans until an <code>approver</code> is supplied.</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_review</code></td>
+<td>Post-execution review: did execution match the original intent? Returns outcome, match score, recommendations.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Canonical AI planning workflow:</strong></p>
+<pre><code>hou_mcp_scene_context   ── read current scene state
+    ↓ context
+hou_mcp_ai_plan         ── &quot;build a pyro smoke source inside /obj/geo1&quot;
+    ↓ plan
+hou_mcp_ai_preview      ── validate risk, check constraints
+    ↓ preview
+if_condition            ── check risk_level == &quot;low&quot; or approval given
+    ↓ (approved)
+hou_mcp_ai_execute      ── execute transactionally, rollback on failure
+    ↓ result
+hou_mcp_ai_review       ── verify intent matched execution
+    ↓ review
+console_print           ── log outcome
+</code></pre>
+<h3 id="direct-runtime-orchestration-headless-mcp-server">Direct Runtime Orchestration — Headless MCP Server</h3>
+<p>Run the Vibrante runtime as a standalone MCP server and connect Claude Desktop, Codex CLI, or Cursor directly. No visual canvas is needed.</p>
+<p><strong>Step 1 — Start the Houdini bridge</strong> (if using Houdini scene operations):</p>
+<pre><code>Houdini → Vibrante-Node menu → Launch Vibrante-Node
+</code></pre>
+<p><strong>Step 2 — Start the MCP server:</strong></p>
+<pre><code class="language-bash">python scripts/run_vibrante_mcp.py
+</code></pre>
+<p><strong>Step 3 — Configure your AI client.</strong> See <a href="README.md">README.md</a> for Claude Desktop, Codex CLI, and Cursor configuration.</p>
+<p><strong>Step 4 — In your AI client session:</strong></p>
+<p>Call <code>initialize_runtime_context</code> first, then use any of the 12 semantic tools:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime</td>
+<td><code>initialize_runtime_context</code>, <code>query_runtime_state</code>, <code>query_scene_context</code></td>
+</tr>
+<tr>
+<td>Knowledge</td>
+<td><code>query_capabilities</code>, <code>query_workflow_templates</code>, <code>query_examples</code></td>
+</tr>
+<tr>
+<td>Planning</td>
+<td><code>plan_scene</code>, <code>preview_execution</code>, <code>validate_execution_plan</code></td>
+</tr>
+<tr>
+<td>Execution</td>
+<td><code>execute_workflow_transaction</code>, <code>review_execution</code></td>
+</tr>
+<tr>
+<td>Node Info</td>
+<td><code>query_node_parameters</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="runtime-safety-rules">Runtime Safety Rules</h3>
+<p>Regardless of orchestration mode, the runtime enforces these rules:</p>
+<ul>
+<li>All mutations route through the transaction system (begin → validate → execute → commit/rollback)</li>
+<li>Plans with <code>ok=False</code> are never executed</li>
+<li>High-risk plans (<code>requires_approval=True</code>) block until an approver identity is supplied</li>
+<li><code>delete_node</code> operations are treated as high-risk (10× weight) and always trigger approval review</li>
+<li>No raw Houdini API calls are exposed to AI tools — only semantic, validated operations</li>
+</ul>
+<hr />
+<h2 id="13-settings-and-environment">13. Settings and Environment</h2>
 <h3 id="preferences-dialog-edit-preferences-ctrl">Preferences Dialog — Edit → Preferences (<code>Ctrl+,</code>)</h3>
 <table>
 <thead>
@@ -970,7 +1119,7 @@ result = len(text.split())
 <h3 id="scripts-menu">Scripts Menu</h3>
 <p><strong>Scripts → [script name]</strong> runs any <code>.py</code> file found in the <code>v_scripts_path</code> directories. Scripts execute with <code>window</code> and <code>scene</code> in their global namespace. Use <strong>Scripts → Refresh Scripts</strong> to rescan without restarting.</p>
 <hr />
-<h2 id="13-keyboard-shortcuts-reference">13. Keyboard Shortcuts Reference</h2>
+<h2 id="14-keyboard-shortcuts-reference">14. Keyboard Shortcuts Reference</h2>
 <h3 id="graph-navigation">Graph Navigation</h3>
 <table>
 <thead>
@@ -1123,7 +1272,7 @@ result = len(text.split())
 <p><strong>Hotkey suppression</strong>: All shortcuts are disabled when a text input widget on the canvas has keyboard focus. Typing in node text fields will not accidentally trigger graph operations.</p>
 </blockquote>
 <hr />
-<h2 id="14-troubleshooting">14. Troubleshooting</h2>
+<h2 id="15-troubleshooting">15. Troubleshooting</h2>
 <table>
 <thead>
 <tr>
@@ -1192,6 +1341,31 @@ result = len(text.split())
 <td>Type mismatch warning in log</td>
 <td>Connected ports of different types</td>
 <td>Informational only — connection still works; <code>any</code> ports are always compatible</td>
+</tr>
+<tr>
+<td>MCP server won't start</td>
+<td><code>mcp</code> package missing</td>
+<td><code>pip install "mcp&gt;=1.0.0"</code></td>
+</tr>
+<tr>
+<td><code>query_scene_context</code> returns "bridge not available"</td>
+<td>Houdini bridge not running</td>
+<td>Launch Vibrante-Node from Houdini menu bar; verify <code>VIBRANTE_HOU_PORT</code></td>
+</tr>
+<tr>
+<td><code>execute_workflow_transaction</code> returns <code>pending_approval</code></td>
+<td>Plan marked as high-risk</td>
+<td>Supply <code>approver="your_name"</code> argument to authorize execution</td>
+</tr>
+<tr>
+<td><code>hou_mcp_ai_plan</code> not in library</td>
+<td>Houdini plugin path missing</td>
+<td>Set <code>v_nodes_dir</code> to <code>plugins/houdini/v_nodes_houdini/</code> in Preferences → Application Paths</td>
+</tr>
+<tr>
+<td>AI plan <code>ok=False</code></td>
+<td>Planning failed</td>
+<td>Check <code>error</code> output on <code>hou_mcp_ai_plan</code>; verify parent path exists in scene</td>
 </tr>
 </tbody>
 </table>

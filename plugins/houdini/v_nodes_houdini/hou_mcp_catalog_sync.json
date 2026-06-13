@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_catalog_sync",
+    "name": "hou_mcp_catalog_sync",
+    "description": "Sync the semantic catalog from Megascans API or local manifests. Actions: sync, sync_new, refresh, cleanup, report, build_graph. Offline-safe. No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",       "type": "string", "widget_type": "text", "options": null, "default": "sync_new" },
+        { "name": "query",        "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "category",     "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "limit",        "type": "int",    "widget_type": "int",  "options": null, "default": 50 },
+        { "name": "force_update", "type": "bool",   "widget_type": "checkbox", "options": null, "default": false },
+        { "name": "known_ids",    "type": "list",   "widget_type": null,   "options": null, "default": null },
+        { "name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "report",       "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "added",        "type": "int",  "widget_type": null, "options": null, "default": null },
+        { "name": "updated",      "type": "int",  "widget_type": null, "options": null, "default": null },
+        { "name": "ok",           "type": "bool", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",     "type": "any",  "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.semantic import (\n    get_asset_catalog_sync, get_asset_knowledge_graph, get_asset_catalog,\n)\n\nclass Hou_Mcp_Catalog_Sync(BaseNode):\n    name = \"hou_mcp_catalog_sync\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",       \"string\", widget_type=\"text\", default=\"sync_new\")\n        self.add_input(\"query\",        \"string\", widget_type=\"text\")\n        self.add_input(\"category\",     \"string\", widget_type=\"text\")\n        self.add_input(\"limit\",        \"int\",    widget_type=\"int\", default=50)\n        self.add_input(\"force_update\", \"bool\",   widget_type=\"checkbox\", default=False)\n        self.add_input(\"known_ids\",    \"list\")\n        self.add_output(\"report\",  \"any\")\n        self.add_output(\"added\",   \"int\")\n        self.add_output(\"updated\", \"int\")\n        self.add_output(\"ok\",      \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action       = str(inputs.get(\"action\") or \"sync_new\").strip().lower()\n        query        = str(inputs.get(\"query\") or \"\").strip()\n        category     = str(inputs.get(\"category\") or \"\").strip()\n        limit        = int(inputs.get(\"limit\") or 50)\n        force_update = bool(inputs.get(\"force_update\") or False)\n        known_ids    = inputs.get(\"known_ids\") or []\n        try:\n            sync = get_asset_catalog_sync()\n            if action == \"sync\":\n                report = sync.sync_catalog(query=query, category=category, limit=limit, force_update=force_update)\n            elif action == \"sync_new\":\n                report = sync.sync_new_assets(query=query, limit=limit)\n            elif action == \"refresh\":\n                report = sync.refresh_existing_assets(limit=limit)\n            elif action == \"cleanup\":\n                report = sync.remove_deleted_assets(list(known_ids) if isinstance(known_ids, list) else [])\n            elif action == \"report\":\n                info = sync.build_sync_report()\n                return {\"report\": info, \"added\": 0, \"updated\": 0, \"ok\": True, \"exec_out\": True}\n            elif action == \"build_graph\":\n                entries = [e.to_dict() for e in get_asset_catalog().iter_all()]\n                added = get_asset_knowledge_graph().build_graph(entries)\n                return {\"report\": {\"graph_relationships_added\": added}, \"added\": added, \"updated\": 0, \"ok\": True, \"exec_out\": True}\n            else:\n                return {\"report\": {}, \"added\": 0, \"updated\": 0, \"ok\": False, \"exec_out\": True}\n            return {\n                \"report\":  report.to_dict(),\n                \"added\":   report.added,\n                \"updated\": report.updated,\n                \"ok\":      report.ok,\n                \"exec_out\": True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_catalog_sync failed: {e}\")\n            return {\"report\": {}, \"added\": 0, \"updated\": 0, \"ok\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Catalog_Sync\n"
+}

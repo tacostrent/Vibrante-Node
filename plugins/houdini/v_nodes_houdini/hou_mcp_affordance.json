@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_affordance",
+    "name": "hou_mcp_affordance",
+    "description": "Query the affordance profile for an asset type. Returns whether the asset provides a support surface, attracts surrounding assets, is an anchor, can mount on walls, hang from ceilings, rest against walls, or go in corners. Also returns the canonical placement mode.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "asset_type",   "type": "string", "widget_type": "text", "options": null, "default": "table" },
+        { "name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "affordance_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "placement_mode",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "is_anchor",        "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.layout import get_affordance_engine\n\nclass Hou_Mcp_Affordance(BaseNode):\n    name = \"hou_mcp_affordance\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_type\",   \"string\", widget_type=\"text\", default=\"table\")\n        self.add_output(\"affordance_json\", \"string\")\n        self.add_output(\"placement_mode\",  \"string\")\n        self.add_output(\"is_anchor\",       \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_type = (inputs.get(\"asset_type\") or \"\").strip()\n        if not asset_type:\n            self.log_error(\"No asset_type provided.\")\n            return {\"affordance_json\": \"{}\", \"placement_mode\": \"scattered\", \"is_anchor\": False, \"exec_out\": True}\n\n        try:\n            eng = get_affordance_engine()\n            profile = eng.get_affordances(asset_type)\n            return {\n                \"affordance_json\": json.dumps(profile.to_dict(), sort_keys=True, indent=2),\n                \"placement_mode\":  profile.placement_mode,\n                \"is_anchor\":       profile.is_anchor,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Affordance query failed: {exc}\")\n            return {\"affordance_json\": \"{}\", \"placement_mode\": \"scattered\", \"is_anchor\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Affordance\n"
+}

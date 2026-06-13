@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Automation API — Vibrante-Node v2.4.0</title>
+<title>Automation API — Vibrante-Node v2.5.0</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -49,7 +49,8 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="DOCUMENTATION.html">Technical Feature List</a>
   <hr style="border-color:#313244;margin:10px 18px">
   <h2 style="margin-top:8px">Release Notes</h2>
-  <a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
+  <a class="nav-release" href="RELEASE_v2.5.0.html">Release Notes v2.5.0</a>
+<a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
 <a class="nav-release" href="RELEASE_v2.3.0.html">Release Notes v2.3.0</a>
 <a class="nav-release" href="RELEASE_v2.2.1.html">Release Notes v2.2.1</a>
 <a class="nav-release" href="RELEASE_v2.2.0.html">Release Notes v2.2.0</a>
@@ -111,6 +112,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="#maya-headless-action-pattern" style="padding-left:32px">Maya — Headless Action Pattern</a>
 <a href="#blender-same-pattern" style="padding-left:32px">Blender — Same Pattern</a>
 <a href="#houdini-live-bridge" style="padding-left:32px">Houdini — Live Bridge</a>
+<a href="#houdini-runtime-layer-direct-python-access" style="padding-left:32px">Houdini — Runtime Layer (Direct Python Access)</a>
 <a href="#10-automation-script-examples" style="padding-left:18px">10. Automation Script Examples</a>
 <a href="#01-linear-chain" style="padding-left:32px">01 — Linear Chain</a>
 <a href="#02-batch-prefix-update" style="padding-left:32px">02 — Batch Prefix Update</a>
@@ -120,6 +122,13 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="#07-stress-test-grid" style="padding-left:32px">07 — Stress Test Grid</a>
 <a href="#08-scene-summary" style="padding-left:32px">08 — Scene Summary</a>
 <a href="#10-session-report" style="padding-left:32px">10 — Session Report</a>
+<a href="#11-mcp-runtime-api-direct-orchestration" style="padding-left:18px">11. MCP Runtime API — Direct Orchestration</a>
+<a href="#starting-the-mcp-server" style="padding-left:32px">Starting the MCP Server</a>
+<a href="#ai-client-configuration" style="padding-left:32px">AI Client Configuration</a>
+<a href="#python-client-via-mcp_runtime" style="padding-left:32px">Python Client via mcp_runtime</a>
+<a href="#semantic-execution-from-python" style="padding-left:32px">Semantic Execution from Python</a>
+<a href="#mcp-tool-registry-from-python" style="padding-left:32px">MCP Tool Registry from Python</a>
+<a href="#execution-safety-invariants" style="padding-left:32px">Execution Safety Invariants</a>
 </nav>
 <main class="content">
 <h1 id="vibrante-node-automation-scripting-api">Vibrante-Node — Automation &amp; Scripting API</h1>
@@ -138,6 +147,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <li><a href="#8-python-runtime-and-environment">Python Runtime and Environment</a></li>
 <li><a href="#9-headless-and-subprocess-execution">Headless and Subprocess Execution</a></li>
 <li><a href="#10-automation-script-examples">Automation Script Examples</a></li>
+<li><a href="#11-mcp-runtime-api">MCP Runtime API — Direct Orchestration</a></li>
 </ol>
 <hr />
 <h2 id="1-scripting-console">1. Scripting Console</h2>
@@ -485,6 +495,37 @@ result = bridge.run_code(
 )
 print(result[&quot;result&quot;])
 </code></pre>
+<h3 id="houdini-runtime-layer-direct-python-access">Houdini — Runtime Layer (Direct Python Access)</h3>
+<p>The <code>src.runtime</code> module can be called directly from Python scripts without going through the visual canvas. This is useful for pipeline automation tools that embed Vibrante's orchestration logic.</p>
+<pre><code class="language-python">import asyncio
+from src.runtime import houdini_runtime, transaction_manager
+
+async def build_pyro_scene():
+    # Get structured scene snapshot
+    ctx = await houdini_runtime.scene_context()
+    print(ctx[&quot;scene&quot;][&quot;hip_file&quot;])
+
+    # Execute with automatic rollback on failure
+    mgr = transaction_manager.get_transaction_manager()
+    txn_id = mgr.begin_transaction(&quot;build_pyro&quot;)
+
+    op = await houdini_runtime.execute_operation({
+        &quot;op&quot;: &quot;create_node&quot;,
+        &quot;parent&quot;: &quot;/obj&quot;,
+        &quot;type&quot;: &quot;geo&quot;,
+        &quot;name&quot;: &quot;pyro_geo&quot;,
+    })
+
+    if op[&quot;status&quot;] == &quot;ok&quot;:
+        mgr.record_operation(txn_id, op)
+        mgr.commit_transaction(txn_id)
+        print(&quot;Created:&quot;, op[&quot;result&quot;][&quot;path&quot;])
+    else:
+        mgr.rollback_transaction(txn_id)
+        print(&quot;Failed:&quot;, op[&quot;error&quot;])
+
+asyncio.run(build_pyro_scene())
+</code></pre>
 <hr />
 <h2 id="10-automation-script-examples">10. Automation Script Examples</h2>
 <p>The <code>examples/automation/</code> directory contains 11 scripts demonstrating real automation patterns. Below are representative examples.</p>
@@ -595,14 +636,128 @@ report = {
 print(json.dumps(report, indent=2))
 </code></pre>
 <hr />
+<h2 id="11-mcp-runtime-api-direct-orchestration">11. MCP Runtime API — Direct Orchestration</h2>
+<p>Vibrante Runtime exposes a full MCP server that external AI clients (Claude Desktop, Codex CLI, Cursor, and any MCP-compatible tool) can connect to <strong>without the visual canvas</strong>. The runtime is fully headless — no Qt dependency, no display required.</p>
+<h3 id="starting-the-mcp-server">Starting the MCP Server</h3>
+<pre><code class="language-bash"># From the repo root
+pip install &quot;mcp&gt;=1.0.0&quot; pydantic toposort
+
+python scripts/run_vibrante_mcp.py
+</code></pre>
+<p>The server starts on stdio and blocks until the client disconnects. All 12 semantic tools are immediately available. Houdini-dependent tools (<code>query_scene_context</code>, <code>execute_workflow_transaction</code>) connect to the live bridge automatically when a Houdini session is running.</p>
+<h3 id="ai-client-configuration">AI Client Configuration</h3>
+<p><strong>Claude Desktop</strong> (<code>~/.claude/settings.json</code>):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;vibrante&quot;: {
+      &quot;command&quot;: &quot;python&quot;,
+      &quot;args&quot;: [&quot;D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py&quot;],
+      &quot;env&quot;: { &quot;VIBRANTE_HOU_PORT&quot;: &quot;18811&quot; }
+    }
+  }
+}
+</code></pre>
+<p><strong>Codex CLI</strong> (<code>~/.config/codex/config.toml</code>):</p>
+<pre><code class="language-toml">[mcp_servers.vibrante]
+command     = &quot;python&quot;
+args        = [&quot;D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py&quot;]
+trust_level = &quot;trusted&quot;
+</code></pre>
+<p><strong>Cursor</strong> (<code>.cursor/mcp.json</code> in workspace root):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;vibrante&quot;: {
+      &quot;command&quot;: &quot;python&quot;,
+      &quot;args&quot;: [&quot;D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py&quot;]
+    }
+  }
+}
+</code></pre>
+<h3 id="python-client-via-mcp_runtime">Python Client via <code>mcp_runtime</code></h3>
+<p>From within Vibrante's event loop you can also call external MCP servers as a client:</p>
+<pre><code class="language-python">from src.runtime import mcp_runtime
+
+# Register an MCP server (stdio transport — launches a subprocess)
+await mcp_runtime.register_server(
+    &quot;my_server&quot;, &quot;stdio&quot;,
+    {&quot;command&quot;: &quot;npx&quot;, &quot;args&quot;: [&quot;-y&quot;, &quot;@modelcontextprotocol/server-everything&quot;]}
+)
+
+# List available tools
+tools = await mcp_runtime.list_tools(&quot;my_server&quot;)
+for t in tools:
+    print(t[&quot;name&quot;], &quot;-&quot;, t[&quot;description&quot;])
+
+# Call a tool
+result = await mcp_runtime.call_tool(&quot;my_server&quot;, &quot;echo&quot;, {&quot;message&quot;: &quot;hello&quot;})
+print(result[&quot;result_json&quot;])
+</code></pre>
+<h3 id="semantic-execution-from-python">Semantic Execution from Python</h3>
+<p>The full semantic pipeline is available without the canvas or MCP:</p>
+<pre><code class="language-python">from src.runtime.semantic_execution import get_semantic_executor
+from src.runtime.runtime_bootstrap import initialize_runtime
+
+# Initialize all runtime singletons
+initialize_runtime()
+
+executor = get_semantic_executor()
+
+# Translate a named intent to an execution plan (no execution)
+plan = await executor.translate(&quot;build_pyro_source&quot;, {
+    &quot;parent&quot;: &quot;/obj&quot;,
+    &quot;name&quot;: &quot;fire_sim&quot;,
+    &quot;style&quot;: &quot;smoke&quot;,
+})
+print(plan[&quot;operations&quot;])
+
+# Execute end-to-end with automatic rollback on failure
+result = await executor.execute(&quot;build_pyro_source&quot;, {
+    &quot;parent&quot;: &quot;/obj&quot;,
+    &quot;name&quot;: &quot;fire_sim&quot;,
+}, dry_run=False, auto_commit=True, rollback_on_error=True)
+
+print(result[&quot;status&quot;])       # &quot;committed&quot; | &quot;rolled_back&quot; | &quot;failed&quot;
+print(result[&quot;graph_diff&quot;])   # what changed in the scene
+</code></pre>
+<h3 id="mcp-tool-registry-from-python">MCP Tool Registry from Python</h3>
+<p>Register custom tools that the MCP server exposes to AI clients:</p>
+<pre><code class="language-python">from src.runtime.mcp_tool_registry import get_mcp_tool_registry, ToolDefinition
+
+registry = get_mcp_tool_registry()
+
+async def my_handler(arguments):
+    return {&quot;ok&quot;: True, &quot;result&quot;: f&quot;custom: {arguments.get('name', '')}&quot;}
+
+registry.register_tool(ToolDefinition(
+    name=&quot;my_studio_tool&quot;,
+    description=&quot;Studio-specific operation&quot;,
+    inputSchema={&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;name&quot;: {&quot;type&quot;: &quot;string&quot;}}},
+    handler=my_handler,
+    category=&quot;custom&quot;,
+))
+</code></pre>
+<blockquote>
+<p><strong>Forbidden names:</strong> <code>create_node</code>, <code>set_parm</code>, <code>set_parms</code>, <code>run_python</code>, <code>run_code</code>, <code>delete_node</code>, <code>raw_houdini_execute</code>, <code>connect_nodes</code>, <code>cook_node</code> — registering any of these will raise <code>ValueError</code>. These are never exposed as MCP tools.</p>
+</blockquote>
+<h3 id="execution-safety-invariants">Execution Safety Invariants</h3>
+<p>All mutations routed through the runtime respect these invariants regardless of how they are triggered (canvas node, Python API, or MCP tool):</p>
+<ol>
+<li><code>ValidationEngine</code> and <code>RuntimeConstraints</code> run before every transaction.</li>
+<li>Plans with <code>ok=False</code> are rejected before any bridge call.</li>
+<li>Plans with <code>requires_approval=True</code> block until an <code>approver</code> is supplied.</li>
+<li>Rollback handlers never raise — failures are captured and reported.</li>
+<li><code>scene_cache.invalidate("scene_context::")</code> is called after every mutation.</li>
+</ol>
+<hr />
 <p><strong>See also:</strong></p>
 <ul>
 <li><a href="USER_GUIDE.md">User Guide</a> — Scripting Console location and basic usage</li>
 <li><a href="NODE_BUILDER_API.md">Node Builder API</a> — building nodes that expose scriptable parameters</li>
-<li><a href="DEVELOPER.md">Developer Guide</a> — engine internals, signal architecture, NodeRegistry internals</li>
-<li><a href="DOCUMENTATION.md">Technical Reference</a> — complete method signatures, type annotations</li>
+<li><a href="DEVELOPER.md">Developer Guide</a> — engine internals, Runtime Layer architecture (Tiers 1–6)</li>
+<li><a href="DOCUMENTATION.md">Technical Reference</a> — Runtime Layer API reference, MCP Semantic Tools reference</li>
 <li><code>examples/automation/</code> — full collection of automation scripts</li>
 <li><code>examples/nodes/</code> — custom node Python source examples</li>
+<li><code>scripts/run_vibrante_mcp.py</code> — MCP server entry point</li>
 </ul>
 </main>
 <script>

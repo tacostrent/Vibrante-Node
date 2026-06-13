@@ -1,0 +1,258 @@
+{
+    "nodes": [
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000001",
+            "node_id": "hou_mcp_scene_intent_extract",
+            "position": [-800.0, 0.0],
+            "parameters": {
+                "prompt": "Create a cinematic sci-fi apocalyptic city at night with neon lights, atmospheric fog, and damaged buildings",
+                "context_json": "{}",
+                "scene_intent_json": "",
+                "intent_id": "",
+                "environment": "",
+                "confidence": 0.0,
+                "extraction_method": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000002",
+            "node_id": "hou_mcp_scene_intent_validate",
+            "position": [-480.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "valid": false,
+                "errors_json": "[]",
+                "warnings_json": "[]",
+                "contradiction_flags": "[]",
+                "normalized_intent_json": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000003",
+            "node_id": "hou_mcp_scene_intent_enrich",
+            "position": [-160.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "enriched_intent_json": "",
+                "enrichment_count": 0,
+                "enrichment_notes": "[]",
+                "enrichment_applied": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000004",
+            "node_id": "hou_mcp_scene_plan_create",
+            "position": [160.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "scene_plan_json": "",
+                "plan_id": "",
+                "zone_count": 0,
+                "asset_query_count": 0,
+                "estimated_complexity": "",
+                "planning_ok": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000005",
+            "node_id": "hou_mcp_scene_plan_validate",
+            "position": [480.0, 0.0],
+            "parameters": {
+                "scene_plan_json": "",
+                "valid": false,
+                "errors_json": "[]",
+                "warnings_json": "[]",
+                "check_count": 0,
+                "validated_plan_json": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000006",
+            "node_id": "hou_mcp_scene_plan_recommend",
+            "position": [800.0, 0.0],
+            "parameters": {
+                "scene_plan_json": "",
+                "max_per_source": 5,
+                "enriched_plan_json": "",
+                "recommendation_count": 0,
+                "recommendations_json": "[]",
+                "top_lighting": "",
+                "top_camera": "",
+                "top_atmosphere": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000007",
+            "node_id": "hou_mcp_scene_asset_query_generate",
+            "position": [1120.0, 0.0],
+            "parameters": {
+                "scene_plan_json": "",
+                "zone_filter": "",
+                "required_only": false,
+                "queries_json": "[]",
+                "query_count": 0,
+                "required_count": 0,
+                "categories_json": "[]"
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "a1000001-0000-4000-8000-000000000008",
+            "node_id": "console_print",
+            "position": [1440.0, 0.0],
+            "parameters": {
+                "data": "",
+                "out": ""
+            },
+            "state": "idle"
+        }
+    ],
+    "connections": [
+        {
+            "id": "b1000001-0000-4000-8000-000000000001",
+            "from_node": "a1000001-0000-4000-8000-000000000001",
+            "from_port": "exec_out",
+            "to_node": "a1000001-0000-4000-8000-000000000002",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000002",
+            "from_node": "a1000001-0000-4000-8000-000000000001",
+            "from_port": "scene_intent_json",
+            "to_node": "a1000001-0000-4000-8000-000000000002",
+            "to_port": "scene_intent_json",
+            "is_exec": false
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000003",
+            "from_node": "a1000001-0000-4000-8000-000000000002",
+            "from_port": "exec_out",
+            "to_node": "a1000001-0000-4000-8000-000000000003",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000004",
+            "from_node": "a1000001-0000-4000-8000-000000000002",
+            "from_port": "normalized_intent_json",
+            "to_node": "a1000001-0000-4000-8000-000000000003",
+            "to_port": "scene_intent_json",
+            "is_exec": false
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000005",
+            "from_node": "a1000001-0000-4000-8000-000000000003",
+            "from_port": "exec_out",
+            "to_node": "a1000001-0000-4000-8000-000000000004",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000006",
+            "from_node": "a1000001-0000-4000-8000-000000000003",
+            "from_port": "enriched_intent_json",
+            "to_node": "a1000001-0000-4000-8000-000000000004",
+            "to_port": "scene_intent_json",
+            "is_exec": false
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000007",
+            "from_node": "a1000001-0000-4000-8000-000000000004",
+            "from_port": "exec_out",
+            "to_node": "a1000001-0000-4000-8000-000000000005",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000008",
+            "from_node": "a1000001-0000-4000-8000-000000000004",
+            "from_port": "scene_plan_json",
+            "to_node": "a1000001-0000-4000-8000-000000000005",
+            "to_port": "scene_plan_json",
+            "is_exec": false
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000009",
+            "from_node": "a1000001-0000-4000-8000-000000000005",
+            "from_port": "exec_out",
+            "to_node": "a1000001-0000-4000-8000-000000000006",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000010",
+            "from_node": "a1000001-0000-4000-8000-000000000005",
+            "from_port": "validated_plan_json",
+            "to_node": "a1000001-0000-4000-8000-000000000006",
+            "to_port": "scene_plan_json",
+            "is_exec": false
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000011",
+            "from_node": "a1000001-0000-4000-8000-000000000006",
+            "from_port": "exec_out",
+            "to_node": "a1000001-0000-4000-8000-000000000007",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000012",
+            "from_node": "a1000001-0000-4000-8000-000000000006",
+            "from_port": "enriched_plan_json",
+            "to_node": "a1000001-0000-4000-8000-000000000007",
+            "to_port": "scene_plan_json",
+            "is_exec": false
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000013",
+            "from_node": "a1000001-0000-4000-8000-000000000007",
+            "from_port": "exec_out",
+            "to_node": "a1000001-0000-4000-8000-000000000008",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "b1000001-0000-4000-8000-000000000014",
+            "from_node": "a1000001-0000-4000-8000-000000000007",
+            "from_port": "queries_json",
+            "to_node": "a1000001-0000-4000-8000-000000000008",
+            "to_port": "data",
+            "is_exec": false
+        }
+    ],
+    "sticky_notes": [
+        {
+            "id": "c1000001-0000-4000-8000-000000000001",
+            "position": [-800.0, -200.0],
+            "size": [2400.0, 140.0],
+            "text": "Scene Planning Pipeline (Tier 7)\n\nTransforms a natural language prompt into a structured, validated, recommended ScenePlan with asset queries.\nPipeline: Extract Intent → Validate → Enrich → Create Plan → Validate Plan → Add Recommendations → Generate Asset Queries\n\nNo scene generation. No Houdini execution. Planning only.",
+            "color": "#e8f5e9"
+        },
+        {
+            "id": "c1000001-0000-4000-8000-000000000002",
+            "position": [-800.0, 160.0],
+            "size": [640.0, 100.0],
+            "text": "Tier 6 — Scene Intent\nExtract → Validate → Enrich\nProduces an enriched SceneIntent JSON",
+            "color": "#dceefb"
+        },
+        {
+            "id": "c1000001-0000-4000-8000-000000000003",
+            "position": [160.0, 160.0],
+            "size": [960.0, 100.0],
+            "text": "Tier 7 — Scene Plan\nCreate Plan → Validate Plan → Add Recommendations → Generate Asset Queries\nProduces a validated, recommended ScenePlan JSON with structured asset queries",
+            "color": "#e8f5e9"
+        }
+    ],
+    "backdrops": [],
+    "metadata": {
+        "name": "Scene Planning Pipeline",
+        "description": "Tier 7: Enriched SceneIntent → ScenePlan → Zones → Composition → Cameras → Asset Queries → Recommendations"
+    }
+}

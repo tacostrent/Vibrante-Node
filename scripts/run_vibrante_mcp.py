@@ -12,7 +12,21 @@ All execution routes through:
 Raw Houdini mutation APIs are never exposed directly.
 
 ──────────────────────────────────────────────────────────────────────────────
-Claude Desktop  (~/.claude/settings.json or Claude Desktop → Settings → MCP)
+Claude Code  (CLI / VS Code — stored in ~/.claude.json, or project .mcp.json)
+──────────────────────────────────────────────────────────────────────────────
+
+    claude mcp add-json vibrante '{
+      "command": "python",
+      "args": ["D:/Vibrante-Node/source/scripts/run_vibrante_mcp.py"]
+    }' --scope user
+
+Note: Claude Code ignores a "mcpServers" key in ~/.claude/settings.json —
+use `claude mcp add` (user scope) or a .mcp.json file (project scope).
+
+──────────────────────────────────────────────────────────────────────────────
+Claude Desktop  (Settings → Developer → Edit Config:
+  Windows %APPDATA%/Claude/claude_desktop_config.json,
+  macOS   ~/Library/Application Support/Claude/claude_desktop_config.json)
 ──────────────────────────────────────────────────────────────────────────────
 
     {

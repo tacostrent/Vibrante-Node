@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_intent_parser",
+    "name": "hou_mcp_intent_parser",
+    "description": "Parse natural language production intent into structured fields (environment, role, storytelling, lookdev, cinematic). No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "intent_text", "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "environment",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "role",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "category",     "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "storytelling", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "lookdev",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "cinematic",    "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "confidence",   "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "parsed",       "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",     "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.vector_search import get_intent_parser\n\nclass Hou_Mcp_Intent_Parser(BaseNode):\n    name = \"hou_mcp_intent_parser\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"intent_text\", \"string\", widget_type=\"text\")\n        self.add_output(\"environment\",  \"string\")\n        self.add_output(\"role\",         \"string\")\n        self.add_output(\"category\",     \"string\")\n        self.add_output(\"storytelling\", \"string\")\n        self.add_output(\"lookdev\",      \"string\")\n        self.add_output(\"cinematic\",    \"string\")\n        self.add_output(\"confidence\",   \"float\")\n        self.add_output(\"parsed\",       \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        intent_text = str(inputs.get(\"intent_text\") or \"\").strip()\n        try:\n            parsed = get_intent_parser().parse(intent_text)\n            d = parsed.to_dict()\n            return {\n                \"environment\":  d.get(\"environment\", \"\"),\n                \"role\":         d.get(\"role\", \"\"),\n                \"category\":     d.get(\"category\", \"\"),\n                \"storytelling\": d.get(\"storytelling\", \"\"),\n                \"lookdev\":      d.get(\"lookdev\", \"\"),\n                \"cinematic\":    d.get(\"cinematic\", \"\"),\n                \"confidence\":   d.get(\"confidence\", 0.0),\n                \"parsed\":       d,\n                \"exec_out\":     True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_intent_parser failed: {e}\")\n            return {\"environment\": \"\", \"role\": \"\", \"category\": \"\", \"storytelling\": \"\", \"lookdev\": \"\", \"cinematic\": \"\", \"confidence\": 0.0, \"parsed\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Intent_Parser\n"
+}

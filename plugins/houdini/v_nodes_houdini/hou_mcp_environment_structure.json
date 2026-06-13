@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_environment_structure",
+    "name": "hou_mcp_environment_structure",
+    "description": "Build the structural scaffold for an environment: floor, walls, ceiling, doors, windows, and support elements. Structure-First Rule — must run before any asset placement. No Houdini scene mutations — planning only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "environment_name", "type": "string", "widget_type": "text",   "options": null, "default": "western_room"},
+        {"name": "blueprint_json",   "type": "string", "widget_type": "text",   "options": null, "default": ""}
+    ],
+    "outputs": [
+        {"name": "structure_json",        "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "structure_complete",    "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "missing_required_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "element_count",         "type": "int",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.environment.environment_structure_builder import get_environment_structure_builder\nfrom src.runtime.environment.environment_blueprint import EnvironmentBlueprint\nimport json\n\nclass Hou_Mcp_Environment_Structure(BaseNode):\n    name = \"hou_mcp_environment_structure\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment_name\", \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_input(\"blueprint_json\",   \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"structure_json\",        \"string\")\n        self.add_output(\"structure_complete\",    \"bool\")\n        self.add_output(\"missing_required_json\", \"string\")\n        self.add_output(\"element_count\",         \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        env_name = (inputs.get(\"environment_name\") or \"\").strip()\n        bp_json  = (inputs.get(\"blueprint_json\") or \"\").strip()\n\n        if not env_name:\n            self.log_error(\"No environment_name provided.\")\n            return {\"structure_json\": \"{}\", \"structure_complete\": False, \"missing_required_json\": \"[]\", \"element_count\": 0, \"exec_out\": True}\n\n        try:\n            builder = get_environment_structure_builder()\n\n            if bp_json:\n                try:\n                    bp_dict = json.loads(bp_json)\n                    blueprint = EnvironmentBlueprint.from_dict(bp_dict)\n                    plan = builder.build_structure(blueprint)\n                except Exception:\n                    plan = builder.build_environment(env_name)\n            else:\n                plan = builder.build_environment(env_name)\n\n            status = \"complete\" if plan.structure_complete else f\"incomplete — missing: {plan.missing_required}\"\n            self.log_info(f\"Structure '{env_name}': {len(plan.elements)} elements, {status}\")\n\n            return {\n                \"structure_json\":        json.dumps(plan.to_dict(), sort_keys=True, default=str),\n                \"structure_complete\":    plan.structure_complete,\n                \"missing_required_json\": json.dumps(plan.missing_required, default=str),\n                \"element_count\":         len(plan.elements),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Structure build failed: {exc}\")\n            return {\"structure_json\": \"{}\", \"structure_complete\": False, \"missing_required_json\": \"[]\", \"element_count\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Environment_Structure\n"
+}

@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_scene_asset_query_generate",
+    "name": "hou_mcp_scene_asset_query_generate",
+    "description": "Generate structured asset search queries from a ScenePlan or SceneIntent. Each query has category, tags, zone, quantity, priority, and style_hints — ready for any asset provider without API calls. No Houdini scene modifications.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_plan_json",   "type": "string", "widget_type": "text", "options": null, "default": null},
+        {"name": "zone_filter",       "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "required_only",     "type": "bool",   "widget_type": "checkbox", "options": null, "default": false}
+    ],
+    "outputs": [
+        {"name": "queries_json",       "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "query_count",        "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "required_count",     "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "categories_json",    "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.planning import get_plan_serializer\nimport json\n\nclass Hou_Mcp_Scene_Asset_Query_Generate(BaseNode):\n    name = \"hou_mcp_scene_asset_query_generate\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_plan_json\", \"string\", widget_type=\"text\")\n        self.add_input(\"zone_filter\",     \"string\", widget_type=\"text\",     default=\"\")\n        self.add_input(\"required_only\",   \"bool\",   widget_type=\"checkbox\", default=False)\n        self.add_output(\"queries_json\",    \"string\")\n        self.add_output(\"query_count\",     \"int\")\n        self.add_output(\"required_count\",  \"int\")\n        self.add_output(\"categories_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        plan_json = inputs.get(\"scene_plan_json\", \"\") or \"\"\n        if not plan_json.strip():\n            self.log_error(\"No scene_plan_json provided.\")\n            return {\"queries_json\": \"[]\", \"query_count\": 0, \"required_count\": 0,\n                    \"categories_json\": \"[]\", \"exec_out\": True}\n        zone_filter  = (inputs.get(\"zone_filter\") or \"\").strip()\n        required_only = bool(inputs.get(\"required_only\") or False)\n        try:\n            plan = get_plan_serializer().from_json(plan_json)\n            queries = plan.asset_queries\n            if zone_filter:\n                queries = [q for q in queries if q.zone == zone_filter]\n            if required_only:\n                queries = [q for q in queries if q.priority == \"required\"]\n            required_count = sum(1 for q in queries if q.priority == \"required\")\n            categories = sorted(set(q.category for q in queries if q.category))\n            self.log_info(f\"Asset queries: {len(queries)} total, {required_count} required, {len(categories)} categories\")\n            return {\n                \"queries_json\":    json.dumps([q.to_dict() for q in queries]),\n                \"query_count\":     len(queries),\n                \"required_count\":  required_count,\n                \"categories_json\": json.dumps(categories),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Asset query generation failed: {exc}\")\n            return {\"queries_json\": \"[]\", \"query_count\": 0, \"required_count\": 0,\n                    \"categories_json\": \"[]\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Asset_Query_Generate\n"
+}

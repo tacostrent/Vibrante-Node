@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_shell_audit",
+    "name": "hou_mcp_shell_audit",
+    "description": "Generate a structured audit report from a completed shell_json. Reports floor_exists, wall_count, ceiling_exists, door/window/beam attachment counts, environment_ready, environment_valid, geometry_valid, and production_ready. Accepts optional semantic_valid and plausibility_valid from downstream validators.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "shell_json",          "type": "string", "widget_type": "text",     "options": null, "default": "{}" },
+        { "name": "semantic_valid",      "type": "bool",   "widget_type": "checkbox", "options": null, "default": true },
+        { "name": "plausibility_valid",  "type": "bool",   "widget_type": "checkbox", "options": null, "default": true },
+        { "name": "required_wall_count", "type": "int",    "widget_type": "int",      "options": null, "default": 4 },
+        { "name": "exec_in",             "type": "any",    "widget_type": null,        "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "audit_json",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "environment_valid",  "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "geometry_valid",     "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "semantic_valid",     "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "plausibility_valid", "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready",   "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",           "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_shell import EnvironmentShell, get_environment_shell_auditor\n\nclass Hou_Mcp_Shell_Audit(BaseNode):\n    name = \"hou_mcp_shell_audit\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"shell_json\",          \"string\", widget_type=\"text\",     default=\"{}\")\n        self.add_input(\"semantic_valid\",      \"bool\",   widget_type=\"checkbox\", default=True)\n        self.add_input(\"plausibility_valid\",  \"bool\",   widget_type=\"checkbox\", default=True)\n        self.add_input(\"required_wall_count\", \"int\",    widget_type=\"int\",      default=4)\n        self.add_output(\"audit_json\")\n        self.add_output(\"environment_valid\",  \"bool\")\n        self.add_output(\"geometry_valid\",     \"bool\")\n        self.add_output(\"semantic_valid\",     \"bool\")\n        self.add_output(\"plausibility_valid\", \"bool\")\n        self.add_output(\"production_ready\",   \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw             = (inputs.get(\"shell_json\") or \"{}\").strip()\n        semantic_valid  = bool(inputs.get(\"semantic_valid\",     True))\n        plaus_valid     = bool(inputs.get(\"plausibility_valid\", True))\n        required_walls  = int(inputs.get(\"required_wall_count\") or 4)\n        try:\n            shell_dict = json.loads(raw)\n        except Exception:\n            shell_dict = {}\n        try:\n            shell = EnvironmentShell.from_dict(shell_dict)\n            audit = get_environment_shell_auditor().audit(\n                shell,\n                required_wall_count = required_walls,\n                semantic_valid      = semantic_valid,\n                plausibility_valid  = plaus_valid,\n            )\n            return {\n                \"audit_json\":        json.dumps(audit.to_dict(), sort_keys=True, indent=2),\n                \"environment_valid\": audit.environment_valid,\n                \"geometry_valid\":    audit.geometry_valid,\n                \"semantic_valid\":    audit.semantic_valid,\n                \"plausibility_valid\": audit.plausibility_valid,\n                \"production_ready\":  audit.production_ready,\n                \"exec_out\":          True,\n            }\n        except Exception as exc:\n            self.log_error(f\"hou_mcp_shell_audit failed: {exc}\")\n            return {\"audit_json\": \"{}\", \"environment_valid\": False, \"geometry_valid\": False, \"semantic_valid\": False, \"plausibility_valid\": False, \"production_ready\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Shell_Audit\n"
+}

@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_structural_review",
+    "name": "hou_mcp_structural_review",
+    "description": "Validate a batch of structural classifications against placement rules. Detects: floating structural assets, architectural assets inside furniture clusters, beams treated as decoration, fireplaces not wall-attached, doorways at floor center. Outputs 4-dimension review score, grade, and production_ready flag.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "classifications_json",  "type": "string", "widget_type": "text", "options": null, "default": "[]"},
+        {"name": "cluster_ids_json",      "type": "string", "widget_type": "text", "options": null, "default": "[]"},
+        {"name": "decoration_ids_json",   "type": "string", "widget_type": "text", "options": null, "default": "[]"},
+        {"name": "exec_in",               "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "review_json",       "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "overall_score",     "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "grade",             "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "production_ready",  "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",          "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.structure import get_structural_review, get_structural_serializer\nimport json\n\nclass Hou_Mcp_Structural_Review(BaseNode):\n    name = \"hou_mcp_structural_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"classifications_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"cluster_ids_json\",     \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"decoration_ids_json\",  \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_output(\"review_json\",      \"string\")\n        self.add_output(\"overall_score\",    \"float\")\n        self.add_output(\"grade\",            \"string\")\n        self.add_output(\"production_ready\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        _default = {\"review_json\": \"{}\", \"overall_score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n\n        try:\n            cls_json  = str(inputs.get(\"classifications_json\") or \"[]\")\n            clu_json  = str(inputs.get(\"cluster_ids_json\")     or \"[]\")\n            dec_json  = str(inputs.get(\"decoration_ids_json\")  or \"[]\")\n            classifications = json.loads(cls_json)  if cls_json.strip()  else []\n            cluster_ids     = json.loads(clu_json)  if clu_json.strip()  else []\n            decoration_ids  = json.loads(dec_json)  if dec_json.strip()  else []\n        except Exception as exc:\n            self.log_error(f\"Failed to parse input JSON: {exc}\")\n            return _default\n\n        if not isinstance(classifications, list):\n            classifications = [classifications]\n        if not isinstance(cluster_ids, list):\n            cluster_ids = []\n        if not isinstance(decoration_ids, list):\n            decoration_ids = []\n\n        reviewer   = get_structural_review()\n        serializer = get_structural_serializer()\n\n        result = reviewer.review(classifications, cluster_ids, decoration_ids)\n\n        self.log_info(\n            f\"Structural review: grade={result.grade} score={result.overall_score:.2f} \"\n            f\"production_ready={result.production_ready} \"\n            f\"structural={result.structural_count}/{result.asset_count}\"\n        )\n        if result.findings:\n            for f in result.findings:\n                self.log_warning(f\"  Finding: {f}\")\n\n        return {\n            \"review_json\":      serializer.serialize_review(result),\n            \"overall_score\":    result.overall_score,\n            \"grade\":            result.grade,\n            \"production_ready\": result.production_ready,\n            \"exec_out\":         True,\n        }\n\ndef register_node():\n    return Hou_Mcp_Structural_Review\n"
+}

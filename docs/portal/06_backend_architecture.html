@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Vibrante-Node v2.4.0 — Backend Architecture">
+<meta name="description" content="Vibrante-Node v2.5.0 — Backend Architecture">
 <title>Backend Architecture — Vibrante-Node Docs</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
 <style>
@@ -391,7 +391,7 @@ td code { font-size: .85em; }
 <!-- ── Header ─────────────────────────────────────────────────────────── -->
 <header class="header">
   <a class="header-logo" href="index.html">Vibrante-Node</a>
-  <span class="header-version">v2.4.0</span>
+  <span class="header-version">v2.5.0</span>
   <div class="header-spacer"></div>
   <div class="search-wrap">
     <span class="search-icon">&#128269;</span>
@@ -441,7 +441,7 @@ td code { font-size: .85em; }
 <main class="content">
   <div class="content-inner">
     <nav class="breadcrumb"><a href="index.html">Docs</a><span class="breadcrumb-sep">›</span><span>Backend Architecture</span></nav>
-    <div class="val-badge val-badge-ok" title="Verified against source code">&#10003; Verified</div>
+    <div class="val-badge val-badge-warn" title="4 warning(s) — review recommended">&#9888; 4 warnings</div>
 <h1 id="06-backend-architecture">06 — Backend Architecture</h1>
 <p><strong>Vibrante-Node v2.4.0 — Technical Reference</strong></p>
 <p>This document describes the execution engine, graph model, node registry, and all supporting subsystems that make up the Vibrante-Node backend. It is written for contributors, plugin authors, and advanced users who need to understand what happens between the moment the user clicks <strong>Run</strong> and the moment the last node finishes.</p>
@@ -1083,6 +1083,96 @@ def _cpu_intensive(self, data):
 <p>For graphs with 100+ nodes, the topological sort (<code>toposort</code> library) and connection lookup become measurable. The engine pre-calculates <code>_incoming_data_conns</code> and <code>_driven_by_flow</code> once per run to avoid per-node O(n) scans. The main loop is O(n + e) where n = node count and e = connection count. Execution time is dominated by <code>execute()</code> coroutine time, not engine overhead.</p>
 <h3 id="memory">Memory</h3>
 <p><code>node_results</code> stores every output value of every node. For nodes that output large data structures (big lists, numpy arrays, large strings), this can accumulate significant memory during a run. Values are discarded when <code>node_results</code> is reset at the next run's start. If memory is a concern, avoid storing large objects in <code>node_results</code> across the run — produce them, consume them, and release references.</p>
+<hr />
+<h2 id="21-runtime-layer-ai-orchestration-v240">21. Runtime Layer — AI Orchestration (v2.4.0+)</h2>
+<p><code>src/runtime/</code> is the seam between graph nodes (Layer 3) and DCC bridges / external MCP servers (Layer 5). Houdini AI nodes call this layer rather than calling the bridge directly. The Runtime Layer also operates <strong>fully headless</strong> as a standalone MCP server for Claude, Codex, and Cursor.</p>
+<h3 id="architecture-position">Architecture position</h3>
+<pre><code>NetworkExecutor → hou_mcp_* nodes → Runtime Layer → HouBridge → Houdini
+External AI → MCP stdio transport → Runtime Layer → HouBridge → Houdini
+</code></pre>
+<p>Both paths use the same <code>houdini_runtime</code>, <code>transaction_manager</code>, <code>validation_engine</code>, and <code>runtime_constraints</code>. Mutations are identical regardless of trigger source.</p>
+<h3 id="key-modules">Key modules</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Tier</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp_runtime.py</code></td>
+<td>1</td>
+<td>MCP client session registry (stdio + SSE)</td>
+</tr>
+<tr>
+<td><code>houdini_runtime.py</code></td>
+<td>1–2</td>
+<td><code>scene_context()</code>, <code>build_node_chain()</code>, <code>execute_operation()</code></td>
+</tr>
+<tr>
+<td><code>scene_cache.py</code></td>
+<td>1</td>
+<td>TTL cache + dirty tracking + visualization data</td>
+</tr>
+<tr>
+<td><code>transaction_manager.py</code></td>
+<td>2</td>
+<td><code>begin/record/commit/rollback</code> + rollback handler registry</td>
+</tr>
+<tr>
+<td><code>validation_engine.py</code></td>
+<td>2.5</td>
+<td>Structural + constraint pre-execution validator</td>
+</tr>
+<tr>
+<td><code>runtime_constraints.py</code></td>
+<td>2.75</td>
+<td>Policy-based gate (protected paths, forbidden ops, max ops)</td>
+</tr>
+<tr>
+<td><code>semantic_execution.py</code></td>
+<td>2.75</td>
+<td><code>SemanticRegistry → Constraints → ValidationEngine → Transaction</code></td>
+</tr>
+<tr>
+<td><code>ai_planner.py</code></td>
+<td>3</td>
+<td>Intent + context → validated execution plan</td>
+</tr>
+<tr>
+<td><code>approval_pipeline.py</code></td>
+<td>3</td>
+<td>Synchronous human-approval state machine</td>
+</tr>
+<tr>
+<td><code>mcp_tool_registry.py</code></td>
+<td>6</td>
+<td>All 12 semantic tool handlers</td>
+</tr>
+<tr>
+<td><code>mcp_transport.py</code></td>
+<td>6</td>
+<td>MCP stdio server (uses <code>mcp</code> SDK)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="execution-safety-invariants">Execution safety invariants</h3>
+<p>Every path through the Runtime Layer enforces:</p>
+<ol>
+<li><code>ValidationEngine.validate_operations()</code> runs before any transaction begins.</li>
+<li><code>RuntimeConstraints.validate_transaction()</code> enforces policy gates (protected paths, max ops).</li>
+<li>Plans with <code>ok=False</code> are rejected before any bridge call.</li>
+<li>Plans with <code>requires_approval=True</code> block until <code>approver</code> is supplied.</li>
+<li><code>scene_cache.invalidate("scene_context::")</code> is called after every mutation.</li>
+<li>Rollback handlers never raise — exceptions are captured in <code>rollback_errors</code>.</li>
+</ol>
+<h3 id="running-the-mcp-server-standalone">Running the MCP server (standalone)</h3>
+<pre><code class="language-bash">pip install &quot;mcp&gt;=1.0.0&quot;
+python scripts/run_vibrante_mcp.py
+</code></pre>
+<p>The server blocks on stdio until the client disconnects. All 12 semantic tools are available. Houdini-dependent tools connect to the live bridge automatically when port 18811 is reachable.</p>
     <nav class="page-nav">
       <a class="page-nav-link prev" href="05_node_development.html"><span class="page-nav-label">Previous</span><span class="page-nav-title">Node Development Guide</span></a>
       <a class="page-nav-link next" href="07_frontend_architecture.html"><span class="page-nav-label">Next</span><span class="page-nav-title">Frontend Architecture</span></a>
@@ -1160,6 +1250,11 @@ def _cpu_intensive(self, data):
 <a class="toc-link toc-h3" href="#houdini-bridge-latency">Houdini bridge latency</a>
 <a class="toc-link toc-h3" href="#graph-size">Graph size</a>
 <a class="toc-link toc-h3" href="#memory">Memory</a>
+<a class="toc-link toc-h2" href="#21-runtime-layer-ai-orchestration-v240">21. Runtime Layer — AI Orchestration (v2.4.0+)</a>
+<a class="toc-link toc-h3" href="#architecture-position">Architecture position</a>
+<a class="toc-link toc-h3" href="#key-modules">Key modules</a>
+<a class="toc-link toc-h3" href="#execution-safety-invariants">Execution safety invariants</a>
+<a class="toc-link toc-h3" href="#running-the-mcp-server-standalone">Running the MCP server (standalone)</a>
 </aside>
 
 <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>

@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_clearance_validator",
+    "name": "hou_mcp_clearance_validator",
+    "description": "Validate minimum edge-to-edge clearance distances between placed assets. Input: JSON array of {asset_id, position:[x,y,z], spatial_metadata:{...}}. Returns violation_count, clearance violations list, and ok flag.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "placements_json", "type": "string", "widget_type": "text", "options": null, "default": "[]"},
+        {"name": "exec_in",         "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "clearance_report_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "violation_count",       "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "ok",                    "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",              "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.assembly.clearance_validator import get_clearance_validator\nfrom src.runtime.assets.assembly.spatial_metadata import SpatialMetadata\nimport json\n\nclass Hou_Mcp_Clearance_Validator(BaseNode):\n    name = \"hou_mcp_clearance_validator\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"placements_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_output(\"clearance_report_json\", \"string\")\n        self.add_output(\"violation_count\",       \"int\")\n        self.add_output(\"ok\",                    \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        placements_json = str(inputs.get(\"placements_json\", \"[]\") or \"[]\")\n        try:\n            raw = json.loads(placements_json)\n        except Exception as exc:\n            self.log_error(f\"Failed to parse placements_json: {exc}\")\n            return {\"clearance_report_json\": \"{}\", \"violation_count\": 0, \"ok\": True, \"exec_out\": True}\n\n        try:\n            placements = []\n            for item in raw:\n                aid  = str(item.get(\"asset_id\", \"\"))\n                pos  = tuple(item.get(\"position\", [0.0, 0.0, 0.0]))\n                meta = SpatialMetadata.from_dict(item.get(\"spatial_metadata\") or {})\n                placements.append((aid, pos, meta))\n\n            report = get_clearance_validator().validate_scene_clearance(placements)\n            self.log_info(f\"Clearance validation: {report.violation_count} violation(s). ok={report.ok}\")\n            if not report.ok:\n                for v in report.violations[:3]:\n                    self.log_warning(f\"  Clearance: {v.asset_a} ({v.type_a}) ↔ {v.asset_b} ({v.type_b}) shortfall={v.shortfall:.2f}m\")\n            return {\n                \"clearance_report_json\": json.dumps(report.to_dict(), sort_keys=True, default=str),\n                \"violation_count\":       report.violation_count,\n                \"ok\":                    report.ok,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Clearance validation failed: {exc}\")\n            return {\"clearance_report_json\": \"{}\", \"violation_count\": 0, \"ok\": True, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Clearance_Validator\n"
+}

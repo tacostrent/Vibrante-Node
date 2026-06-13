@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_asset_materials",
+    "name": "hou_mcp_asset_materials",
+    "description": "Map asset materials to renderer-specific profiles. Supports arnold, usd_preview_surface, generic_pbr, karma. Returns MaterialProfile descriptors — no real shader creation.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json", "type": "string", "widget_type": "text", "options": null, "default": null},
+        {"name": "renderer",   "type": "string", "widget_type": "text", "options": null, "default": "usd_preview_surface"}
+    ],
+    "outputs": [
+        {"name": "mapping_result_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "profiles_json",       "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "material_count",      "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "mapping_ok",          "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.realization import get_asset_material_mapper\nimport json\n\nclass Hou_Mcp_Asset_Materials(BaseNode):\n    name = \"hou_mcp_asset_materials\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\", \"string\", widget_type=\"text\")\n        self.add_input(\"renderer\",   \"string\", widget_type=\"text\", default=\"usd_preview_surface\")\n        self.add_output(\"mapping_result_json\", \"string\")\n        self.add_output(\"profiles_json\",       \"string\")\n        self.add_output(\"material_count\",      \"int\")\n        self.add_output(\"mapping_ok\",          \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json = inputs.get(\"asset_json\", \"\") or \"\"\n        renderer   = str(inputs.get(\"renderer\") or \"usd_preview_surface\")\n\n        if not asset_json.strip():\n            self.log_error(\"No asset_json provided.\")\n            return {\"mapping_result_json\": \"{}\", \"profiles_json\": \"[]\", \"material_count\": 0, \"mapping_ok\": False, \"exec_out\": True}\n\n        try:\n            asset = json.loads(asset_json)\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"mapping_result_json\": \"{}\", \"profiles_json\": \"[]\", \"material_count\": 0, \"mapping_ok\": False, \"exec_out\": True}\n\n        try:\n            result = get_asset_material_mapper().map_materials(asset, renderer)\n            self.log_info(f\"Material mapping: {result.material_count} profiles for renderer={renderer} ok={result.ok}\")\n            return {\n                \"mapping_result_json\": json.dumps(result.to_dict(), sort_keys=True, default=str),\n                \"profiles_json\":       json.dumps([p.to_dict() for p in result.profiles], sort_keys=True, default=str),\n                \"material_count\":      result.material_count,\n                \"mapping_ok\":          result.ok,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Material mapping failed: {exc}\")\n            return {\"mapping_result_json\": \"{}\", \"profiles_json\": \"[]\", \"material_count\": 0, \"mapping_ok\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Materials\n"
+}

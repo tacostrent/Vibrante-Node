@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Release Notes v2.5.0 — Vibrante-Node v2.5.0</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+       background: #1e1e2e; color: #cdd6f4; line-height: 1.7; }
+.sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh;
+           background: #181825; overflow-y: auto; padding: 20px 0; z-index: 100; }
+.sidebar h2 { font-size: 13px; color: #6c7086; text-transform: uppercase;
+              letter-spacing: .08em; padding: 0 18px 10px; }
+.sidebar a  { display: block; padding: 6px 18px; color: #a6adc8; text-decoration: none;
+              font-size: 13px; border-left: 3px solid transparent; transition: all .15s; }
+.sidebar a:hover, .sidebar a.active { color: #cba6f7; border-left-color: #cba6f7;
+                                       background: #1e1e2e; }
+.sidebar .nav-release { font-size: 12px; padding: 4px 18px; }
+.content { margin-left: 220px; max-width: 920px; padding: 40px 48px; }
+h1 { font-size: 2em; color: #cba6f7; border-bottom: 2px solid #313244; padding-bottom: 10px; margin: 28px 0 16px; }
+h2 { font-size: 1.45em; color: #89b4fa; margin: 32px 0 12px; }
+h3 { font-size: 1.15em; color: #94e2d5; margin: 22px 0 8px; }
+h4 { font-size: 1em; color: #f5c2e7; margin: 16px 0 6px; }
+p  { margin-bottom: 14px; color: #cdd6f4; }
+a  { color: #89b4fa; }
+ul, ol { margin: 10px 0 14px 22px; }
+li { margin-bottom: 5px; }
+code { background: #313244; color: #f38ba8; padding: 2px 6px; border-radius: 4px; font-size: .88em; font-family: 'Consolas','Courier New',monospace; }
+pre  { background: #181825; border: 1px solid #313244; border-radius: 8px;
+       padding: 18px 20px; overflow-x: auto; margin: 14px 0 20px; }
+pre code { background: none; color: #a6e3a1; padding: 0; font-size: .9em; }
+table { border-collapse: collapse; width: 100%; margin: 14px 0 20px; font-size: .92em; }
+th { background: #313244; color: #cba6f7; padding: 9px 14px; text-align: left; }
+td { border-top: 1px solid #313244; padding: 8px 14px; }
+tr:nth-child(even) td { background: #1e1e2e; }
+hr { border: none; border-top: 1px solid #313244; margin: 28px 0; }
+blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8; margin: 14px 0; }
+@media (max-width: 700px) { .sidebar { display: none; } .content { margin-left: 0; padding: 24px 18px; } }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <h2>Vibrante-Node</h2>
+  <a href="USER_GUIDE.html">User Guide</a>
+<a href="NODE_BUILDER_API.html">Node Builder API</a>
+<a href="AUTOMATION_API.html">Automation API</a>
+<a href="DEVELOPER.html">Developer Documentation</a>
+<a href="DOCUMENTATION.html">Technical Feature List</a>
+  <hr style="border-color:#313244;margin:10px 18px">
+  <h2 style="margin-top:8px">Release Notes</h2>
+  <a class="nav-release" href="RELEASE_v2.5.0.html">Release Notes v2.5.0</a>
+<a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
+<a class="nav-release" href="RELEASE_v2.3.0.html">Release Notes v2.3.0</a>
+<a class="nav-release" href="RELEASE_v2.2.1.html">Release Notes v2.2.1</a>
+<a class="nav-release" href="RELEASE_v2.2.0.html">Release Notes v2.2.0</a>
+<a class="nav-release" href="RELEASE_v2.1.1.html">Release Notes v2.1.1</a>
+<a class="nav-release" href="RELEASE_v2.1.0.html">Release Notes v2.1.0</a>
+<a class="nav-release" href="RELEASE_v2.0.0.html">Release Notes v2.0.0</a>
+<a class="nav-release" href="RELEASE_v1.8.5.html">Release Notes v1.8.5</a>
+<a class="nav-release" href="RELEASE_v1.8.4.html">Release Notes v1.8.4</a>
+<a class="nav-release" href="RELEASE_v1.8.3.html">Release Notes v1.8.3</a>
+<a class="nav-release" href="RELEASE_v1.8.2.html">Release Notes v1.8.2</a>
+<a class="nav-release" href="RELEASE_v1.8.1.html">Release Notes v1.8.1</a>
+<a class="nav-release" href="RELEASE_v1.8.0.html">Release Notes v1.8.0</a>
+<a class="nav-release" href="RELEASE_v1.7.0.html">Release Notes v1.7.0</a>
+<a class="nav-release" href="RELEASE_v1.6.1.html">Release Notes v1.6.1</a>
+<a class="nav-release" href="RELEASE_v1.6.0.html">Release Notes v1.6.0</a>
+<a class="nav-release" href="RELEASE_v1.5.0.html">Release Notes v1.5.0</a>
+<a class="nav-release" href="RELEASE_v1.4.0.html">Release Notes v1.4.0</a>
+<a class="nav-release" href="RELEASE_v1.3.0.html">Release Notes v1.3.0</a>
+<a class="nav-release" href="RELEASE_v1.2.0.html">Release Notes v1.2.0</a>
+<a class="nav-release" href="RELEASE_v1.1.5.html">Release Notes v1.1.5</a>
+<a class="nav-release" href="RELEASE_v1.1.0.html">Release Notes v1.1.0</a>
+<a class="nav-release" href="RELEASE_v1.0.5.html">Release Notes v1.0.5</a>
+  <hr style="border-color:#313244;margin:10px 18px">
+  <h2 style="margin-top:8px">On this page</h2>
+  <a href="#vibrante-node-v250-release-notes" style="padding-left:18px">Vibrante-Node v2.5.0 — Release Notes</a>
+<a href="#summary" style="padding-left:18px">Summary</a>
+<a href="#whats-new" style="padding-left:18px">What's New</a>
+<a href="#semantic-scene-intent-system-phase-1" style="padding-left:32px">Semantic Scene Intent System (Phase 1)</a>
+<a href="#production-semantic-intelligence-layer-tier-29" style="padding-left:32px">Production Semantic Intelligence Layer (Tier 2.9)</a>
+<a href="#cinematic-orchestration-suite-23" style="padding-left:32px">Cinematic Orchestration Suite (§23)</a>
+<a href="#production-knowledge-system-24" style="padding-left:32px">Production Knowledge System (§24)</a>
+<a href="#scene-planning-runtime-27" style="padding-left:32px">Scene Planning Runtime (§27)</a>
+<a href="#asset-intelligence-runtime-tier-8" style="padding-left:32px">Asset Intelligence Runtime (Tier 8)</a>
+<a href="#semantic-asset-catalog-megascans-knowledge-layer-tier-127" style="padding-left:32px">Semantic Asset Catalog &amp; Megascans Knowledge Layer (Tier 12.7)</a>
+<a href="#semantic-vector-search-asset-retrieval-tier-128" style="padding-left:32px">Semantic Vector Search &amp; Asset Retrieval (Tier 12.8)</a>
+<a href="#semantic-asset-suitability-ranking-tier-1285" style="padding-left:32px">Semantic Asset Suitability Ranking (Tier 12.85)</a>
+<a href="#local-asset-acquisition-tier-125" style="padding-left:32px">Local Asset Acquisition (Tier 12.5)</a>
+<a href="#online-asset-acquisition-tier-129" style="padding-left:32px">Online Asset Acquisition (Tier 12.9)</a>
+<a href="#asset-realization-dcc-integration-tier-13" style="padding-left:32px">Asset Realization &amp; DCC Integration (Tier 13)</a>
+<a href="#lookdev-material-intelligence-tier-14" style="padding-left:32px">Lookdev &amp; Material Intelligence (Tier 14)</a>
+<a href="#lighting-intelligence-tier-15" style="padding-left:32px">Lighting Intelligence (Tier 15)</a>
+<a href="#real-asset-spatial-intelligence-tier-94" style="padding-left:32px">Real Asset Spatial Intelligence (Tier 9.4)</a>
+<a href="#scale-aware-spatial-placement-tier-96" style="padding-left:32px">Scale-Aware Spatial Placement (Tier 9.6)</a>
+<a href="#geometry-intelligence-asset-metrics-tier-97" style="padding-left:32px">Geometry Intelligence &amp; Asset Metrics (Tier 9.7)</a>
+<a href="#environment-construction-package-44" style="padding-left:32px">Environment Construction Package (§44)</a>
+<a href="#semantic-furniture-layout-engine-tier-98" style="padding-left:32px">Semantic Furniture Layout Engine (Tier 9.8)</a>
+<a href="#layout-realization-scene-constraint-solver-tier-99" style="padding-left:32px">Layout Realization &amp; Scene Constraint Solver (Tier 9.9)</a>
+<a href="#structural-environment-realization-tier-100" style="padding-left:32px">Structural Environment Realization (Tier 10.0)</a>
+<a href="#structural-asset-classification-tier-103" style="padding-left:32px">Structural Asset Classification (Tier 10.3)</a>
+<a href="#environment-shell-construction-tier-104" style="padding-left:32px">Environment Shell Construction (Tier 10.4)</a>
+<a href="#structural-openings-architectural-features-tier-105" style="padding-left:32px">Structural Openings &amp; Architectural Features (Tier 10.5)</a>
+<a href="#scene-reality-validation-tier-143" style="padding-left:32px">Scene Reality Validation (Tier 14.3)</a>
+<a href="#asset-identity-audit-tier-1445" style="padding-left:32px">Asset Identity Audit (Tier 14.4.5)</a>
+<a href="#reality-intelligence-tier-150" style="padding-left:32px">Reality Intelligence (Tier 15.0+)</a>
+<a href="#environment-expansion-pack-39" style="padding-left:32px">Environment Expansion Pack (§39)</a>
+<a href="#build_scene_from_assets-mcp-tool" style="padding-left:32px">build_scene_from_assets MCP Tool</a>
+<a href="#200-new-houdini-mcp-nodes" style="padding-left:32px">200+ New Houdini MCP Nodes</a>
+<a href="#changed" style="padding-left:18px">Changed</a>
+<a href="#fixed" style="padding-left:18px">Fixed</a>
+<a href="#dependencies" style="padding-left:18px">Dependencies</a>
+<a href="#migration-notes" style="padding-left:18px">Migration Notes</a>
+<a href="#upgrading-from-v240" style="padding-left:32px">Upgrading from v2.4.0</a>
+<a href="#scene-building-intents" style="padding-left:32px">Scene-Building Intents</a>
+<a href="#known-limitations" style="padding-left:18px">Known Limitations</a>
+<a href="#stats" style="padding-left:18px">Stats</a>
+</nav>
+<main class="content">
+<h1 id="vibrante-node-v250-release-notes">Vibrante-Node v2.5.0 — Release Notes</h1>
+<p><strong>Released:</strong> 2026-06-13<br />
+<strong>Type:</strong> Minor — massive AI intelligence expansion (Tiers 8–15), 200+ new Houdini nodes, 250+ new tests</p>
+<hr />
+<h2 id="summary">Summary</h2>
+<p>v2.5.0 is the largest feature release in Vibrante-Node's history. It introduces a complete AI-native environment assembly pipeline spanning 18 intelligence tiers, from natural language scene intent extraction through reality validation and live geometry correction in Houdini. Every tier is deterministic, planning-only (no bridge calls), and backed by a dedicated unit test suite.</p>
+<hr />
+<h2 id="whats-new">What's New</h2>
+<h3 id="semantic-scene-intent-system-phase-1">Semantic Scene Intent System (Phase 1)</h3>
+<p>New <code>src/runtime/semantic/</code> sub-package — a full NL → structured intent extraction pipeline:</p>
+<ul>
+<li><strong><code>SceneIntentExtractor</code></strong> — orchestrates LLM-optional extraction; produces typed <code>SceneIntent</code> dataclasses</li>
+<li><strong><code>SceneIntentValidator</code></strong> — enum/range/contradiction validation on all 14 schema fields</li>
+<li><strong><code>SceneIntentEnricher</code></strong> — deterministically enriches intents with implied requirements; every enrichment records reason, source, and confidence</li>
+<li><strong><code>IntentSerializer</code></strong> — JSON persistence with schema version migration</li>
+<li><strong><code>SemanticLogger</code></strong> — pipeline trace for every extraction step</li>
+<li><strong><code>IntentRecommendationEngine</code></strong> — production-proven recommendations from memory + patterns + knowledge graph</li>
+<li>Schema constants: <code>ENVIRONMENT_TYPES</code>, <code>STYLE_TYPES</code>, <code>MOOD_TYPES</code>, <code>CINEMATIC_STYLE_VALUES</code>, <code>ATMOSPHERIC_EFFECT_TYPES</code>, and more (55 environments)</li>
+<li>5 new Houdini nodes: <code>hou_mcp_scene_intent_extract</code>, <code>hou_mcp_scene_intent_validate</code>, <code>hou_mcp_scene_intent_enrich</code>, <code>hou_mcp_scene_intent_recommend</code>, <code>hou_mcp_build_scene_from_intent</code></li>
+</ul>
+<h3 id="production-semantic-intelligence-layer-tier-29">Production Semantic Intelligence Layer (Tier 2.9)</h3>
+<p>4 new runtime modules for cinematic goal orchestration:</p>
+<ul>
+<li><strong><code>goal_decomposer</code></strong> — "create cinematic explosion scene" → 9 ordered workflow stages; pure keyword matching, no LLM required</li>
+<li><strong><code>review_engine</code></strong> — specific per-stage critique ("smoke breakup lacks variation", "depth pass not in world units"); never returns generic "Execution successful"</li>
+<li><strong><code>scene_awareness</code></strong> — analyzes scene_context dicts for terrain scale, renderer, lighting environment, and render cost estimation</li>
+<li><strong><code>runtime_narration</code></strong> — <code>[Runtime]</code>/<code>[Planning]</code>/<code>[Execution]</code>/<code>[Review]</code> narration blocks for all orchestration steps</li>
+</ul>
+<h3 id="cinematic-orchestration-suite-23">Cinematic Orchestration Suite (§23)</h3>
+<p>6 new planning modules with zero Houdini dependency:</p>
+<ul>
+<li><strong><code>semantic_lighting_engine</code></strong> — cinematic lighting plans from scene intent + mood context</li>
+<li><strong><code>cinematic_camera_engine</code></strong> — camera orchestration plans (push-in, orbital, dutch, etc.)</li>
+<li><strong><code>atmosphere_orchestrator</code></strong> — fog, volumetric, and particle atmosphere plans</li>
+<li><strong><code>visual_hierarchy_engine</code></strong> — hero focus, depth layering, and balance evaluation</li>
+<li><strong><code>render_preparation_engine</code></strong> — renderer settings, AOV strategy, and complexity scoring</li>
+<li><strong><code>cinematic_scene_review</code></strong> — 9-dimension cinematic quality evaluation</li>
+</ul>
+<h3 id="production-knowledge-system-24">Production Knowledge System (§24)</h3>
+<p>6 new modules that learn from production history:</p>
+<ul>
+<li><strong><code>production_memory</code></strong> — append-only store of successful/failed scenes, pattern usage, review outcomes</li>
+<li><strong><code>pattern_library</code></strong> — reusable production pattern registry with usage-based ranking</li>
+<li><strong><code>production_scoring</code></strong> — deterministic multi-dimension quality scoring (readability, composition, lighting, camera, atmosphere)</li>
+<li><strong><code>review_feedback</code></strong> — structured feedback extraction from review results → improvement actions</li>
+<li><strong><code>asset_knowledge_graph</code></strong> — semantic relationship graph: <code>commonly_used_with</code>, <code>same_environment</code>, <code>same_style</code>, <code>successful_pairing</code></li>
+<li><strong><code>scene_recommendation_engine</code></strong> — production-proven scene configuration recommendations from memory + patterns + graph</li>
+</ul>
+<h3 id="scene-planning-runtime-27">Scene Planning Runtime (§27)</h3>
+<p>3 new modules + 4 Houdini nodes:</p>
+<ul>
+<li><strong>Scene Plan creation</strong> — <code>SceneIntent</code> → <code>ScenePlan</code> with zones, composition rules, camera targets, asset queries</li>
+<li><strong>Scene Plan validation</strong> — structural consistency checks on zone completeness and camera targets</li>
+<li><strong>Asset Query Generation</strong> — structured provider-agnostic search queries from any <code>ScenePlan</code></li>
+<li>New nodes: <code>hou_mcp_scene_plan_create</code>, <code>hou_mcp_scene_plan_validate</code>, <code>hou_mcp_scene_plan_recommend</code>, <code>hou_mcp_scene_asset_query_generate</code></li>
+</ul>
+<h3 id="asset-intelligence-runtime-tier-8">Asset Intelligence Runtime (Tier 8)</h3>
+<p>New <code>src/runtime/assets/</code> package — full pipeline from queries to ranked recommendations:</p>
+<ul>
+<li><strong>Providers</strong>: <code>SketchfabProvider</code>, <code>PolyhavenProvider</code>, <code>LocalLibraryProvider</code></li>
+<li><strong><code>AssetDiscoveryEngine</code></strong> — queries all providers, merges, deduplicates; no downloads, no auth</li>
+<li><strong><code>AssetValidationEngine</code></strong> — category, format, scale, and conflict validation</li>
+<li><strong><code>AssetRankingEngine</code></strong> — 6-factor deterministic scoring with production memory/pattern/graph boost</li>
+<li><strong><code>AssetRecommendationEngine</code></strong> — full pipeline orchestrator</li>
+<li>New nodes: <code>hou_mcp_asset_discover</code>, <code>hou_mcp_asset_validate</code>, <code>hou_mcp_asset_rank</code>, <code>hou_mcp_import_asset</code></li>
+</ul>
+<h3 id="semantic-asset-catalog-megascans-knowledge-layer-tier-127">Semantic Asset Catalog &amp; Megascans Knowledge Layer (Tier 12.7)</h3>
+<p>17-module semantic catalog in <code>src/runtime/assets/semantic/</code>:</p>
+<ul>
+<li>Environment mapping (55 environments), role classification (6 roles), storytelling mapping, lookdev tagging, cinematic usage</li>
+<li>Megascans metadata client (offline-safe; official API only; no scraping)</li>
+<li>Knowledge graph with 6 relationship types</li>
+<li>Priority chain: local manifest → catalog → API → fallback</li>
+<li>6 Houdini nodes + 130 tests</li>
+</ul>
+<h3 id="semantic-vector-search-asset-retrieval-tier-128">Semantic Vector Search &amp; Asset Retrieval (Tier 12.8)</h3>
+<p>14-module vector search in <code>src/runtime/assets/vector_search/</code>:</p>
+<ul>
+<li><strong><code>DeterministicEmbeddingProvider</code></strong> — 128-dim, no ML dependencies; same text → same vector always</li>
+<li><strong><code>SentenceTransformersProvider</code></strong> — optional <code>all-MiniLM-L6-v2</code> upgrade when available</li>
+<li><strong><code>HybridRankingEngine</code></strong> — 6-signal scoring: vector 40%, environment 20%, storytelling 15%, lookdev 10%, graph 10%, memory 5%</li>
+<li>6 Houdini nodes + 175 tests</li>
+</ul>
+<h3 id="semantic-asset-suitability-ranking-tier-1285">Semantic Asset Suitability Ranking (Tier 12.85)</h3>
+<p>12-module suitability engine in <code>src/runtime/assets/suitability/</code>:</p>
+<ul>
+<li>7-factor scoring replaces raw similarity: environment, role, style, material, scale, placement, story affinity</li>
+<li>Wooden Saloon Chair scores 0.905 vs Modern Plastic Chair 0.550 for western_room — correct contextual selection</li>
+<li>4 Houdini nodes + 110 tests</li>
+</ul>
+<h3 id="local-asset-acquisition-tier-125">Local Asset Acquisition (Tier 12.5)</h3>
+<p>6-module acquisition service in <code>src/runtime/assets/acquisition/</code>:</p>
+<ul>
+<li>Scans local Fab and Megascans library directories — no network calls, no authentication</li>
+<li>Priority chain: registry → index → Fab scan → Megascans scan → not_found</li>
+</ul>
+<h3 id="online-asset-acquisition-tier-129">Online Asset Acquisition (Tier 12.9)</h3>
+<p>15-module acquisition pipeline in <code>src/runtime/assets/acquisition_online/</code>:</p>
+<ul>
+<li>Cache-first fetcher; Megascans API fallback (token via <code>VIBRANTE_MEGASCANS_TOKEN</code>)</li>
+<li>Persistent download queue, rate-limited scheduler, SHA-256 asset cache</li>
+<li>Project-local staging, append-only provenance tracking</li>
+<li><strong>Fab Socket Receiver</strong> — started automatically at <code>initialize_runtime_context</code>; accepts push events from the Fab desktop app / Unreal Engine</li>
+<li>Token never stored in serialized output (<code>to_dict()</code> → <code>"***"</code>)</li>
+<li>14 tests</li>
+</ul>
+<h3 id="asset-realization-dcc-integration-tier-13">Asset Realization &amp; DCC Integration (Tier 13)</h3>
+<p>12-module realization pipeline in <code>src/runtime/assets/realization/</code>:</p>
+<ul>
+<li>Import → convert → normalize → resolve dependencies → map materials → build USD → instance → realize as transaction ops → validate → review</li>
+<li>No bridge calls; all modules are planning-only</li>
+<li>SUPPORTED_FORMATS: fbx, obj, gltf, glb, usd, usda, usdc, usdz</li>
+<li>SUPPORTED_RENDERERS: arnold, usd_preview_surface, generic_pbr, karma</li>
+</ul>
+<h3 id="lookdev-material-intelligence-tier-14">Lookdev &amp; Material Intelligence (Tier 14)</h3>
+<p>10-module lookdev layer in <code>src/runtime/lookdev/</code>:</p>
+<ul>
+<li>13 built-in material categories, 5 environment patterns, 3 renderer profiles</li>
+<li>Recommendation priority: LookdevPatterns → MaterialKnowledge → RendererDefault</li>
+<li>4-dimension review scoring; blocking findings for "no materials", "zero assignments"</li>
+</ul>
+<h3 id="lighting-intelligence-tier-15">Lighting Intelligence (Tier 15)</h3>
+<p>16-module cinematic illumination pipeline in <code>src/runtime/lighting/</code>:</p>
+<ul>
+<li>8 mood profiles, 8 lighting patterns, 10 color palettes, 8 exposure profiles</li>
+<li>6-dimension review: readability, mood accuracy, story support, visual hierarchy, color harmony, exposure</li>
+<li>All outputs are renderer-agnostic plans — never creates Houdini lights</li>
+</ul>
+<h3 id="real-asset-spatial-intelligence-tier-94">Real Asset Spatial Intelligence (Tier 9.4)</h3>
+<p>AABB collision detection, clearance validation, and placement optimization in <code>src/runtime/assets/assembly/</code>:</p>
+<ul>
+<li><code>CollisionDetector</code> — AABB-based collision detection</li>
+<li><code>ClearanceValidator</code> — edge-to-edge clearance rules (machine→machine: 2.0m, vehicle→vehicle: 2.5m)</li>
+<li><code>PlacementOptimizer</code> — 48-candidate radial search for collision-free positions</li>
+<li><code>collision_count &gt; 0</code> is a hard production-ready block</li>
+</ul>
+<h3 id="scale-aware-spatial-placement-tier-96">Scale-Aware Spatial Placement (Tier 9.6)</h3>
+<p>Fixes the root cause of cm/m unit mismatch from Megascans assets:</p>
+<ul>
+<li><code>UnitNormalizer</code> — detects and converts cm/mm/m/in/ft → meters; heuristic: dim &gt; 10 → assume cm</li>
+<li><code>AssetScaleAnalyzer</code> — 6 scale classes (tiny/small/medium/large/structural/hero)</li>
+<li><code>LayoutSpacingEngine</code> — <code>spacing = radius_a + clearance_margin + radius_b</code>; replaces fixed <code>index × 3.0 m</code></li>
+</ul>
+<h3 id="geometry-intelligence-asset-metrics-tier-97">Geometry Intelligence &amp; Asset Metrics (Tier 9.7)</h3>
+<p>9-module geometry analysis pipeline in <code>src/runtime/assets/geometry/</code>:</p>
+<ul>
+<li>10-step bounding box extraction priority chain (explicit vectors → USD extent → GLTF bounds → placement-type table → generic fallback)</li>
+<li>Pivot detection (5 types), ground contact detection (leg/base_ring/wheel/skid/track), support surface detection (tabletop/shelf/worktop/rack_unit)</li>
+<li><code>AssetMetrics</code> is now the authoritative geometry source for all placement engines</li>
+</ul>
+<h3 id="environment-construction-package-44">Environment Construction Package (§44)</h3>
+<p>14-module environment construction layer in <code>src/runtime/environment/</code>:</p>
+<ul>
+<li>20 built-in templates across Interior, Industrial, Scientific, Sci-Fi, Outdoor, and Fantasy categories</li>
+<li>8 atmosphere profiles (western_dust, industrial_haze, cold_interior, volumetric_light, etc.)</li>
+<li>6-dimension review: structure, zones, anchors, support, decoration, atmosphere</li>
+</ul>
+<h3 id="semantic-furniture-layout-engine-tier-98">Semantic Furniture Layout Engine (Tier 9.8)</h3>
+<p>12-module relationship-based placement in <code>src/runtime/layout/</code>:</p>
+<ul>
+<li>Assets placed relative to other assets through semantic relationships — not dropped independently into zones</li>
+<li>Chairs orbit table at 0.9m in 4 cardinal directions; bottle placed on table surface at y=0.75m; poster wall-mounted at 1.6m</li>
+<li>10 relationship types: supports, around, attached_to, against, near, hanging_from, mounted_on, etc.</li>
+<li><code>hou_mcp_semantic_layout_debug</code> logs the full placement tree for every environment</li>
+</ul>
+<h3 id="layout-realization-scene-constraint-solver-tier-99">Layout Realization &amp; Scene Constraint Solver (Tier 9.9)</h3>
+<p>12-module world-space transform pipeline in <code>src/runtime/layout_realization/</code>:</p>
+<ul>
+<li><code>LayoutPlan</code> → <code>ResolvedSceneLayout</code> with concrete tx/ty/tz/rx/ry/rz for every asset</li>
+<li>7-stage pipeline: cluster → surface → wall → decoration → collision → constraint → assemble</li>
+<li><code>LayoutApplicationEngine</code> is the only module that calls <code>get_bridge()</code> — isolated adapter</li>
+<li>Parent-child pairs are exempt from AABB collision checks</li>
+</ul>
+<h3 id="structural-environment-realization-tier-100">Structural Environment Realization (Tier 10.0)</h3>
+<p>13-module architectural shell builder in <code>src/runtime/environment_realization/</code>:</p>
+<ul>
+<li>Floor + walls + ceiling + doors + windows + beams + columns for all 55 environments</li>
+<li>Outdoor environments receive a 50×50m ground plane with no walls/ceiling</li>
+<li>All elements converted to Houdini transaction op dicts for safe application</li>
+</ul>
+<h3 id="structural-asset-classification-tier-103">Structural Asset Classification (Tier 10.3)</h3>
+<p>9-module pre-layout classifier in <code>src/runtime/structure/</code>:</p>
+<ul>
+<li>3-signal pipeline: geometry dimensions + metadata keywords + environment affinity</li>
+<li>20 structural roles: wall, doorway, beam, column, fireplace, archway, stair, railing, etc.</li>
+<li>Doorways, beams, and columns are automatically routed away from the furniture pipeline</li>
+<li>25 environments with affinity tables; stone arch scores 0.90 in castle_hall, ≤0.50 in western_room</li>
+</ul>
+<h3 id="environment-shell-construction-tier-104">Environment Shell Construction (Tier 10.4)</h3>
+<p>6-phase environment-first pipeline in <code>src/runtime/environment_shell/</code>:</p>
+<ul>
+<li>Phase 1–6: floor → walls → ceiling → structural anchors → structural placement → shell validation</li>
+<li><code>ENVIRONMENT_NOT_READY</code> gate is BLOCKING — furniture placement cannot proceed until gate passes</li>
+<li><code>hou_mcp_shell_gate</code> has dual exec output: <code>exec_out_ready</code> and <code>exec_out_blocked</code></li>
+</ul>
+<h3 id="structural-openings-architectural-features-tier-105">Structural Openings &amp; Architectural Features (Tier 10.5)</h3>
+<p>Door/window openings, fireplace/beam/shelf attachment, and <code>/obj/sh_*</code> geometry in <code>src/runtime/architectural_features/</code>.</p>
+<h3 id="scene-reality-validation-tier-143">Scene Reality Validation (Tier 14.3)</h3>
+<p>5-rule validation in <code>src/runtime/scene_validation/</code>:</p>
+<ul>
+<li>Support surface, occupancy AABB, relationship graph, human plausibility, orphan detection</li>
+<li>Replaces bare <code>production_ready</code> bool with <code>geometry_valid + semantic_valid + plausibility_valid + production_ready</code></li>
+</ul>
+<h3 id="asset-identity-audit-tier-1445">Asset Identity Audit (Tier 14.4.5)</h3>
+<p>8-module identity auditor in <code>src/runtime/asset_identity/</code>:</p>
+<ul>
+<li>3 new <code>vibrante_</code> user-data keys on every Houdini node (<code>vibrante_asset_id</code>, <code>vibrante_asset_name</code>, <code>vibrante_asset_category</code>)</li>
+<li>Opaque ID detection, role/engine and role/category cross-validation</li>
+</ul>
+<h3 id="reality-intelligence-tier-150">Reality Intelligence (Tier 15.0+)</h3>
+<p>16-module senior-artist intelligence layer in <code>src/runtime/reality/</code>:</p>
+<ul>
+<li><strong>Core rule</strong>: never ask "Can I place this asset?" — always ask "Would a human intentionally place this here?"</li>
+<li><strong>Reality First Rule</strong>: geometry wins over metadata when the two conflict</li>
+<li><code>GeometryInspector</code> — BRIDGE: reads actual Houdini geometry; <code>reconcile()</code> enforces GEOMETRY WINS</li>
+<li><code>CorrectionApplier</code> — BRIDGE: applies geometry fixes via <code>set_parms</code>; all other modules are pure planning</li>
+<li>Support rule table: bottle requires table/shelf/bar; chair requires table/desk/fireplace/bar within 2.0m; fireplace requires wall</li>
+<li><code>FloatingObjectDetector</code> — <code>raycast_down()</code> for any asset with bottom_y &gt; floor + 0.10m</li>
+<li><code>VisualReviewEngine</code> — 9 criteria ALL required: physically_plausible, functionally_usable, architecturally_valid, visually_believable, compositionally_balanced, relationship_consistent, no_floating_objects, no_orphan_assets, no_impossible_placements</li>
+</ul>
+<h3 id="environment-expansion-pack-39">Environment Expansion Pack (§39)</h3>
+<p>55 production environments across 9 categories in <code>src/runtime/environments/</code>:</p>
+<ul>
+<li>Industrial (8): industrial_hangar, warehouse, shipyard, oil_refinery, power_station, mining_facility…</li>
+<li>Scientific (6): robotics_lab, research_lab, medical_lab, clean_room, biohazard_facility, control_room</li>
+<li>Military (5), Sci-Fi (6), Urban (6), Interior (8), Nature (7), Fantasy (5), Post-Apocalyptic (4)</li>
+<li>All 55 environments have lighting profiles, storytelling narratives, lookdev keywords, and workflow packs</li>
+</ul>
+<h3 id="build_scene_from_assets-mcp-tool"><code>build_scene_from_assets</code> MCP Tool</h3>
+<p>New MCP tool registered in <code>MCPToolRegistry</code>:</p>
+<ul>
+<li><strong>Required first step</strong> for all scene-building intents — real assets, never primitives</li>
+<li>Pipeline: intent → keyword extraction → local catalog search → Megascans import → structural routing → semantic layout → layout realization → Houdini transforms</li>
+<li><code>query_examples()</code> now returns a concrete <code>scene_building_example</code> dict for scene intents</li>
+</ul>
+<h3 id="200-new-houdini-mcp-nodes">200+ New Houdini MCP Nodes</h3>
+<p>Complete node set for the full assembly pipeline in <code>plugins/houdini/v_nodes_houdini/</code>:</p>
+<ul>
+<li>Scene intent: <code>hou_mcp_scene_intent_extract</code>, <code>hou_mcp_scene_intent_validate</code>, <code>hou_mcp_scene_intent_enrich</code>, <code>hou_mcp_scene_intent_recommend</code></li>
+<li>Scene planning: <code>hou_mcp_scene_plan_create</code>, <code>hou_mcp_scene_plan_validate</code>, <code>hou_mcp_scene_plan_recommend</code></li>
+<li>Asset pipeline: <code>hou_mcp_asset_discover</code>, <code>hou_mcp_asset_validate</code>, <code>hou_mcp_asset_rank</code>, <code>hou_mcp_asset_suitability</code>, <code>hou_mcp_asset_retrieval</code></li>
+<li>Layout: <code>hou_mcp_layout_cluster</code>, <code>hou_mcp_surface_placement</code>, <code>hou_mcp_layout_graph</code>, <code>hou_mcp_realize_layout</code>, <code>hou_mcp_apply_layout</code></li>
+<li>Environment: <code>hou_mcp_build_shell</code>, <code>hou_mcp_shell_gate</code>, <code>hou_mcp_build_environment</code>, <code>hou_mcp_environment_blueprint</code></li>
+<li>Structural: <code>hou_mcp_structural_classifier</code>, <code>hou_mcp_geometry_analyze</code>, <code>hou_mcp_collision_review</code></li>
+<li>Lookdev &amp; lighting: <code>hou_mcp_material_recommend</code>, <code>hou_mcp_lighting_strategy</code>, <code>hou_mcp_lighting_plan</code>, <code>hou_mcp_lighting_review</code></li>
+<li>Reality: <code>hou_mcp_reality_check</code>, <code>hou_mcp_reality_correction</code>, <code>hou_mcp_visual_review</code>, <code>hou_mcp_geometry_truth</code></li>
+<li>Workflow: <code>hou_mcp_workflow_pack</code>, <code>hou_mcp_workflow_recommend</code>, <code>hou_mcp_workflow_execute</code></li>
+</ul>
+<hr />
+<h2 id="changed">Changed</h2>
+<ul>
+<li><strong><code>vibrante_node.json</code></strong> — expanded from 2 to 14 env vars; new acquisition and storage paths are optional (backward-compatible with v2.4.0 installs)</li>
+<li><strong><code>RECOMMENDED_EXECUTION_FLOW</code></strong> — step 7 added: <code>hou_mcp_build_scene_from_intent</code> for scene intents (geometry before lights)</li>
+<li><strong><code>initialize_runtime_context</code></strong> — now reports asset path status, starts Fab socket receiver, and pushes <code>vibrante_node.json</code> values into the live Houdini session</li>
+<li><strong><code>query_examples()</code></strong> — returns <code>scene_building_example</code> dict for scene-building intents; redirects callers to <code>build_scene_from_assets</code> (not <code>plan_scene + execute_workflow_transaction</code>)</li>
+<li><strong><code>workflow_templates</code></strong> — new <code>scene_from_assets</code> template for the full Tier 12.8 → 10.3.5 → 9.8 → 9.9 pipeline</li>
+<li><strong><code>pythonrc.py</code></strong> — Houdini startup now prints <code>VIBRANTE_MEGASCANS_LIBRARY</code> and <code>VIBRANTE_ASSET_CACHE</code> status</li>
+<li><strong><code>run_vibrante_mcp.py</code></strong> — documentation updated with Claude Code MCP setup instructions (<code>claude mcp add-json</code>)</li>
+<li><strong>Release notes</strong> moved from repository root to <code>releases/</code> directory; root keeps only the current release</li>
+</ul>
+<hr />
+<h2 id="fixed">Fixed</h2>
+<ul>
+<li><code>asset_cache_manager.py</code> — deadlock in <code>remove_asset()</code> caused <code>tests/unit/test_asset_cache_manager.py</code> to hang forever (see §10.13 in CLAUDE.md)</li>
+</ul>
+<hr />
+<h2 id="dependencies">Dependencies</h2>
+<ul>
+<li><strong><code>networkx</code></strong> added to <code>requirements.txt</code> — required by asset knowledge graph modules</li>
+</ul>
+<hr />
+<h2 id="migration-notes">Migration Notes</h2>
+<h3 id="upgrading-from-v240">Upgrading from v2.4.0</h3>
+<p>No breaking changes. All v2.4.0 workflows, nodes, and MCP tools continue to work unchanged.</p>
+<p><strong>Optional new configuration</strong> in <code>vibrante_node.json</code>:</p>
+<pre><code class="language-json">{ &quot;VIBRANTE_MEGASCANS_LIBRARY&quot;: &quot;&lt;path to local Megascans Downloaded/3d&gt;&quot; },
+{ &quot;VIBRANTE_FAB_LIBRARY&quot;:       &quot;&lt;path to local Fab Library&gt;&quot; },
+{ &quot;VIBRANTE_ASSET_STORAGE&quot;:     &quot;&lt;root for Vibrante databases, e.g. E:/vibrante_db&gt;&quot; },
+{ &quot;VIBRANTE_ASSET_CACHE&quot;:       &quot;&lt;subfolder for vector index, e.g. E:/vibrante_db/vector_cache&gt;&quot; }
+</code></pre>
+<p>All are optional — without them, asset discovery falls back to local file scan only and the vector index is not persisted between sessions.</p>
+<p><strong>Install <code>networkx</code></strong> if using asset knowledge graph features:</p>
+<pre><code class="language-bash">pip install networkx
+</code></pre>
+<h3 id="scene-building-intents">Scene-Building Intents</h3>
+<p>For prompts like "build a western room" or "create a sci-fi corridor":</p>
+<ul>
+<li>Use <code>build_scene_from_assets</code> (new MCP tool) — this runs the full Tier 12.8 → layout → Houdini pipeline with real assets</li>
+<li>Do NOT use <code>plan_scene + execute_workflow_transaction</code> for environment building — that path handles primitive geometry only</li>
+</ul>
+<hr />
+<h2 id="known-limitations">Known Limitations</h2>
+<ul>
+<li><code>SentenceTransformersProvider</code> requires <code>sentence_transformers</code> to be pre-installed and the <code>all-MiniLM-L6-v2</code> model to be cached; it silently falls back to <code>DeterministicEmbeddingProvider</code> if unavailable</li>
+<li><code>GeometryInspector.reconcile()</code> requires a live Houdini bridge; <code>build_op_dicts()</code> provides a dry-run path for testing</li>
+<li>Online Megascans download requires <code>VIBRANTE_MEGASCANS_TOKEN</code> — without it the system operates in offline mode (local library scan only)</li>
+</ul>
+<hr />
+<h2 id="stats">Stats</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New runtime modules</td>
+<td>120+</td>
+</tr>
+<tr>
+<td>New Houdini MCP nodes</td>
+<td>200+</td>
+</tr>
+<tr>
+<td>New unit test files</td>
+<td>250+</td>
+</tr>
+<tr>
+<td>Intelligence tiers</td>
+<td>Tiers 2.9, 8, 9.4–9.9, 10.0–10.5, 12.5–12.9, 13–15.0+</td>
+</tr>
+<tr>
+<td>Supported environments</td>
+<td>55</td>
+</tr>
+<tr>
+<td>New capabilities registered</td>
+<td>80+</td>
+</tr>
+</tbody>
+</table>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var links = document.querySelectorAll('.sidebar a');
+    var headings = document.querySelectorAll('h1,h2,h3');
+    window.addEventListener('scroll', function() {
+        var cur = '';
+        headings.forEach(function(h) { if (h.offsetTop <= window.scrollY + 80) cur = h.id; });
+        links.forEach(function(a) {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + cur);
+        });
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_scene_reality_validate",
+    "name": "hou_mcp_scene_reality_validate",
+    "description": "Scene Reality Validation (§53 Tier 14.3): runs all 5 rules on a ResolvedSceneLayout. Produces geometry_valid (no occupancy/support violations), semantic_valid (relationships OK + no orphans, score>=0.95), plausibility_valid (human usage score>=0.90), and production_ready (all three). Replaces bare production_ready with four independent verdicts.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "scene_layout_json", "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",           "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "validation_json",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "geometry_valid",           "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "semantic_valid",           "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "plausibility_valid",       "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready",         "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "plausibility_score",       "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "semantic_validation_score","type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",                 "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.scene_validation import get_scene_reality_validator\n\n_EMPTY = {\n    \"validation_json\": \"{}\",\n    \"geometry_valid\": False,\n    \"semantic_valid\": False,\n    \"plausibility_valid\": False,\n    \"production_ready\": False,\n    \"plausibility_score\": 0.0,\n    \"semantic_validation_score\": 0.0,\n    \"exec_out\": True,\n}\n\nclass Hou_Mcp_Scene_Reality_Validate(BaseNode):\n    name = \"hou_mcp_scene_reality_validate\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"validation_json\")\n        self.add_output(\"geometry_valid\",            \"bool\")\n        self.add_output(\"semantic_valid\",            \"bool\")\n        self.add_output(\"plausibility_valid\",        \"bool\")\n        self.add_output(\"production_ready\",          \"bool\")\n        self.add_output(\"plausibility_score\",        \"float\")\n        self.add_output(\"semantic_validation_score\", \"float\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw = (inputs.get(\"scene_layout_json\") or \"\").strip()\n        try:\n            scene = json.loads(raw) if raw else {}\n        except Exception:\n            self.log_error(\"scene_layout_json is not valid JSON.\")\n            return dict(_EMPTY)\n        try:\n            result = get_scene_reality_validator().validate(scene)\n            return {\n                \"validation_json\":           json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"geometry_valid\":            result.geometry_valid,\n                \"semantic_valid\":            result.semantic_valid,\n                \"plausibility_valid\":        result.plausibility_valid,\n                \"production_ready\":          result.production_ready,\n                \"plausibility_score\":        result.plausibility_score,\n                \"semantic_validation_score\": result.semantic_validation_score,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Scene reality validation failed: {exc}\")\n            return dict(_EMPTY)\n\ndef register_node():\n    return Hou_Mcp_Scene_Reality_Validate\n"
+}

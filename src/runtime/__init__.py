@@ -57,6 +57,31 @@ external services. Modules:
     scene_awareness          — terrain scale, renderer, lighting analysis (§20)
     runtime_narration        — [Runtime]/[Planning]/[Execution]/[Review] narration (§20)
 
+    semantic_lighting_engine — cinematic lighting plan generation (§23)
+    cinematic_camera_engine  — camera orchestration plan generation (§23)
+    atmosphere_orchestrator  — fog, volumetric, particle atmosphere plans (§23)
+    visual_hierarchy_engine  — hero focus, depth, balance evaluation (§23)
+    render_preparation_engine — renderer settings, AOV strategy, complexity (§23)
+    cinematic_scene_review   — cinematic quality evaluation + specific critique (§23)
+
+    production_memory         — append-only production experience store (§24)
+    pattern_library           — reusable production pattern registry with usage ranking (§24)
+    production_scoring        — deterministic multi-dimension quality scoring (§24)
+    review_feedback           — review → structured feedback + improvement actions (§24)
+    asset_knowledge_graph     — semantic asset relationship graph (§24)
+    scene_recommendation_engine — production-proven scene configuration recommender (§24)
+
+Asset Intelligence Runtime (§28) — sub-package, import directly:
+    from src.runtime.assets import (
+        get_asset_recommendation_engine,
+        get_asset_discovery_engine,
+        get_asset_validation_engine,
+        get_asset_ranking_engine,
+        get_provider_registry,
+        SketchfabProvider, PolyhavenProvider, LocalLibraryProvider,
+    )
+    from src.runtime.assets.schema import AssetDescriptor, AssetRecommendation
+
 Import order note (Tier 2 constraint):
     houdini_runtime registers rollback handlers with transaction_manager at
     import time. houdini_runtime.py imports transaction_manager directly at
@@ -137,6 +162,20 @@ __all__ = [
     "review_engine",
     "scene_awareness",
     "runtime_narration",
+    # Cinematic Orchestration (§23)
+    "semantic_lighting_engine",
+    "cinematic_camera_engine",
+    "atmosphere_orchestrator",
+    "visual_hierarchy_engine",
+    "render_preparation_engine",
+    "cinematic_scene_review",
+    # Production Knowledge System (§24)
+    "production_memory",
+    "pattern_library",
+    "production_scoring",
+    "review_feedback",
+    "asset_knowledge_graph",
+    "scene_recommendation_engine",
 ]
 
 

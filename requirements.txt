@@ -2,6 +2,7 @@ PyQt5
 QScintilla
 pydantic
 toposort
+networkx
 pytest
 pytest-qt
 google-generativeai

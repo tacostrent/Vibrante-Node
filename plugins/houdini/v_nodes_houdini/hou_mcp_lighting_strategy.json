@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_lighting_strategy",
+    "name": "hou_mcp_lighting_strategy",
+    "description": "Generate a renderer-agnostic lighting strategy from intent, environment, and mood. Outputs a strategy dict with key/fill/rim concepts, color temperature, contrast, and production notes.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "intent_text",  "type": "string", "widget_type": "text",     "options": null, "default": ""},
+        {"name": "environment",  "type": "string", "widget_type": "text",     "options": null, "default": ""},
+        {"name": "mood",         "type": "string", "widget_type": "text",     "options": null, "default": ""},
+        {"name": "lookdev_json", "type": "string", "widget_type": "text",     "options": null, "default": ""},
+        {"name": "exec_in",      "type": "any",    "widget_type": null,       "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "strategy_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "mood",          "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "environment",   "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",      "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lighting import get_lighting_strategy_engine\nimport json\n\nclass Hou_Mcp_Lighting_Strategy(BaseNode):\n    name = \"hou_mcp_lighting_strategy\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"intent_text\",  \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"environment\",  \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"mood\",         \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"lookdev_json\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"strategy_json\", \"string\")\n        self.add_output(\"mood\",          \"string\")\n        self.add_output(\"environment\",   \"string\")\n\n    async def execute(self, inputs):\n        intent_text  = str(inputs.get(\"intent_text\",  \"\") or \"\")\n        environment  = str(inputs.get(\"environment\",  \"\") or \"\")\n        mood         = str(inputs.get(\"mood\",         \"\") or \"\")\n        lookdev_json = str(inputs.get(\"lookdev_json\", \"\") or \"\")\n        try:\n            lookdev_dict = json.loads(lookdev_json) if lookdev_json.strip() else {}\n        except Exception:\n            lookdev_dict = {}\n        try:\n            engine   = get_lighting_strategy_engine()\n            strategy = engine.generate_strategy(\n                intent_text=intent_text,\n                environment=environment,\n                mood=mood,\n                lookdev_dict=lookdev_dict,\n            )\n            self.log_info(\n                f\"Lighting strategy: mood={strategy.mood}, env={strategy.environment}, \"\n                f\"approach={strategy.approach}, volumetrics={strategy.volumetrics}.\"\n            )\n            return {\n                \"strategy_json\": json.dumps(strategy.to_dict(), sort_keys=True, default=str),\n                \"mood\":          strategy.mood,\n                \"environment\":   strategy.environment,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Lighting strategy failed: {exc}\")\n            return {\"strategy_json\": \"{}\", \"mood\": \"\", \"environment\": \"\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Lighting_Strategy\n"
+}

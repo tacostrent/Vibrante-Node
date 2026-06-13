@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_workflow_pack",
+    "name": "Hou MCP Workflow Pack",
+    "description": "View and browse WorkflowPack definitions from the registry. Returns the full pack configuration including all strategies. Supports: industrial_hangar_pack, robotics_lab_pack, control_room_pack, sci_fi_corridor_pack, abandoned_factory_pack.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",        "type": "any",    "widget_type": null,       "options": null, "default": null },
+        { "name": "pack_name",      "type": "string", "widget_type": "text",     "options": null, "default": "industrial_hangar_pack" },
+        { "name": "list_all",       "type": "bool",   "widget_type": "checkbox", "options": null, "default": false },
+        { "name": "environment",    "type": "string", "widget_type": "text",     "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",       "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "pack_json",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "pack_name_out",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "environment_type","type": "string","widget_type": null, "options": null, "default": null },
+        { "name": "pack_count",     "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "pack_list_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "ok",             "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.workflows import get_workflow_registry\n\n    pack_name   = str(inputs.get('pack_name') or self.parameters.get('pack_name', 'industrial_hangar_pack') or '')\n    list_all    = bool(inputs.get('list_all') or self.parameters.get('list_all', False))\n    environment = str(inputs.get('environment') or self.parameters.get('environment', '') or '')\n\n    try:\n        registry = get_workflow_registry()\n\n        if list_all:\n            packs = registry.list_packs(environment_type=environment or None)\n            pack_list = [{'name': p.name, 'environment': p.environment_type,\n                          'version': p.version,\n                          'tags': p.metadata.get('tags', [])} for p in packs]\n            self.log_info(f'[WorkflowPack] {len(packs)} packs registered')\n            return {\n                'pack_json':       json.dumps(pack_list[0].get('name', '') if pack_list else ''),\n                'pack_name_out':   pack_list[0].get('name', '') if pack_list else '',\n                'environment_type': pack_list[0].get('environment', '') if pack_list else '',\n                'pack_count':      len(packs),\n                'pack_list_json':  json.dumps(pack_list, sort_keys=True),\n                'ok':              True,\n                'exec_out':        True,\n            }\n\n        pack = registry.get_pack(pack_name)\n        if not pack:\n            self.log_error(f'[WorkflowPack] Pack not found: {pack_name!r}')\n            return {\n                'pack_json': json.dumps({'error': f'Pack not found: {pack_name}'}),\n                'pack_name_out': pack_name,\n                'environment_type': '',\n                'pack_count': registry.get_statistics().get('total_packs', 0),\n                'pack_list_json': '[]',\n                'ok': False,\n                'exec_out': True,\n            }\n\n        self.log_info(f'[WorkflowPack] Retrieved: {pack.name!r} ({pack.environment_type})')\n        return {\n            'pack_json':        json.dumps(pack.to_dict(), sort_keys=True),\n            'pack_name_out':    pack.name,\n            'environment_type': pack.environment_type,\n            'pack_count':       registry.get_statistics().get('total_packs', 0),\n            'pack_list_json':   '[]',\n            'ok':               True,\n            'exec_out':         True,\n        }\n    except Exception as e:\n        self.log_error(f'[WorkflowPack] {e}')\n        return {\n            'pack_json': json.dumps({'error': str(e)}),\n            'pack_name_out': pack_name,\n            'environment_type': '',\n            'pack_count': 0,\n            'pack_list_json': '[]',\n            'ok': False,\n            'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Workflow_Pack(BaseNode):\n        name = 'hou_mcp_workflow_pack'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Workflow_Pack"
+}

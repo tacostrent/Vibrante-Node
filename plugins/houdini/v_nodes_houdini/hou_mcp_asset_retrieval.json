@@ -1,0 +1,27 @@
+{
+    "node_id": "hou_mcp_asset_retrieval",
+    "name": "hou_mcp_asset_retrieval",
+    "description": "Full semantic retrieval pipeline: intent → embedding → vector search → hybrid ranking → assets. Actions: retrieve, retrieve_environment, retrieve_hero, retrieve_storytelling. No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",       "type": "string", "widget_type": "text", "options": null, "default": "retrieve" },
+        { "name": "intent",       "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "environment",  "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "role",         "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "story_role",   "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "top_k",        "type": "int",    "widget_type": "int",  "options": null, "default": 10 },
+        { "name": "use_vector",   "type": "bool",   "widget_type": "checkbox", "options": null, "default": true },
+        { "name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "assets",         "type": "list",   "widget_type": null, "options": null, "default": null },
+        { "name": "total",          "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "parsed_intent",  "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "strategy",       "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "result",         "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",       "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.vector_search import get_retrieval_pipeline\n\nclass Hou_Mcp_Asset_Retrieval(BaseNode):\n    name = \"hou_mcp_asset_retrieval\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",      \"string\", widget_type=\"text\", default=\"retrieve\")\n        self.add_input(\"intent\",      \"string\", widget_type=\"text\")\n        self.add_input(\"environment\", \"string\", widget_type=\"text\")\n        self.add_input(\"role\",        \"string\", widget_type=\"text\")\n        self.add_input(\"story_role\",  \"string\", widget_type=\"text\")\n        self.add_input(\"top_k\",       \"int\",    widget_type=\"int\", default=10)\n        self.add_input(\"use_vector\",  \"bool\",   widget_type=\"checkbox\", default=True)\n        self.add_output(\"assets\",        \"list\")\n        self.add_output(\"total\",         \"int\")\n        self.add_output(\"parsed_intent\", \"any\")\n        self.add_output(\"strategy\",      \"string\")\n        self.add_output(\"result\",        \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action     = str(inputs.get(\"action\") or \"retrieve\").strip().lower()\n        intent     = str(inputs.get(\"intent\") or \"\").strip()\n        environment= str(inputs.get(\"environment\") or \"\").strip()\n        role       = str(inputs.get(\"role\") or \"\").strip()\n        story_role = str(inputs.get(\"story_role\") or \"\").strip()\n        top_k      = int(inputs.get(\"top_k\") or 10)\n        use_vector = bool(inputs.get(\"use_vector\", True))\n        try:\n            pipeline = get_retrieval_pipeline()\n            if action == \"retrieve_environment\":\n                result = pipeline.retrieve_environment_assets(environment, role=role, top_k=top_k)\n            elif action == \"retrieve_hero\":\n                result = pipeline.retrieve_hero_assets(environment=environment, top_k=top_k)\n            elif action == \"retrieve_storytelling\":\n                result = pipeline.retrieve_storytelling_assets(story_role, environment=environment, top_k=top_k)\n            else:\n                result = pipeline.retrieve(intent or environment or story_role, top_k=top_k, use_vector_search=use_vector)\n            return {\n                \"assets\":        result.assets,\n                \"total\":         result.total,\n                \"parsed_intent\": result.parsed_intent,\n                \"strategy\":      result.strategy,\n                \"result\":        result.to_dict(),\n                \"exec_out\":      True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_asset_retrieval failed: {e}\")\n            return {\"assets\": [], \"total\": 0, \"parsed_intent\": {}, \"strategy\": \"\", \"result\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Retrieval\n"
+}

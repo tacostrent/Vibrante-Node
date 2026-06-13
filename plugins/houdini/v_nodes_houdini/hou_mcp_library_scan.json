@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_library_scan",
+    "name": "hou_mcp_library_scan",
+    "description": "Scan local Fab and/or Megascans libraries for acquired assets. Returns discovered asset records and automatically updates the LibraryIndex. Reads VIBRANTE_FAB_LIBRARY and VIBRANTE_MEGASCANS_LIBRARY. No network calls, no authentication.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "source",       "type": "string", "widget_type": "text", "options": null, "default": "all"},
+        {"name": "library_path", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "scan_result_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "asset_count",      "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.acquisition import (\n    get_fab_library_scanner, get_megascans_scanner, get_library_index\n)\nimport json\n\nclass Hou_Mcp_Library_Scan(BaseNode):\n    name = \"hou_mcp_library_scan\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"source\",       \"string\", widget_type=\"text\", default=\"all\")\n        self.add_input(\"library_path\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"scan_result_json\", \"string\")\n        self.add_output(\"asset_count\",      \"int\")\n\n    async def execute(self, inputs):\n        source  = str(inputs.get(\"source\",       \"all\") or \"all\").strip().lower()\n        lpath   = str(inputs.get(\"library_path\", \"\")   or \"\")\n        idx     = get_library_index()\n        combined_assets = []\n        errors = []\n        try:\n            if source in (\"fab\", \"all\"):\n                fab_result = get_fab_library_scanner().scan_library(lpath)\n                for rec in fab_result.assets_found:\n                    desc = get_fab_library_scanner().build_asset_descriptor(rec)\n                    idx.add_from_descriptor(desc, provenance=\"fab_local_library\")\n                    combined_assets.append(rec.to_dict())\n                if fab_result.errors:\n                    errors.extend(fab_result.errors)\n                self.log_info(f\"Fab scan: {len(fab_result.assets_found)} asset(s) found.\")\n            if source in (\"megascans\", \"all\"):\n                ms_result = get_megascans_scanner().scan_megascans(lpath)\n                for rec in ms_result.assets_found:\n                    desc = get_megascans_scanner().build_asset_descriptor(rec)\n                    idx.add_from_descriptor(desc, provenance=\"megascans_local_library\")\n                    combined_assets.append(rec.to_dict())\n                if ms_result.errors:\n                    errors.extend(ms_result.errors)\n                self.log_info(f\"Megascans scan: {len(ms_result.assets_found)} asset(s) found.\")\n            result = {\"source\": source, \"asset_count\": len(combined_assets),\n                      \"assets\": combined_assets, \"errors\": errors}\n            return {\"scan_result_json\": json.dumps(result, sort_keys=True, default=str),\n                    \"asset_count\": len(combined_assets), \"exec_out\": True}\n        except Exception as exc:\n            self.log_error(f\"Library scan failed: {exc}\")\n            return {\"scan_result_json\": \"{}\", \"asset_count\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Library_Scan\n"
+}

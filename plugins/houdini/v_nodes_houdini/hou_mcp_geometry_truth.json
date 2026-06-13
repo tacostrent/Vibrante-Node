@@ -1,0 +1,69 @@
+{
+    "node_id": "hou_mcp_geometry_truth",
+    "name": "hou_mcp_geometry_truth",
+    "description": "Reality First Rule (\u00a754 Tier 15.0+): inspects the ACTUAL Houdini geometry under a root node \u2014 world transforms and cooked bounding boxes \u2014 and optionally reconciles a planned scene layout against it. When geometry contradicts metadata, GEOMETRY WINS. The viewport is the source of truth.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {
+            "name": "root_path",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": "/obj"
+        },
+        {
+            "name": "scene_layout_json",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": ""
+        },
+        {
+            "name": "exec_in",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "outputs": [
+        {
+            "name": "observed_scene_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "reconciled_scene_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "ok",
+            "type": "bool",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "asset_count",
+            "type": "int",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "exec_out",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.reality import get_geometry_inspector\n\n_EMPTY = {\"observed_scene_json\": \"{}\", \"reconciled_scene_json\": \"{}\",\n          \"ok\": False, \"asset_count\": 0, \"exec_out\": True}\n\nclass Hou_Mcp_Geometry_Truth(BaseNode):\n    name = \"hou_mcp_geometry_truth\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"root_path\", \"string\", widget_type=\"text\", default=\"/obj\")\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"observed_scene_json\")\n        self.add_output(\"reconciled_scene_json\")\n        self.add_output(\"ok\", \"bool\")\n        self.add_output(\"asset_count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        root = (inputs.get(\"root_path\") or \"/obj\").strip() or \"/obj\"\n        try:\n            inspector = get_geometry_inspector()\n            observed = inspector.inspect(root)\n            for err in observed.errors:\n                self.log_error(err)\n            observed_dict = observed.to_dict()\n            reconciled = {}\n            raw = (inputs.get(\"scene_layout_json\") or \"\").strip()\n            if raw:\n                try:\n                    planned = json.loads(raw)\n                    reconciled = inspector.reconcile(observed_dict, planned)\n                except Exception:\n                    self.log_error(\"scene_layout_json is not valid JSON \u2014 skipping reconcile.\")\n            return {\n                \"observed_scene_json\": json.dumps(observed_dict, sort_keys=True, indent=2),\n                \"reconciled_scene_json\": json.dumps(reconciled, sort_keys=True, indent=2),\n                \"ok\": observed.ok,\n                \"asset_count\": len(observed.assets),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Geometry truth inspection failed: {exc}\")\n            return dict(_EMPTY)\n\ndef register_node():\n    return Hou_Mcp_Geometry_Truth\n"
+}

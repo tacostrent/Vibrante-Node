@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Vibrante-Node v2.4.0 — Introduction">
+<meta name="description" content="Vibrante-Node v2.5.0 — Introduction">
 <title>Introduction — Vibrante-Node Docs</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
 <style>
@@ -391,7 +391,7 @@ td code { font-size: .85em; }
 <!-- ── Header ─────────────────────────────────────────────────────────── -->
 <header class="header">
   <a class="header-logo" href="index.html">Vibrante-Node</a>
-  <span class="header-version">v2.4.0</span>
+  <span class="header-version">v2.5.0</span>
   <div class="header-spacer"></div>
   <div class="search-wrap">
     <span class="search-icon">&#128269;</span>
@@ -443,7 +443,15 @@ td code { font-size: .85em; }
     <nav class="breadcrumb"><a href="index.html">Docs</a><span class="breadcrumb-sep">›</span><span>Introduction</span></nav>
     <div class="val-badge val-badge-ok" title="Verified against source code">&#10003; Verified</div>
 <h1 id="vibrante-node-v240-introduction">Vibrante-Node v2.4.0 — Introduction</h1>
-<p><strong>Vibrante-Node</strong> is a Python-based visual node graph automation platform that lets you build, run, and maintain complex multi-step workflows by wiring together reusable node blocks on an interactive canvas. It ships with a PyQt5 graphical interface, an asyncio-based execution engine, and a growing library of nodes covering general-purpose automation, filesystem operations, DCC application control (Maya, Houdini, Blender), studio pipeline management (Prism Pipeline), and render farm submission (Deadline). Every node is a self-contained unit of logic defined in a single JSON file paired with Python code, making the platform trivially extensible by any Python developer without requiring modifications to the core application.</p>
+<p><strong>Vibrante-Node</strong> is a Python node-based visual framework for building modular systems through connected nodes and data flows. It provides an intuitive graph interface where complex logic can be constructed visually by linking nodes together.</p>
+<p>The platform focuses on flexibility, extensibility, and developer productivity — making it suitable for building visual pipelines, automation workflows, and data-processing graphs across any domain. Node-based systems allow complex operations to be organized as interconnected components rather than traditional linear code structures, improving clarity and scalability in large workflows.</p>
+<p><strong>Vibrante-Node supports multiple interaction patterns:</strong></p>
+<ul>
+<li><strong>Visual Workflow Orchestration</strong> — build, run, and inspect complex multi-step workflows by wiring together reusable node blocks on an interactive PyQt5 canvas. Data flows left-to-right, execution flows via exec pins, and every wire value is inspectable after a run.</li>
+<li><strong>Programmatic Automation</strong> — drive the execution engine via the scripting console or Python API without UI interaction.</li>
+<li><strong>DCC Integration</strong> — build and control Houdini, Maya, and Blender scenes through live bridge and headless executor nodes.</li>
+<li><strong>AI-Assisted Orchestration</strong> <em>(optional advanced feature)</em> — Claude, Codex CLI, Cursor, or any MCP-compatible AI client connects to the built-in MCP server (<code>scripts/run_vibrante_mcp.py</code>), accessing tools for scene inspection, planning, validation, and structured scene execution.</li>
+</ul>
 <hr />
 <h2 id="table-of-contents">Table of Contents</h2>
 <ol>
@@ -472,6 +480,9 @@ td code { font-size: .85em; }
 </ul>
 <h3 id="why-extensible">Why Extensible?</h3>
 <p>No automation platform ships with every node you will ever need. Vibrante-Node is designed so that adding a new node requires exactly one file: a <code>.json</code> file containing the port definitions and the Python code. There is no registration step, no recompile, no plugin manifest beyond dropping the file in the <code>nodes/</code> directory. The <code>NodeRegistry</code> discovers and registers it automatically on startup. For DCC-specific nodes, the Houdini plugin package (<code>plugins/houdini/</code>) adds nodes from <code>v_nodes_houdini/</code> and scripts from <code>v_scripts_houdini/</code> via environment variables — no changes to the core application.</p>
+<h3 id="build-once-reuse-everywhere">Build Once → Reuse Everywhere</h3>
+<p>The GroupNode (Ctrl+Shift+G) collapses any selected sub-workflow into a single reusable node. Group nodes expose only the ports you choose, hide internal complexity, and can be nested inside other group nodes. A studio can build a <code>prism_publish_asset</code> group node once and reuse it as a black-box building block in every shot workflow across all projects — without copying the logic.</p>
+<p>Workflow files are plain JSON. They can be checked into version control, diffed, merged, and shared across teams. A workflow that runs on one artist's machine runs identically on another with the same node library installed.</p>
 <hr />
 <h2 id="who-is-this-for">Who Is This For</h2>
 <p>Vibrante-Node is built for three overlapping audiences.</p>
@@ -484,6 +495,9 @@ td code { font-size: .85em; }
 <h3 id="python-developers">Python Developers</h3>
 <p>Developers who want to build automated systems with a visual interface without writing a UI framework from scratch. They subclass <code>BaseNode</code>, implement <code>async def execute(self, inputs)</code>, and return a dict. The engine, canvas, log panel, autosave, and all other infrastructure are provided. They can also drive Vibrante-Node programmatically via the automation API (<code>AUTOMATION_API.md</code>).</p>
 <p><strong>Typical tasks</strong>: custom automation tooling, CI/CD pipeline steps, data processing workflows, service integrations.</p>
+<h3 id="ai-developers-and-ml-engineers">AI Developers and ML Engineers</h3>
+<p>Developers who want Claude, Codex CLI, Cursor, or another MCP-compatible AI to build, inspect, and modify Houdini scenes autonomously under human supervision. They run <code>scripts/run_vibrante_mcp.py</code>, configure their AI client, and then describe in natural language what they want built. The AI uses the planning and validation tools; the human reviews the generated plan and approves high-risk operations before execution.</p>
+<p><strong>Typical tasks</strong>: AI-driven scene assembly, iterative procedural content generation, natural-language Houdini automation, multi-agent production pipelines.</p>
 <hr />
 <h2 id="feature-overview">Feature Overview</h2>
 <table>
@@ -621,11 +635,6 @@ td code { font-size: .85em; }
 <td><code>deadline_*</code> nodes</td>
 </tr>
 <tr>
-<td><strong>Gemini AI Integration</strong></td>
-<td>Chat with Google Gemini AI from within the app</td>
-<td>Window menu</td>
-</tr>
-<tr>
 <td><strong>Export to Python</strong></td>
 <td>Export a workflow as a standalone Python script</td>
 <td>File &gt; Export</td>
@@ -634,6 +643,49 @@ td code { font-size: .85em; }
 <td><strong>Dark / Light Theme</strong></td>
 <td>Toggle between Dracula dark and One-Light themes</td>
 <td>Window &gt; Theme</td>
+</tr>
+<tr>
+<td><strong>Gemini AI Integration</strong></td>
+<td>Chat with Google Gemini AI from within the app</td>
+<td>Window menu</td>
+</tr>
+</tbody>
+</table>
+<h3 id="advanced-runtime-extensions-optional-v240">Advanced Runtime Extensions <em>(optional — v2.4.0)</em></h3>
+<p>Available when <code>mcp&gt;=1.0.0</code> is installed. Headless — no Qt or display server required.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+<th>Entry Point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MCP Server</strong></td>
+<td>12 tools for Claude Desktop, Codex CLI, and Cursor: scene inspection, planning, validation, and execution</td>
+<td><code>scripts/run_vibrante_mcp.py</code></td>
+</tr>
+<tr>
+<td><strong>Generic MCP Client Nodes</strong></td>
+<td>Connect any MCP server from inside a workflow</td>
+<td><code>mcp_server_init</code>, <code>mcp_list_tools</code>, <code>mcp_call_tool</code></td>
+</tr>
+<tr>
+<td><strong>Houdini AI Nodes</strong></td>
+<td>23 nodes: scene context, node chain builder, transaction, graph diff, AI plan/preview/execute/review</td>
+<td><code>hou_mcp_*</code> nodes</td>
+</tr>
+<tr>
+<td><strong>Transaction System</strong></td>
+<td>Validated, recorded, reversible mutations with optional rollback</td>
+<td><code>hou_mcp_transaction</code></td>
+</tr>
+<tr>
+<td><strong>AI Planning Pipeline</strong></td>
+<td>Natural-language prompt → validated plan → approval gate → execution</td>
+<td><code>hou_mcp_ai_*</code> nodes</td>
 </tr>
 </tbody>
 </table>
@@ -677,71 +729,48 @@ td code { font-size: .85em; }
 <p>PrismCore is resolved automatically from a shared cache — there is no need to wire a <code>core</code> output between every Prism node. Place a <code>prism_core_init</code> node anywhere in the graph and all <code>prism_*</code> nodes find the same instance.</p>
 <h3 id="deadline-thinkbox">Deadline (Thinkbox)</h3>
 <p>Deadline submission nodes (<code>deadline_maya_submit</code>, <code>deadline_houdini_submit</code>, <code>deadline_blender_submit</code>) wrap the Deadline command-line client to submit render jobs with configurable job name, pool, priority, frame range, and renderer settings.</p>
+<h3 id="mcp-runtime-advanced">MCP Runtime <em>(Advanced)</em></h3>
+<p>Vibrante-Node can run as a headless MCP server. An external AI client (Claude Desktop, Codex CLI, Cursor) connects via stdio and receives tools for scene inspection, planning, validation, and structured scene execution. No display server or Qt required. See <a href="#">AI Runtime &amp; MCP Integration</a> in the full documentation for setup and the complete tool list.</p>
 <hr />
 <h2 id="architecture-overview">Architecture Overview</h2>
-<p>The following diagram shows how the major components relate to one another at runtime.</p>
-<pre><code>+----------------------------------------------------------+
-|                     MainWindow (PyQt5)                   |
-|  Menu Bar | Toolbar | Tab Bar                            |
-|  +--------------------+  +----------------------------+  |
-|  |  Library Panel     |  |  NodeView (QGraphicsView)  |  |
-|  |  (node categories) |  |  +----------------------+  |  |
-|  |  [search box]      |  |  |  NodeScene           |  |  |
-|  |  [node list]       |  |  |  (QGraphicsScene)    |  |  |
-|  +--------------------+  |  |  NodeWidget items    |  |  |
-|                          |  |  Edge items          |  |  |
-|  +--------------------+  |  |  Backdrop items      |  |  |
-|  |  Log Panel         |  |  |  StickyNote items    |  |  |
-|  |  [info/warn/err]   |  |  +----------------------+  |  |
-|  +--------------------+  |  |  MiniMap overlay     |  |  |
-|                          |  |  CanvasSearchBar     |  |  |
-|                          +----------------------------+  |
-+----------------------------------------------------------+
-          |                          |
-          | F5 / Run                 | Scene -&gt; WorkflowModel
-          v                          v
-+--------------------+    +------------------------+
-|  GraphManager      |    |  Persistence           |
-|  (DAG + toposort)  |    |  (JSON load/save)      |
-+--------------------+    +------------------------+
-          |
-          v
-+--------------------+
-|  NetworkExecutor   |   (QObject, asyncio coroutines)
-|  node_started      |--&gt;  UI: highlights running node
-|  node_finished     |--&gt;  UI: clears highlight
-|  node_log          |--&gt;  Log Panel
-|  node_output       |--&gt;  Live Wire Inspector
-|  execution_finished|--&gt;  UI: re-enable Run button
-+--------------------+
-          |
-          | instantiates &amp; calls execute()
-          v
-+------------------------------------------+
-|  BaseNode subclasses (per node)          |
-|  JSON nodes  |  Python builtins          |
-+------------------------------------------+
-          |
-          | (Houdini nodes)     (Maya/Blender)    (Prism)
-          v                     v                  v
-+---------------+   +-------------------+   +-----------+
-|  HouBridge    |   |  Headless         |   | PrismCore |
-|  TCP JSON-RPC |   |  Subprocess       |   | (shared)  |
-|  port 18811   |   |  (mayapy/blender) |   |           |
-+---------------+   +-------------------+   +-----------+
-          |
-          v
-   Live Houdini session
-   (vibrante_hou_server.py)
+<p>Vibrante-Node has a layered architecture. The visual canvas drives the execution engine, which runs nodes that call integrations and utilities. The Advanced Runtime Extensions are an optional layer used by <code>hou_mcp_*</code> nodes and the headless MCP server.</p>
+<pre><code>+------------------------------- VISUAL CANVAS ------------------------------+
+|  LAYER 1  MainWindow (PyQt5)                                              |
+|  Menu | Toolbar | Tab Bar | Library Panel | Log Panel | Scripting Console |
++------------------------------------+--------------------------------------+
+                                     | F5 -&gt; WorkflowModel
+                                     v
++------------------------------- EXECUTION ENGINE ---------------------------+
+|  LAYER 2  Core                                                            |
+|  NetworkExecutor (asyncio) | GraphManager (DAG+toposort)                 |
+|  NodeRegistry | WorkflowModel (Pydantic) | Persistence (JSON)            |
++------------------------------------+--------------------------------------+
+                                     | calls execute()
+                                     v
++------------------------------- NODE LIBRARY --------------------------------+
+|  LAYER 3  Nodes  (nodes/ + plugins/)                                      |
+|  BaseNode subclasses: General | Houdini | Maya | Blender | Prism | MCP   |
++-------------------+------------------------+------------------------------+
+                    |                        |
+                    v                        v
++------- UTILS &amp; INTEGRATIONS (4a) -----+  +--- Headless Subprocesses (4b)--+
+|  src/utils/                           |  |  mayapy / blender --bg         |
+|  HouBridge (TCP/JSON-RPC, port 18811) |  |  PrismCore (shared singleton)  |
+|  EnvManager | qt_compat               |  +--------------------------------+
++---------------------------------------+
+                                     |
+                    (optional) ──────v
++-------------------- ADVANCED RUNTIME EXTENSIONS --------------------------+
+|  OPTIONAL  src/runtime/  ← used only by hou_mcp_* nodes and MCP server  |
+|  MCP server | AI planning | transactions | validation | analytics        |
++----------------------------------------------------------------------------+
 </code></pre>
-<p><strong>Data flow summary:</strong></p>
+<p><strong>Execution flow (F5):</strong></p>
 <ol>
-<li>The user builds a workflow on the <strong>NodeScene</strong> canvas. Each node is a <code>NodeWidget</code>; each connection is an <code>Edge</code>.</li>
-<li>On F5, <code>MainWindow</code> serialises the scene to a <code>WorkflowModel</code> (Pydantic), builds a <code>GraphManager</code> from it, and creates a <code>NetworkExecutor</code>.</li>
-<li>The executor identifies entry nodes (nodes with no connected <code>exec_in</code>), fires their <code>execute()</code> coroutines, and follows <code>exec_out</code> connections to chain subsequent nodes.</li>
-<li>Data flows backward by pulling: when a node needs an input value from an upstream data node, the executor runs that upstream node first.</li>
-<li>Results are broadcast via Qt signals: <code>node_output</code> updates the live wire inspector, <code>node_log</code> writes to the log panel, <code>node_started</code>/<code>node_finished</code> update node widget state.</li>
-<li>DCC nodes call out to their respective bridges or subprocesses. All DCC calls are blocking within an <code>async def execute()</code> — the <code>await</code> call yields control to the event loop while waiting.</li>
+<li>The user builds a workflow on the canvas — nodes connected by exec and data pins.</li>
+<li>On F5, <code>MainWindow</code> serialises the scene to a <code>WorkflowModel</code>, builds a <code>GraphManager</code> (DAG), and creates a <code>NetworkExecutor</code>.</li>
+<li>The executor fires entry-node <code>execute()</code> coroutines and follows <code>exec_out</code> connections in topological order.</li>
+<li>Results broadcast via Qt signals: <code>node_output</code> → live wire inspector, <code>node_log</code> → log panel.</li>
 </ol>
 <hr />
 <h2 id="version-history">Version History</h2>
@@ -812,7 +841,7 @@ td code { font-size: .85em; }
 <tr>
 <td><strong>v2.4.0</strong></td>
 <td>2026-05-26</td>
-<td>Complete AI orchestration MCP runtime (Tiers 1–6): transaction system, AI planning pipeline, distributed execution, Tier 5 analytics, Tier 6 MCP server. 26 new nodes (3 generic MCP + 23 Houdini AI). query_node_parameters tool. Node ID cleanup. Subprocess crash log. Bug fixes: build_node_chain ordering, review_execution scoring, preview_execution ImportError.</td>
+<td>26 new nodes (3 generic MCP client + 23 Houdini AI). Runtime extensions layer (Tiers 1–6): MCP server, AI planning pipeline, transaction system, distributed execution, analytics. Node ID cleanup. Subprocess crash log. Bug fixes: build_node_chain ordering, review_execution scoring, preview_execution ImportError.</td>
 </tr>
 </tbody>
 </table>
@@ -991,11 +1020,14 @@ td code { font-size: .85em; }
 <a class="toc-link toc-h3" href="#why-node-based">Why Node-Based?</a>
 <a class="toc-link toc-h3" href="#why-async">Why Async?</a>
 <a class="toc-link toc-h3" href="#why-extensible">Why Extensible?</a>
+<a class="toc-link toc-h3" href="#build-once-reuse-everywhere">Build Once → Reuse Everywhere</a>
 <a class="toc-link toc-h2" href="#who-is-this-for">Who Is This For</a>
 <a class="toc-link toc-h3" href="#visual-users-and-technical-artists">Visual Users and Technical Artists</a>
 <a class="toc-link toc-h3" href="#pipeline-tds-and-studio-engineers">Pipeline TDs and Studio Engineers</a>
 <a class="toc-link toc-h3" href="#python-developers">Python Developers</a>
+<a class="toc-link toc-h3" href="#ai-developers-and-ml-engineers">AI Developers and ML Engineers</a>
 <a class="toc-link toc-h2" href="#feature-overview">Feature Overview</a>
+<a class="toc-link toc-h3" href="#advanced-runtime-extensions-optional-v240">Advanced Runtime Extensions (optional — v2.4.0)</a>
 <a class="toc-link toc-h2" href="#why-visual-node-graphs">Why Visual Node Graphs</a>
 <a class="toc-link toc-h3" href="#the-problem-with-plain-scripts">The Problem with Plain Scripts</a>
 <a class="toc-link toc-h3" href="#specific-benefits">Specific Benefits</a>
@@ -1006,6 +1038,7 @@ td code { font-size: .85em; }
 <a class="toc-link toc-h3" href="#blender-headless-executor">Blender (Headless Executor)</a>
 <a class="toc-link toc-h3" href="#prism-pipeline">Prism Pipeline</a>
 <a class="toc-link toc-h3" href="#deadline-thinkbox">Deadline (Thinkbox)</a>
+<a class="toc-link toc-h3" href="#mcp-runtime-advanced">MCP Runtime (Advanced)</a>
 <a class="toc-link toc-h2" href="#architecture-overview">Architecture Overview</a>
 <a class="toc-link toc-h2" href="#version-history">Version History</a>
 <a class="toc-link toc-h2" href="#documentation-map">Documentation Map</a>

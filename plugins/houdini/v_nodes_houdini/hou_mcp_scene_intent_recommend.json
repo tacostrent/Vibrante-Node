@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_scene_intent_recommend",
+    "name": "hou_mcp_scene_intent_recommend",
+    "description": "Generate production-proven recommendations for a SceneIntent from three Tier 5 sources: ProductionMemory (confidence 0.95), PatternLibrary (0.80), AssetKnowledgeGraph (0.65), then built-in defaults (0.50). Returns ranked, deduplicated IntentRecommendation list. Never executes scene operations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_intent_json", "type": "string", "widget_type": "text",  "options": null, "default": null},
+        {"name": "max_per_source",    "type": "int",    "widget_type": "int",   "options": null, "default": 5}
+    ],
+    "outputs": [
+        {"name": "recommendations_json",  "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "recommendation_count",  "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "top_recommendation",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "source_counts_json",    "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.semantic import get_intent_recommendation_engine, get_intent_serializer\nimport json\n\nclass Hou_Mcp_Scene_Intent_Recommend(BaseNode):\n    name = \"hou_mcp_scene_intent_recommend\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_intent_json\", \"string\", widget_type=\"text\")\n        self.add_input(\"max_per_source\",    \"int\",    widget_type=\"int\", default=5)\n        self.add_output(\"recommendations_json\",  \"string\")\n        self.add_output(\"recommendation_count\",  \"int\")\n        self.add_output(\"top_recommendation\",    \"string\")\n        self.add_output(\"source_counts_json\",    \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        intent_json = inputs.get(\"scene_intent_json\", \"\") or \"\"\n        if not intent_json.strip():\n            self.log_error(\"No scene_intent_json provided.\")\n            return {\"recommendations_json\": \"[]\", \"recommendation_count\": 0,\n                    \"top_recommendation\": \"\", \"source_counts_json\": \"{}\", \"exec_out\": True}\n        try:\n            intent = get_intent_serializer().from_json(intent_json)\n            max_per = int(inputs.get(\"max_per_source\", 5) or 5)\n            engine = get_intent_recommendation_engine()\n            result = await engine.get_recommendations(intent, max_per_source=max_per)\n            recs_json = json.dumps([r.to_dict() for r in result.recommendations])\n            top = result.top_recommendation\n            top_str = f\"{top.recommendation_type}: {top.value}\" if top else \"\"\n            self.log_info(f\"Generated {len(result.recommendations)} recommendations for {intent.environment or 'unknown'} environment\")\n            return {\n                \"recommendations_json\": recs_json,\n                \"recommendation_count\": len(result.recommendations),\n                \"top_recommendation\":   top_str,\n                \"source_counts_json\":   json.dumps(result.source_counts),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Recommendation failed: {exc}\")\n            return {\"recommendations_json\": \"[]\", \"recommendation_count\": 0,\n                    \"top_recommendation\": \"\", \"source_counts_json\": \"{}\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Intent_Recommend\n"
+}

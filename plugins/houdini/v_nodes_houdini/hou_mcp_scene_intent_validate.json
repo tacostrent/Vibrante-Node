@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_scene_intent_validate",
+    "name": "hou_mcp_scene_intent_validate",
+    "description": "Validate a SceneIntent JSON for correctness: missing fields, invalid enum values, logical contradictions (e.g. night + noon, tiny + mega city). Returns a validation report and a normalized intent JSON. Never executes scene operations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_intent_json", "type": "string", "widget_type": "text", "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "valid",                "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "errors_json",          "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "warnings_json",        "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "contradiction_flags",  "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "normalized_intent_json","type": "string","widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.semantic import get_scene_intent_validator, get_intent_serializer\nfrom src.runtime.semantic.schema.scene_intent_schema import SceneIntent\nimport json\n\nclass Hou_Mcp_Scene_Intent_Validate(BaseNode):\n    name = \"hou_mcp_scene_intent_validate\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_intent_json\", \"string\", widget_type=\"text\")\n        self.add_output(\"valid\",                 \"bool\")\n        self.add_output(\"errors_json\",           \"string\")\n        self.add_output(\"warnings_json\",         \"string\")\n        self.add_output(\"contradiction_flags\",   \"string\")\n        self.add_output(\"normalized_intent_json\",\"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        intent_json = inputs.get(\"scene_intent_json\", \"\") or \"\"\n        if not intent_json.strip():\n            self.log_error(\"No scene_intent_json provided.\")\n            return {\"valid\": False, \"errors_json\": json.dumps([\"No intent provided\"]),\n                    \"warnings_json\": \"[]\", \"contradiction_flags\": \"[]\",\n                    \"normalized_intent_json\": \"\", \"exec_out\": True}\n        try:\n            serializer = get_intent_serializer()\n            intent = serializer.from_json(intent_json)\n            validator = get_scene_intent_validator()\n            result = validator.validate(intent)\n            norm_json = serializer.to_json(intent)\n            self.log_info(f\"Validation: valid={result.valid}, errors={len(result.errors)}, warnings={len(result.warnings)}\")\n            return {\n                \"valid\":                 result.valid,\n                \"errors_json\":           json.dumps(result.errors),\n                \"warnings_json\":         json.dumps(result.warnings),\n                \"contradiction_flags\":   json.dumps(result.contradiction_flags),\n                \"normalized_intent_json\": norm_json,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Validation failed: {exc}\")\n            return {\"valid\": False, \"errors_json\": json.dumps([str(exc)]),\n                    \"warnings_json\": \"[]\", \"contradiction_flags\": \"[]\",\n                    \"normalized_intent_json\": \"\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Intent_Validate\n"
+}

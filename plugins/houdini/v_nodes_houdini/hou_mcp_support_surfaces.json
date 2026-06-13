@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_support_surfaces",
+    "name": "hou_mcp_support_surfaces",
+    "description": "Detect valid horizontal surfaces on which child assets can be placed. Returns list of support surfaces (tabletop, shelves, worktop, rack units) with height_m, area_m2, and load_capacity. Empty list for non-surface types (chair, vehicle, bucket, etc.).",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json",  "type": "string", "widget_type": "text", "options": null, "default": "{}"},
+        {"name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "surfaces_json",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "surface_count",    "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "has_surfaces",     "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "primary_height_m", "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "primary_area_m2",  "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.geometry import get_geometry_analyzer\nimport json\n\nclass Hou_Mcp_Support_Surfaces(BaseNode):\n    name = \"hou_mcp_support_surfaces\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"surfaces_json\",    \"string\")\n        self.add_output(\"surface_count\",    \"int\")\n        self.add_output(\"has_surfaces\",     \"bool\")\n        self.add_output(\"primary_height_m\", \"float\")\n        self.add_output(\"primary_area_m2\",  \"float\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json = str(inputs.get(\"asset_json\", \"{}\") or \"{}\")\n        try:\n            asset = json.loads(asset_json) if asset_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"surfaces_json\": \"[]\", \"surface_count\": 0, \"has_surfaces\": False, \"primary_height_m\": 0.0, \"primary_area_m2\": 0.0, \"exec_out\": True}\n\n        try:\n            result  = get_geometry_analyzer().analyze_asset(asset)\n            metrics = result.metrics\n            surfaces = metrics.support_surfaces if metrics else []\n\n            primary = surfaces[0] if surfaces else None\n            self.log_info(\n                f\"Support surfaces for {result.asset_id}: {len(surfaces)} surface(s) \"\n                + (f\"primary at {primary.height_m:.2f} m\" if primary else \"(none)\")\n            )\n\n            return {\n                \"surfaces_json\":    json.dumps([s.to_dict() for s in surfaces], sort_keys=True),\n                \"surface_count\":    len(surfaces),\n                \"has_surfaces\":     len(surfaces) > 0,\n                \"primary_height_m\": primary.height_m if primary else 0.0,\n                \"primary_area_m2\":  primary.area_m2  if primary else 0.0,\n                \"exec_out\":         True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Support surface detection failed: {exc}\")\n            return {\"surfaces_json\": \"[]\", \"surface_count\": 0, \"has_surfaces\": False, \"primary_height_m\": 0.0, \"primary_area_m2\": 0.0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Support_Surfaces\n"
+}

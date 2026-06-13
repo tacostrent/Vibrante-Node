@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_build_beams",
+    "name": "hou_mcp_build_beams",
+    "description": "Generate structural beams and columns for an environment. Beam type varies by environment: wooden_beam for western/saloon, steel_girder for industrial, panel_rib for sci-fi, stone_arch for castle. Returns beams_json and columns_json.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "environment", "type": "string", "widget_type": "text", "options": null, "default": "western_room" },
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "beams_json",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "columns_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "beam_count",   "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "column_count", "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",     "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_realization import get_room_shell_builder\n\nclass Hou_Mcp_Build_Beams(BaseNode):\n    name = \"hou_mcp_build_beams\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment\", \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_output(\"beams_json\")\n        self.add_output(\"columns_json\")\n        self.add_output(\"beam_count\",   \"int\")\n        self.add_output(\"column_count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        env = (inputs.get(\"environment\") or \"\").strip() or \"western_room\"\n        try:\n            shell = get_room_shell_builder().build(env)\n            beams_json   = json.dumps([e.to_dict() for e in shell.beams],   sort_keys=True, indent=2)\n            columns_json = json.dumps([e.to_dict() for e in shell.columns], sort_keys=True, indent=2)\n            return {\n                \"beams_json\":   beams_json,\n                \"columns_json\": columns_json,\n                \"beam_count\":   len(shell.beams),\n                \"column_count\": len(shell.columns),\n                \"exec_out\":     True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Beam build failed: {exc}\")\n            return {\"beams_json\": \"[]\", \"columns_json\": \"[]\", \"beam_count\": 0, \"column_count\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Build_Beams\n"
+}

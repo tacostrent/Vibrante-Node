@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_vector_search",
+    "name": "hou_mcp_vector_search",
+    "description": "Semantic vector search for assets. Actions: search, search_environment, search_role, search_storytelling, search_cinematic, search_top_k. No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",      "type": "string", "widget_type": "text", "options": null, "default": "search" },
+        { "name": "query",       "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "environment", "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "role",        "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "story_role",  "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "cinematic",   "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "top_k",       "type": "int",    "widget_type": "int",  "options": null, "default": 10 },
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "results",     "type": "list", "widget_type": null, "options": null, "default": null },
+        { "name": "total",       "type": "int",  "widget_type": null, "options": null, "default": null },
+        { "name": "response",    "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",    "type": "any",  "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.vector_search import get_vector_search_engine\n\nclass Hou_Mcp_Vector_Search(BaseNode):\n    name = \"hou_mcp_vector_search\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",      \"string\", widget_type=\"text\", default=\"search\")\n        self.add_input(\"query\",       \"string\", widget_type=\"text\")\n        self.add_input(\"environment\", \"string\", widget_type=\"text\")\n        self.add_input(\"role\",        \"string\", widget_type=\"text\")\n        self.add_input(\"story_role\",  \"string\", widget_type=\"text\")\n        self.add_input(\"cinematic\",   \"string\", widget_type=\"text\")\n        self.add_input(\"top_k\",       \"int\",    widget_type=\"int\", default=10)\n        self.add_output(\"results\",  \"list\")\n        self.add_output(\"total\",    \"int\")\n        self.add_output(\"response\", \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action      = str(inputs.get(\"action\") or \"search\").strip().lower()\n        query       = str(inputs.get(\"query\") or \"\").strip()\n        environment = str(inputs.get(\"environment\") or \"\").strip()\n        role        = str(inputs.get(\"role\") or \"\").strip()\n        story_role  = str(inputs.get(\"story_role\") or \"\").strip()\n        cinematic   = str(inputs.get(\"cinematic\") or \"\").strip()\n        top_k       = int(inputs.get(\"top_k\") or 10)\n        try:\n            engine = get_vector_search_engine()\n            if action == \"search_environment\":\n                resp = engine.search_environment(environment, top_k=top_k)\n            elif action == \"search_role\":\n                resp = engine.search_role(role, top_k=top_k)\n            elif action == \"search_storytelling\":\n                resp = engine.search_storytelling(story_role, top_k=top_k)\n            elif action == \"search_cinematic\":\n                resp = engine.search_cinematic(cinematic, top_k=top_k)\n            elif action == \"search_top_k\":\n                ids = engine.search_top_k(query, k=top_k)\n                return {\"results\": [{'asset_id': i} for i in ids], \"total\": len(ids), \"response\": {\"asset_ids\": ids}, \"exec_out\": True}\n            else:\n                filters = {k: v for k, v in {\"environment\": environment, \"role\": role}.items() if v}\n                resp = engine.search(query, top_k=top_k, filters=filters or None)\n            return {\"results\": resp.results, \"total\": resp.total, \"response\": resp.to_dict(), \"exec_out\": True}\n        except Exception as e:\n            self.log_error(f\"hou_mcp_vector_search failed: {e}\")\n            return {\"results\": [], \"total\": 0, \"response\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Vector_Search\n"
+}

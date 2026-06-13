@@ -1,0 +1,134 @@
+{
+    "nodes": [
+        {
+            "instance_id": "76630585-f4a6-4327-a9eb-a14ad3504e5e",
+            "node_id": "hou_mcp_scene_intent_extract",
+            "position": [-480.0, 0.0],
+            "parameters": {
+                "prompt": "Create a cinematic sci-fi corridor at night with neon lights and atmospheric fog",
+                "context_json": "{}",
+                "scene_intent_json": "",
+                "intent_id": "",
+                "environment": "",
+                "confidence": 0.0,
+                "extraction_method": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "24a57b1c-1018-4b31-bd03-554f8c46d7b9",
+            "node_id": "hou_mcp_scene_intent_validate",
+            "position": [-120.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "valid": false,
+                "errors_json": "[]",
+                "warnings_json": "[]",
+                "contradiction_flags": "[]",
+                "normalized_intent_json": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "1a9b771e-7d4c-433c-853b-3ab7796aea5a",
+            "node_id": "hou_mcp_scene_intent_enrich",
+            "position": [240.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "enriched_intent_json": "",
+                "enrichment_count": 0,
+                "enrichment_notes": "[]",
+                "enrichment_applied": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "38ebeb93-75f7-4199-98e2-0a33fe6b3761",
+            "node_id": "hou_mcp_scene_intent_recommend",
+            "position": [600.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "max_per_source": 5,
+                "recommendations_json": "[]",
+                "recommendation_count": 0,
+                "top_recommendation": "",
+                "source_counts_json": "{}"
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "aafe71fe-6d97-42cc-94ed-c1548631face",
+            "node_id": "console_print",
+            "position": [960.0, 0.0],
+            "parameters": {
+                "data": "",
+                "out": ""
+            },
+            "state": "idle"
+        }
+    ],
+    "connections": [
+        {
+            "id": "77e8d632-a2e2-4dba-8e1a-cc5def891277",
+            "from_node": "76630585-f4a6-4327-a9eb-a14ad3504e5e",
+            "from_port": "exec_out",
+            "to_node": "24a57b1c-1018-4b31-bd03-554f8c46d7b9",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "721a02f9-93e4-4895-8adb-c0e2bddfa350",
+            "from_node": "76630585-f4a6-4327-a9eb-a14ad3504e5e",
+            "from_port": "scene_intent_json",
+            "to_node": "24a57b1c-1018-4b31-bd03-554f8c46d7b9",
+            "to_port": "scene_intent_json",
+            "is_exec": false
+        },
+        {
+            "id": "9a64d74c-f230-4387-a305-e97392e99e7b",
+            "from_node": "24a57b1c-1018-4b31-bd03-554f8c46d7b9",
+            "from_port": "exec_out",
+            "to_node": "1a9b771e-7d4c-433c-853b-3ab7796aea5a",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "9cf3c81e-494b-4f20-9741-ecf5d1268140",
+            "from_node": "24a57b1c-1018-4b31-bd03-554f8c46d7b9",
+            "from_port": "normalized_intent_json",
+            "to_node": "1a9b771e-7d4c-433c-853b-3ab7796aea5a",
+            "to_port": "scene_intent_json",
+            "is_exec": false
+        },
+        {
+            "id": "710bbee2-26cd-4587-b35f-bb71029c7c7b",
+            "from_node": "1a9b771e-7d4c-433c-853b-3ab7796aea5a",
+            "from_port": "exec_out",
+            "to_node": "38ebeb93-75f7-4199-98e2-0a33fe6b3761",
+            "to_port": "exec_in",
+            "is_exec": true
+        },
+        {
+            "id": "5c227603-d42f-4be3-95fe-e3bf8fac3b00",
+            "from_node": "1a9b771e-7d4c-433c-853b-3ab7796aea5a",
+            "from_port": "enriched_intent_json",
+            "to_node": "38ebeb93-75f7-4199-98e2-0a33fe6b3761",
+            "to_port": "scene_intent_json",
+            "is_exec": false
+        }
+    ],
+    "sticky_notes": [
+        {
+            "id": "b4e92f31-8c1d-4a67-9e5b-7f2d3c8a6b45",
+            "position": [-480.0, -160.0],
+            "size": [1000.0, 120.0],
+            "text": "Semantic Scene Intent Pipeline (Tier 6)\n\nTransforms a natural language prompt into a validated, enriched, and recommended SceneIntent JSON.\nPipeline: Extract → Validate → Enrich → Recommend\n\nNo scene generation. No Houdini execution. Intent generation only.",
+            "color": "#dceefb"
+        }
+    ],
+    "backdrops": [],
+    "metadata": {
+        "name": "Scene Intent Pipeline",
+        "description": "Tier 6: NL prompt → Extract → Validate → Enrich → Recommend → Structured SceneIntent JSON"
+    }
+}

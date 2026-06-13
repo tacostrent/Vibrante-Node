@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_scene_population",
+    "name": "Hou MCP Scene Population",
+    "description": "Populate an environment by assigning assets to semantic groups (hero_assets, support_assets, detail_assets, atmosphere_assets, storytelling_assets) and validate production balance. Planning only — no Houdini mutations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",               "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "environment_plan_json", "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",           "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "population_plan_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "plan_id",            "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "total_assets",       "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "balance_score",      "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "hero_asset_count",   "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "ok",                 "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.assets.assembly import get_scene_population_engine, EnvironmentPlan\n\n    env_plan_json = str(inputs.get('environment_plan_json') or '')\n    if not env_plan_json.strip():\n        self.log_error('[ScenePopulation] environment_plan_json is required.')\n        return {'population_plan_json': '{}', 'plan_id': '', 'total_assets': 0, 'balance_score': 0.0, 'hero_asset_count': 0, 'ok': False, 'exec_out': True}\n\n    try:\n        env_dict = json.loads(env_plan_json)\n        env_plan = EnvironmentPlan.from_dict(env_dict)\n\n        engine = get_scene_population_engine()\n        plan   = engine.populate_scene(env_plan)\n\n        hero_group = plan.groups.get('hero_assets')\n        hero_count = hero_group.asset_count if hero_group else 0\n\n        self.log_info(\n            f'[ScenePopulation] {env_plan.environment!r}: '\n            f'{plan.total_assets} assets, balance={plan.balance_score:.2f}, ok={plan.ok}'\n        )\n        if plan.warnings:\n            for w in plan.warnings:\n                self.log_warning(f'[ScenePopulation] {w}')\n\n        return {\n            'population_plan_json': json.dumps(plan.to_dict()),\n            'plan_id':       plan.plan_id,\n            'total_assets':  plan.total_assets,\n            'balance_score': plan.balance_score,\n            'hero_asset_count': hero_count,\n            'ok':            plan.ok,\n            'exec_out':      True,\n        }\n    except Exception as e:\n        self.log_error(f'[ScenePopulation] {e}')\n        return {'population_plan_json': '{}', 'plan_id': '', 'total_assets': 0, 'balance_score': 0.0, 'hero_asset_count': 0, 'ok': False, 'exec_out': True}\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Scene_Population(BaseNode):\n        name = 'hou_mcp_scene_population'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Scene_Population"
+}

@@ -8,6 +8,64 @@ Full release notes for each version: see `RELEASE_vX.Y.Z.md` / `releases/` direc
 
 ---
 
+## [v2.5.0] — 2026-06-13
+
+**Type:** Minor — Semantic Scene Intent System, full environment assembly pipeline (Tiers 8–15.0+), 200+ Houdini AI nodes, 250+ new tests
+
+### Added
+- **Semantic Scene Intent System (Phase 1)** — `src/runtime/semantic/` package: `SceneIntentExtractor`, `SceneIntentValidator`, `SceneIntentEnricher`, `IntentSerializer`, `SemanticLogger`, `IntentRecommendationEngine`. Full NL → typed `SceneIntent` pipeline. LLM optional.
+- **Production Semantic Intelligence (Tier 2.9)** — `goal_decomposer`, `review_engine`, `scene_awareness`, `runtime_narration`: goal decomposition, specific cinematic critique, scene context analysis, narration blocks.
+- **Cinematic Orchestration (§23)** — `semantic_lighting_engine`, `cinematic_camera_engine`, `atmosphere_orchestrator`, `visual_hierarchy_engine`, `render_preparation_engine`, `cinematic_scene_review`.
+- **Production Knowledge System (§24)** — `production_memory`, `pattern_library`, `production_scoring`, `review_feedback`, `asset_knowledge_graph`, `scene_recommendation_engine`.
+- **Scene Planning Runtime (§27)** — SceneIntent → ScenePlan; asset query generation; 4 Houdini nodes.
+- **Asset Intelligence (Tier 8)** — `src/runtime/assets/`: Sketchfab, Polyhaven, LocalLibrary providers; 6-factor ranking; 4 nodes.
+- **Semantic Asset Catalog (Tier 12.7)** — `src/runtime/assets/semantic/`: 17 modules; 55-environment mapping; offline-safe Megascans API; 130 tests; 6 nodes.
+- **Semantic Vector Search (Tier 12.8)** — `src/runtime/assets/vector_search/`: 14 modules; 128-dim deterministic embeddings; hybrid 6-signal ranking; 175 tests; 6 nodes.
+- **Semantic Asset Suitability Ranking (Tier 12.85)** — `src/runtime/assets/suitability/`: 7-factor scoring; correct contextual selection over raw similarity; 110 tests; 4 nodes.
+- **Local Asset Acquisition (Tier 12.5)** — `src/runtime/assets/acquisition/`: Fab + Megascans local library scanners; no network calls.
+- **Online Asset Acquisition (Tier 12.9)** — `src/runtime/assets/acquisition_online/`: cache-first fetcher, download queue, SHA-256 dedup, provenance tracker, Fab socket receiver; 14 tests; 6 nodes.
+- **Asset Realization (Tier 13)** — `src/runtime/assets/realization/`: 12 modules; import→convert→normalize→materials→USD→realize pipeline; planning-only; 7 nodes.
+- **Lookdev & Material Intelligence (Tier 14)** — `src/runtime/lookdev/`: 10 modules; 13 material categories; 3 renderer profiles; 4 nodes; 10 tests.
+- **Lighting Intelligence (Tier 15)** — `src/runtime/lighting/`: 16 modules; 8 moods, 8 patterns, 6-dim review; renderer-agnostic plans; 185 tests; 6 nodes.
+- **Real Asset Spatial Intelligence (Tier 9.4)** — AABB collision, clearance validation, placement optimizer; `collision_count > 0` blocks production_ready; 117 tests; 5 nodes.
+- **Scale-Aware Spatial Placement (Tier 9.6)** — `UnitNormalizer` (cm/mm/m/in/ft → meters); 6 scale classes; size-proportional spacing replaces fixed index×3.0m; 136 tests.
+- **Geometry Intelligence (Tier 9.7)** — `src/runtime/assets/geometry/`: 9 modules; 10-step bbox priority chain; pivot/contact/surface detection; authoritative `AssetMetrics`; 141 tests; 4 nodes.
+- **Environment Construction Package (§44)** — `src/runtime/environment/`: 14 modules; 20 templates; 8 atmosphere profiles; 127 tests; 6 nodes.
+- **Semantic Furniture Layout Engine (Tier 9.8)** — `src/runtime/layout/`: relationship-based placement; chairs orbit table; surface heights; wall mounting; 12 modules; 6 nodes; 9 tests.
+- **Layout Realization & Constraint Solver (Tier 9.9)** — `src/runtime/layout_realization/`: `LayoutPlan` → world-space transforms; 7-stage pipeline; AABB push-apart; 12 modules; 6 nodes; 12 tests.
+- **Structural Environment Realization (Tier 10.0)** — `src/runtime/environment_realization/`: floor+walls+ceiling+doors+beams for 55 environments; transaction op dicts; 13 modules; 6 nodes; 120 tests.
+- **Structural Asset Classification (Tier 10.3)** — `src/runtime/structure/`: 3-signal classifier; 20 structural roles; routes beams/doors away from furniture pipeline; 9 modules; 4 nodes.
+- **Environment Shell Construction (Tier 10.4)** — `src/runtime/environment_shell/`: 6-phase pipeline; BLOCKING readiness gate; dual exec pins; 13 modules; 5 nodes.
+- **Structural Openings & Architectural Features (Tier 10.5)** — `src/runtime/architectural_features/`: door/window/beam/fireplace attachment; 4 modules; 4 nodes.
+- **Scene Reality Validation (Tier 14.3)** — `src/runtime/scene_validation/`: 5 rules; support surface + AABB + relationships + plausibility + orphan; replaces bare production_ready.
+- **Asset Identity Audit (Tier 14.4.5)** — `src/runtime/asset_identity/`: 8 modules; 3 vibrante_ metadata keys per node; 84 tests; 1 node.
+- **Reality Intelligence (Tier 15.0+)** — `src/runtime/reality/`: 16 modules; geometry-wins rule; raycast floating detection; live-geometry correction via bridge; 9 all-required visual criteria; 108 tests; 7 nodes.
+- **Environment Expansion Pack (§39)** — `src/runtime/environments/`: 55 environments (9 categories); `EnvironmentRegistry`; all downstream systems updated.
+- **`build_scene_from_assets` MCP tool** — REQUIRED first step for scene-building intents; full Tier 12.8 → 9.9 pipeline.
+- **3 new workflow JSON files** — `asset_intelligence_pipeline.json`, `scene_intent_pipeline.json`, `scene_planning_pipeline.json`.
+- **`create_western_room.py`** — Houdini script demonstrating full assembly pipeline.
+- **`VIBRANTE_TIER_AUDIT.md`** — full-stack MCP tier audit prompt for post-connection verification.
+- **`src/utils/vibrante_config.py`** — reads and applies `vibrante_node.json` values at runtime.
+
+### Changed
+- `vibrante_node.json` — expanded from 2 to 14 env vars (all optional, backward-compatible)
+- `RECOMMENDED_EXECUTION_FLOW` in `runtime_identity.py` — step 7 added for scene building intents
+- `initialize_runtime_context` — reports asset paths, starts Fab socket receiver, syncs vibrante_node.json env vars into live Houdini session
+- `query_examples()` — returns `scene_building_example` for scene intents; redirects to `build_scene_from_assets`
+- `workflow_templates` — new `scene_from_assets` template
+- `pythonrc.py` — prints `VIBRANTE_MEGASCANS_LIBRARY` and `VIBRANTE_ASSET_CACHE` at Houdini startup
+- `run_vibrante_mcp.py` — Claude Code MCP setup documented (`claude mcp add-json`)
+- Release notes moved to `releases/` directory; root retains only current release
+- Old Maya diagram SVGs removed from `video_assets/`
+
+### Fixed
+- `asset_cache_manager.py` — deadlock in `remove_asset()` caused by `_save_index()` called while holding `self._lock`
+
+### Dependencies
+- `networkx` added to `requirements.txt`
+
+---
+
 ## [v2.4.0] — 2026-05-26
 
 **Type:** Minor — 26 new workflow nodes, runtime extensions layer (Tiers 1–6), bug fixes

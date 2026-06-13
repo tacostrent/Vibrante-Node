@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_studio_standards",
+    "name": "Hou MCP Studio Standards",
+    "description": "Manage studio production standards. Actions: list (all standards), get (single standard by id), check (is_approved for category+value), update (override a standard value), register (add custom standard). Built-in standards: minimum_review_score, approved_lighting_styles, approved_camera_modes, approved_atmosphere_types, approved_workflows, hero_zone_max_assets.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "action",       "type": "string", "widget_type": "text", "options": null, "default": "list" },
+        { "name": "standard_id",  "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "category",     "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "value_json",   "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "description",  "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",        "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "standards_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "standard_count",  "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "is_approved",     "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "ok",              "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    action      = str(inputs.get('action') or self.parameters.get('action', 'list') or 'list')\n    standard_id = str(inputs.get('standard_id') or self.parameters.get('standard_id', '') or '')\n    category    = str(inputs.get('category') or self.parameters.get('category', '') or '')\n    value_json  = str(inputs.get('value_json') or self.parameters.get('value_json', '') or '')\n    description = str(inputs.get('description') or self.parameters.get('description', '') or '')\n\n    try:\n        from src.runtime.studio.studio_standards import get_studio_standards\n        ss = get_studio_standards()\n        ok = True\n        is_approved = False\n\n        if action == 'get' and standard_id:\n            result = ss.get_standard(standard_id)\n            if result is None:\n                result = {'error': f'Standard not found: {standard_id}'}\n                ok = False\n        elif action == 'check' and category:\n            value = value_json.strip('\"') if value_json else ''\n            is_approved = ss.is_approved(category, value)\n            result = {'category': category, 'value': value, 'approved': is_approved}\n        elif action == 'update' and standard_id and value_json:\n            try:\n                val = json.loads(value_json)\n            except Exception:\n                val = value_json\n            ok = ss.update_standard(standard_id, val, description)\n            result = {'updated': ok, 'standard_id': standard_id}\n        elif action == 'register' and standard_id and category:\n            try:\n                val = json.loads(value_json) if value_json else ''\n            except Exception:\n                val = value_json\n            ss.register_standard(standard_id, category, val, description)\n            result = {'registered': True, 'standard_id': standard_id}\n        else:\n            standards = ss.list_standards(category=category or None)\n            result = {'standards': standards}\n\n        stats = ss.stats()\n        self.log_info(f'[StudioStandards] Action={action!r} ok={ok}')\n        return {\n            'standards_json': json.dumps(result, sort_keys=True),\n            'standard_count': stats.get('total_standards', 0),\n            'is_approved':    is_approved,\n            'ok':             ok,\n            'exec_out':       True,\n        }\n    except Exception as e:\n        self.log_error(f'[StudioStandards] {e}')\n        return {\n            'standards_json': json.dumps({'error': str(e)}),\n            'standard_count': 0, 'is_approved': False,\n            'ok': False, 'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Studio_Standards(BaseNode):\n        name = 'hou_mcp_studio_standards'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Studio_Standards"
+}

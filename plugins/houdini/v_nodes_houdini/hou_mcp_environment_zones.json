@@ -1,0 +1,18 @@
+{
+    "node_id": "hou_mcp_environment_zones",
+    "name": "hou_mcp_environment_zones",
+    "description": "Build the canonical zone layout for an environment (hero_zone, entrance_zone, decoration_zone, atmosphere_zone, plus environment-specific zones). Every environment gets at minimum 4 zones. No Houdini scene mutations — planning only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "environment_name", "type": "string", "widget_type": "text", "options": null, "default": "western_room"},
+        {"name": "blueprint_json",   "type": "string", "widget_type": "text", "options": null, "default": ""}
+    ],
+    "outputs": [
+        {"name": "zones_json",             "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "zone_count",             "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "validation_errors_json", "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.environment.environment_zone_builder import get_environment_zone_builder\nfrom src.runtime.environment.environment_blueprint import EnvironmentBlueprint\nimport json\n\nclass Hou_Mcp_Environment_Zones(BaseNode):\n    name = \"hou_mcp_environment_zones\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment_name\", \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_input(\"blueprint_json\",   \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"zones_json\",             \"string\")\n        self.add_output(\"zone_count\",             \"int\")\n        self.add_output(\"validation_errors_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        env_name = (inputs.get(\"environment_name\") or \"\").strip()\n        bp_json  = (inputs.get(\"blueprint_json\") or \"\").strip()\n\n        if not env_name:\n            self.log_error(\"No environment_name provided.\")\n            return {\"zones_json\": \"{}\", \"zone_count\": 0, \"validation_errors_json\": \"[]\", \"exec_out\": True}\n\n        try:\n            builder = get_environment_zone_builder()\n            blueprint = None\n            if bp_json:\n                try:\n                    blueprint = EnvironmentBlueprint.from_dict(json.loads(bp_json))\n                except Exception:\n                    pass\n\n            zone_plan = builder.build_zones(env_name, blueprint)\n            errors = builder.validate_zones(zone_plan)\n\n            if errors:\n                self.log_error(f\"Zone validation errors: {errors}\")\n            else:\n                self.log_info(f\"Zones for '{env_name}': {zone_plan.zone_count} zones\")\n\n            return {\n                \"zones_json\":             json.dumps(zone_plan.to_dict(), sort_keys=True, default=str),\n                \"zone_count\":             zone_plan.zone_count,\n                \"validation_errors_json\": json.dumps(errors, default=str),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Zone build failed: {exc}\")\n            return {\"zones_json\": \"{}\", \"zone_count\": 0, \"validation_errors_json\": \"[]\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Environment_Zones\n"
+}

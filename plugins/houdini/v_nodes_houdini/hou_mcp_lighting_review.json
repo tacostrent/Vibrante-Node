@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_lighting_review",
+    "name": "hou_mcp_lighting_review",
+    "description": "Evaluate lighting plan quality across 6 dimensions: readability (20%), mood accuracy (20%), story support (20%), visual hierarchy (15%), color harmony (15%), exposure quality (10%). production_ready requires score >= 0.70.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "plan_json", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",   "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "review_json",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "score",            "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "grade",            "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "production_ready", "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lighting import get_lighting_review\nimport json\n\nclass Hou_Mcp_Lighting_Review(BaseNode):\n    name = \"hou_mcp_lighting_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"plan_json\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"review_json\",      \"string\")\n        self.add_output(\"score\",            \"float\")\n        self.add_output(\"grade\",            \"string\")\n        self.add_output(\"production_ready\", \"bool\")\n\n    async def execute(self, inputs):\n        plan_json = str(inputs.get(\"plan_json\", \"\") or \"\")\n        try:\n            plan_dict = json.loads(plan_json) if plan_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse plan_json: {exc}\")\n            return {\"review_json\": \"{}\", \"score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n        try:\n            engine = get_lighting_review()\n            result = engine.review_plan(plan_dict)\n            self.log_info(\n                f\"Lighting review: grade={result.grade}, score={result.score:.2f}, \"\n                f\"production_ready={result.production_ready}. Findings: {len(result.findings)}.\"\n            )\n            return {\n                \"review_json\":      json.dumps(result.to_dict(), sort_keys=True, default=str),\n                \"score\":            result.score,\n                \"grade\":            result.grade,\n                \"production_ready\": result.production_ready,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Lighting review failed: {exc}\")\n            return {\"review_json\": \"{}\", \"score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Lighting_Review\n"
+}

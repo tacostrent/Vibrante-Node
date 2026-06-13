@@ -14,7 +14,7 @@ Claude / Codex / GPT sessions at connection time.
 from __future__ import annotations
 
 RUNTIME_NAME    = "Vibrante Runtime"
-RUNTIME_VERSION = "2.4.0"
+RUNTIME_VERSION = "2.5.0"
 RUNTIME_TYPE    = "AI-native procedural orchestration runtime"
 EXECUTION_MODEL = "semantic_transactional_execution"
 
@@ -29,14 +29,15 @@ EXECUTION_RULES: list[str] = [
 ]
 
 RECOMMENDED_EXECUTION_FLOW: list[str] = [
-    "1. initialize_runtime_context  — read scene and runtime state (call first)",
-    "2. query_capabilities          — know what the runtime can do",
-    "3. query_workflow_templates    — find applicable templates",
-    "4. plan_scene                  — parse intent → validated execution plan",
-    "5. preview_execution           — inspect operations and risk",
-    "6. validate_execution_plan     — structural + constraint pass",
-    "7. execute_workflow_transaction — run via transaction system",
-    "8. review_execution            — verify intent was achieved",
+    "1. initialize_runtime_context       — read scene and runtime state (call first)",
+    "2. query_capabilities               — know what the runtime can do",
+    "3. query_workflow_templates         — find applicable templates",
+    "4. plan_scene                       — parse intent → validated execution plan",
+    "5. preview_execution                — inspect operations and risk",
+    "6. validate_execution_plan          — structural + constraint pass",
+    "7. hou_mcp_build_scene_from_intent  — FOR SCENE INTENTS: import real assets into Houdini FIRST (geometry before lights)",
+    "8. execute_workflow_transaction     — run remaining workflow via transaction system",
+    "9. review_execution                 — verify intent was achieved (geometry + lighting + composition, not just 'no errors')",
 ]
 
 MCP_TOOL_NAMES: list[str] = [

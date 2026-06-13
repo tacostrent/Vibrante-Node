@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_build_shell",
+    "name": "hou_mcp_build_shell",
+    "description": "Full 6-phase environment shell construction pipeline. Builds floor, walls, ceiling, structural anchors, places structural elements, validates enclosure, and checks the environment readiness gate. Returns shell_json, gate_json, audit_json, review_json, and environment_ready flag. No assets may be placed until environment_ready = True.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "environment",        "type": "string", "widget_type": "text",     "options": null, "default": "western_room" },
+        { "name": "structural_assets_json", "type": "string", "widget_type": "text", "options": null, "default": "[]" },
+        { "name": "exec_in",            "type": "any",    "widget_type": null,        "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "shell_json",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "gate_json",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "audit_json",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "review_json",        "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "environment_ready",  "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready",   "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",           "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_shell import get_environment_shell_builder\n\nclass Hou_Mcp_Build_Shell(BaseNode):\n    name = \"hou_mcp_build_shell\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment\",            \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_input(\"structural_assets_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_output(\"shell_json\")\n        self.add_output(\"gate_json\")\n        self.add_output(\"audit_json\")\n        self.add_output(\"review_json\")\n        self.add_output(\"environment_ready\", \"bool\")\n        self.add_output(\"production_ready\",  \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        environment = (inputs.get(\"environment\") or \"western_room\").strip()\n        raw_assets  = (inputs.get(\"structural_assets_json\") or \"[]\").strip()\n        try:\n            structural_assets = json.loads(raw_assets) if raw_assets else []\n            if not isinstance(structural_assets, list):\n                structural_assets = []\n        except Exception:\n            structural_assets = []\n\n        try:\n            result = get_environment_shell_builder().build(environment, structural_assets)\n            return {\n                \"shell_json\":        json.dumps(result.shell.to_dict()  if result.shell  else {}, sort_keys=True, indent=2),\n                \"gate_json\":         json.dumps(result.gate.to_dict()   if result.gate   else {}, sort_keys=True, indent=2),\n                \"audit_json\":        json.dumps(result.audit.to_dict()  if result.audit  else {}, sort_keys=True, indent=2),\n                \"review_json\":       json.dumps(result.review.to_dict() if result.review else {}, sort_keys=True, indent=2),\n                \"environment_ready\": result.shell.environment_ready if result.shell else False,\n                \"production_ready\":  result.review.production_ready if result.review else False,\n                \"exec_out\":          True,\n            }\n        except Exception as exc:\n            self.log_error(f\"hou_mcp_build_shell failed: {exc}\")\n            return {\"shell_json\": \"{}\", \"gate_json\": \"{}\", \"audit_json\": \"{}\", \"review_json\": \"{}\", \"environment_ready\": False, \"production_ready\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Build_Shell\n"
+}

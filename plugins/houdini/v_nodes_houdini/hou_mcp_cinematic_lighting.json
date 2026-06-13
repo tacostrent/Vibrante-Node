@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_cinematic_lighting",
+    "name": "Houdini MCP: Cinematic Lighting",
+    "description": "Generates a production-aware cinematic lighting plan from zone data and a lighting style. Selects key/rim/fill/practical/volumetric settings from the named preset, evaluates light balance, and produces ordered transaction operations. Planning only — no bridge calls, no mutations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini_icon.png",
+    "use_exec": true,
+    "inputs": [
+        {"name": "zones_json",      "type": "string", "widget_type": "text",     "options": null, "default": "{}"},
+        {"name": "lighting_style",  "type": "string", "widget_type": "text",     "options": null, "default": "cinematic_industrial"},
+        {"name": "scene_theme",     "type": "string", "widget_type": "text",     "options": null, "default": ""}
+    ],
+    "outputs": [
+        {"name": "plan_id",         "type": "string"},
+        {"name": "lighting_style",  "type": "string"},
+        {"name": "key_strategy",    "type": "any"},
+        {"name": "rim_strategy",    "type": "any"},
+        {"name": "balance",         "type": "any"},
+        {"name": "operations",      "type": "list"},
+        {"name": "plan_json",       "type": "string"}
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.semantic_lighting_engine import get_semantic_lighting_engine\n\n\nclass HouMCPCinematicLightingNode(BaseNode):\n    name = \"hou_mcp_cinematic_lighting\"\n    category = \"Houdini\"\n\n    def __init__(self):\n        super().__init__()\n        self.icon_path = \"icons/houdini_icon.png\"\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"zones_json\",     \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"lighting_style\", \"string\", widget_type=\"text\", default=\"cinematic_industrial\")\n        self.add_input(\"scene_theme\",    \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"plan_id\",        \"string\")\n        self.add_output(\"lighting_style\", \"string\")\n        self.add_output(\"key_strategy\",   \"any\")\n        self.add_output(\"rim_strategy\",   \"any\")\n        self.add_output(\"balance\",        \"any\")\n        self.add_output(\"operations\",     \"list\")\n        self.add_output(\"plan_json\",      \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    def _empty(self, error=\"\"):\n        return {\n            \"plan_id\": \"\", \"lighting_style\": \"\",\n            \"key_strategy\": {}, \"rim_strategy\": {}, \"balance\": {},\n            \"operations\": [], \"plan_json\": json.dumps({\"error\": error}),\n            \"exec_out\": True,\n        }\n\n    async def execute(self, inputs):\n        raw_zones     = (inputs.get(\"zones_json\") or \"{}\").strip() or \"{}\"\n        lighting_style = (inputs.get(\"lighting_style\") or \"cinematic_industrial\").strip()\n        scene_theme    = (inputs.get(\"scene_theme\") or \"\").strip()\n\n        try:\n            zones = json.loads(raw_zones) if isinstance(raw_zones, str) else raw_zones\n        except json.JSONDecodeError as exc:\n            self.log_error(f\"zones_json is not valid JSON: {exc}\")\n            return self._empty(error=f\"invalid zones_json: {exc}\")\n\n        if not isinstance(zones, dict):\n            self.log_error(\"zones_json must be a JSON object.\")\n            return self._empty(error=\"zones_json must be a JSON object\")\n\n        engine = get_semantic_lighting_engine()\n        try:\n            plan = engine.generate_lighting_plan(zones, lighting_style, scene_theme=scene_theme)\n        except Exception as exc:\n            self.log_error(f\"Lighting plan generation failed: {exc}\")\n            return self._empty(error=f\"plan generation failed: {exc}\")\n\n        resolved_style = plan.get(\"lighting_style\", lighting_style)\n        self.log_info(f\"Cinematic lighting plan generated: style={resolved_style}, ops={len(plan.get('operations', []))}\")\n\n        return {\n            \"plan_id\":       plan.get(\"plan_id\", \"\"),\n            \"lighting_style\": resolved_style,\n            \"key_strategy\":  plan.get(\"key_strategy\", {}),\n            \"rim_strategy\":  plan.get(\"rim_strategy\", {}),\n            \"balance\":       plan.get(\"balance\", {}),\n            \"operations\":    plan.get(\"operations\", []),\n            \"plan_json\":     json.dumps(plan, indent=2, default=str),\n            \"exec_out\":      True,\n        }\n\n\ndef register_node():\n    return HouMCPCinematicLightingNode\n"
+}

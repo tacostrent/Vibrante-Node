@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Vibrante-Node v2.4.0 — Getting Started">
+<meta name="description" content="Vibrante-Node v2.5.0 — Getting Started">
 <title>Getting Started — Vibrante-Node Docs</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
 <style>
@@ -391,7 +391,7 @@ td code { font-size: .85em; }
 <!-- ── Header ─────────────────────────────────────────────────────────── -->
 <header class="header">
   <a class="header-logo" href="index.html">Vibrante-Node</a>
-  <span class="header-version">v2.4.0</span>
+  <span class="header-version">v2.5.0</span>
   <div class="header-spacer"></div>
   <div class="search-wrap">
     <span class="search-icon">&#128269;</span>
@@ -441,7 +441,7 @@ td code { font-size: .85em; }
 <main class="content">
   <div class="content-inner">
     <nav class="breadcrumb"><a href="index.html">Docs</a><span class="breadcrumb-sep">›</span><span>Getting Started</span></nav>
-    <div class="val-badge val-badge-ok" title="Verified against source code">&#10003; Verified</div>
+    <div class="val-badge val-badge-warn" title="3 warning(s) — review recommended">&#9888; 3 warnings</div>
 <h1 id="vibrante-node-v240-getting-started">Vibrante-Node v2.4.0 — Getting Started</h1>
 <p>This guide takes you from a fresh machine to running your first workflow. It covers installation, the project layout, a complete first-workflow tutorial, and a detailed explanation of what happens when you press F5.</p>
 <hr />
@@ -543,6 +543,10 @@ td code { font-size: .85em; }
 <tr>
 <td>Gemini AI</td>
 <td><code>google-generativeai</code> Python package, valid API key</td>
+</tr>
+<tr>
+<td>MCP Runtime (Claude/Codex/Cursor)</td>
+<td><code>mcp&gt;=1.0.0</code> Python package (<code>pip install "mcp&gt;=1.0.0"</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -1016,6 +1020,51 @@ UI re-enabled
 <p>If the application exits cleanly, this file is deleted. If the application crashes or is force-closed, the file remains. On the next launch, a dialog offers to restore the last session. Accepting restores all tabs; declining discards the autosave and opens fresh.</p>
 <p>The autosave file is never used as a substitute for an explicit Save — it only appears after an unexpected exit.</p>
 <hr />
+<h2 id="11-direct-runtime-orchestration-mcp-quick-start-advanced">11. Direct Runtime Orchestration — MCP Quick Start <em>(Advanced)</em></h2>
+<p>Vibrante-Node includes a headless MCP server that lets Claude Desktop, Codex CLI, Cursor, and any MCP-compatible AI client orchestrate Houdini scenes without the visual canvas.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<pre><code class="language-bash">pip install &quot;mcp&gt;=1.0.0&quot; pydantic toposort
+</code></pre>
+<h3 id="optional-start-the-houdini-bridge">Optional: Start the Houdini bridge</h3>
+<ol>
+<li>Open Houdini with the Vibrante plugin installed.</li>
+<li>Click <strong>Vibrante-Node → Launch Vibrante-Node</strong> in the Houdini menu bar. This starts the TCP bridge on port 18811.</li>
+<li>The bridge must be running for scene-interaction tools. Planning and knowledge tools work without it.</li>
+</ol>
+<h3 id="start-the-mcp-server">Start the MCP server</h3>
+<pre><code class="language-bash"># From the repo root
+python scripts/run_vibrante_mcp.py
+</code></pre>
+<p>The server starts on stdio and stays running until the client disconnects.</p>
+<h3 id="configure-your-ai-client">Configure your AI client</h3>
+<p><strong>Claude Desktop</strong> (<code>~/.claude/settings.json</code>):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;vibrante&quot;: {
+      &quot;command&quot;: &quot;python&quot;,
+      &quot;args&quot;: [&quot;/path/to/vibrante-node/scripts/run_vibrante_mcp.py&quot;],
+      &quot;env&quot;: { &quot;VIBRANTE_HOU_PORT&quot;: &quot;18811&quot; }
+    }
+  }
+}
+</code></pre>
+<p><strong>Codex CLI</strong> (<code>~/.config/codex/config.toml</code>):</p>
+<pre><code class="language-toml">[mcp_servers.vibrante]
+command     = &quot;python&quot;
+args        = [&quot;/path/to/vibrante-node/scripts/run_vibrante_mcp.py&quot;]
+trust_level = &quot;trusted&quot;
+</code></pre>
+<h3 id="first-session-with-claude">First session with Claude</h3>
+<p>Once connected, follow this sequence:</p>
+<ol>
+<li><strong>Initialize:</strong> ask Claude to call <code>initialize_runtime_context</code> — receives the system prompt and bootstrap data.</li>
+<li><strong>Inspect:</strong> ask Claude to call <code>query_scene_context</code> — returns structured scene state.</li>
+<li><strong>Plan:</strong> ask Claude "build a pyro smoke simulation in /obj" → calls <code>plan_scene</code> → returns a plan.</li>
+<li><strong>Preview:</strong> Claude calls <code>preview_execution(plan.operations)</code> → returns risk level and warnings.</li>
+<li><strong>Execute:</strong> Claude calls <code>execute_workflow_transaction(plan_json=...)</code> → commits or rolls back atomically.</li>
+<li><strong>Review:</strong> Claude calls <code>review_execution(...)</code> → reports outcome and match score.</li>
+</ol>
+<hr />
 <p><em>Vibrante-Node v2.4.0 — Released 2026-05-26</em></p>
     <nav class="page-nav">
       <a class="page-nav-link prev" href="01_introduction.html"><span class="page-nav-label">Previous</span><span class="page-nav-title">Introduction</span></a>
@@ -1078,6 +1127,12 @@ UI re-enabled
 <a class="toc-link toc-h3" href="#loading">Loading</a>
 <a class="toc-link toc-h3" href="#tabs">Tabs</a>
 <a class="toc-link toc-h3" href="#autosave-and-crash-recovery">Autosave and Crash Recovery</a>
+<a class="toc-link toc-h2" href="#11-direct-runtime-orchestration-mcp-quick-start-advanced">11. Direct Runtime Orchestration — MCP Quick Start (Advanced)</a>
+<a class="toc-link toc-h3" href="#prerequisites">Prerequisites</a>
+<a class="toc-link toc-h3" href="#optional-start-the-houdini-bridge">Optional: Start the Houdini bridge</a>
+<a class="toc-link toc-h3" href="#start-the-mcp-server">Start the MCP server</a>
+<a class="toc-link toc-h3" href="#configure-your-ai-client">Configure your AI client</a>
+<a class="toc-link toc-h3" href="#first-session-with-claude">First session with Claude</a>
 </aside>
 
 <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>

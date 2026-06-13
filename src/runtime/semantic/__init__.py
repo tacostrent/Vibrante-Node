@@ -61,6 +61,13 @@ from .prompts import (
     get_intent_prompt_builder,
     reset_intent_prompt_builder_for_tests,
 )
+from .recommendations import (
+    IntentRecommendation,
+    RecommendationResult,
+    IntentRecommendationEngine,
+    get_intent_recommendation_engine,
+    reset_intent_recommendation_engine_for_tests,
+)
 
 __all__ = [
     # Schema
@@ -97,4 +104,10 @@ __all__ = [
     "IntentPromptBuilder",
     "get_intent_prompt_builder",
     "reset_intent_prompt_builder_for_tests",
+    # Recommendations
+    "IntentRecommendation",
+    "RecommendationResult",
+    "IntentRecommendationEngine",
+    "get_intent_recommendation_engine",
+    "reset_intent_recommendation_engine_for_tests",
 ]

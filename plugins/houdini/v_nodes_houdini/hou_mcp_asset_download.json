@@ -1,0 +1,28 @@
+{
+    "node_id": "hou_mcp_asset_download",
+    "name": "hou_mcp_asset_download",
+    "description": "Megascans asset downloader with checksum validation and retry. Actions: download, verify, register. Only downloads assets selected by semantic intelligence layers. Requires VIBRANTE_MEGASCANS_TOKEN.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",             "type": "string", "widget_type": "text", "options": null, "default": "download" },
+        { "name": "asset_id",           "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "provider",           "type": "string", "widget_type": "text", "options": null, "default": "megascans" },
+        { "name": "dest_dir",           "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "download_url",       "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "quality",            "type": "string", "widget_type": "text", "options": null, "default": "medium" },
+        { "name": "expected_checksum",  "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "local_path",         "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "exec_in",            "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "local_path",       "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "checksum",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "bytes_downloaded", "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "verified",         "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "result",           "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.acquisition_online import get_megascans_downloader\n\nclass Hou_Mcp_Asset_Download(BaseNode):\n    name = \"hou_mcp_asset_download\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",            \"string\", widget_type=\"text\", default=\"download\")\n        self.add_input(\"asset_id\",          \"string\", widget_type=\"text\")\n        self.add_input(\"provider\",          \"string\", widget_type=\"text\", default=\"megascans\")\n        self.add_input(\"dest_dir\",          \"string\", widget_type=\"text\")\n        self.add_input(\"download_url\",      \"string\", widget_type=\"text\")\n        self.add_input(\"quality\",           \"string\", widget_type=\"text\", default=\"medium\")\n        self.add_input(\"expected_checksum\", \"string\", widget_type=\"text\")\n        self.add_input(\"local_path\",        \"string\", widget_type=\"text\")\n        self.add_output(\"local_path\",       \"string\")\n        self.add_output(\"checksum\",         \"string\")\n        self.add_output(\"bytes_downloaded\", \"int\")\n        self.add_output(\"verified\",         \"bool\")\n        self.add_output(\"result\",           \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action   = str(inputs.get(\"action\") or \"download\").strip().lower()\n        asset_id = str(inputs.get(\"asset_id\") or \"\").strip()\n        dest_dir = str(inputs.get(\"dest_dir\") or \"\").strip()\n        dl_url   = str(inputs.get(\"download_url\") or \"\").strip()\n        quality  = str(inputs.get(\"quality\") or \"medium\").strip()\n        expected = str(inputs.get(\"expected_checksum\") or \"\").strip()\n        lpath    = str(inputs.get(\"local_path\") or \"\").strip()\n        provider = str(inputs.get(\"provider\") or \"megascans\").strip()\n        try:\n            dl = get_megascans_downloader()\n            if action == \"verify\":\n                res = dl.verify_download(lpath, expected)\n                return {\"local_path\": lpath, \"checksum\": \"\", \"bytes_downloaded\": 0, \"verified\": bool(res.get(\"verified\")), \"result\": res, \"exec_out\": True}\n            elif action == \"register\":\n                res = dl.register_download(asset_id, lpath, provider=provider, checksum=expected)\n                return {\"local_path\": lpath, \"checksum\": expected, \"bytes_downloaded\": 0, \"verified\": False, \"result\": res, \"exec_out\": True}\n            else:\n                r = dl.download_asset(asset_id, dest_dir, download_url=dl_url, quality=quality, expected_checksum=expected)\n                return {\"local_path\": r.local_path, \"checksum\": r.checksum, \"bytes_downloaded\": r.bytes_downloaded, \"verified\": r.ok, \"result\": r.to_dict(), \"exec_out\": True}\n        except Exception as e:\n            self.log_error(f\"hou_mcp_asset_download failed: {e}\")\n            return {\"local_path\": \"\", \"checksum\": \"\", \"bytes_downloaded\": 0, \"verified\": False, \"result\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Download\n"
+}

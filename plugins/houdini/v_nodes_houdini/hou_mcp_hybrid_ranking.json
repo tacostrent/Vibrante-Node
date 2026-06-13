@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_hybrid_ranking",
+    "name": "hou_mcp_hybrid_ranking",
+    "description": "Rank asset candidates using hybrid scoring: vector similarity (40%), environment (20%), storytelling (15%), lookdev (10%), knowledge graph (10%), production memory (5%). No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "candidates",    "type": "list", "widget_type": null, "options": null, "default": null },
+        { "name": "query_context", "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "vector_scores", "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "top_k",         "type": "int",  "widget_type": "int", "options": null, "default": 10 },
+        { "name": "exec_in",       "type": "any",  "widget_type": null, "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "ranked_assets", "type": "list",   "widget_type": null, "options": null, "default": null },
+        { "name": "top_asset_id",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "total",         "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",      "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.vector_search import get_hybrid_ranking_engine\n\nclass Hou_Mcp_Hybrid_Ranking(BaseNode):\n    name = \"hou_mcp_hybrid_ranking\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"candidates\",    \"list\")\n        self.add_input(\"query_context\", \"any\")\n        self.add_input(\"vector_scores\", \"any\")\n        self.add_input(\"top_k\",         \"int\", widget_type=\"int\", default=10)\n        self.add_output(\"ranked_assets\", \"list\")\n        self.add_output(\"top_asset_id\",  \"string\")\n        self.add_output(\"total\",         \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        candidates    = inputs.get(\"candidates\") or []\n        query_context = inputs.get(\"query_context\") or {}\n        vector_scores = inputs.get(\"vector_scores\") or {}\n        top_k         = int(inputs.get(\"top_k\") or 10)\n        try:\n            engine = get_hybrid_ranking_engine()\n            ranked = engine.rank_assets(\n                candidates=list(candidates) if isinstance(candidates, list) else [],\n                query_context=dict(query_context) if isinstance(query_context, dict) else {},\n                vector_scores=dict(vector_scores) if isinstance(vector_scores, dict) else {},\n            )[:top_k]\n            ranked_dicts = [r.to_dict() for r in ranked]\n            top_id = ranked[0].asset_id if ranked else \"\"\n            return {\n                \"ranked_assets\": ranked_dicts,\n                \"top_asset_id\":  top_id,\n                \"total\":         len(ranked_dicts),\n                \"exec_out\":      True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_hybrid_ranking failed: {e}\")\n            return {\"ranked_assets\": [], \"top_asset_id\": \"\", \"total\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Hybrid_Ranking\n"
+}

@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_vector_index",
+    "name": "hou_mcp_vector_index",
+    "description": "Build, update, or rebuild the semantic vector index from the catalog. Actions: build_full, rebuild, update_asset, stats. No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",    "type": "string", "widget_type": "text", "options": null, "default": "build_full" },
+        { "name": "asset_id",  "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "limit",     "type": "int",    "widget_type": "int",  "options": null, "default": 10000 },
+        { "name": "exec_in",   "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "indexed",     "type": "int",  "widget_type": null, "options": null, "default": null },
+        { "name": "store_size",  "type": "int",  "widget_type": null, "options": null, "default": null },
+        { "name": "ok",          "type": "bool", "widget_type": null, "options": null, "default": null },
+        { "name": "result",      "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",    "type": "any",  "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.vector_search import (\n    get_catalog_vector_index_builder, get_asset_vector_store,\n)\n\nclass Hou_Mcp_Vector_Index(BaseNode):\n    name = \"hou_mcp_vector_index\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",   \"string\", widget_type=\"text\", default=\"build_full\")\n        self.add_input(\"asset_id\", \"string\", widget_type=\"text\")\n        self.add_input(\"limit\",    \"int\",    widget_type=\"int\", default=10000)\n        self.add_output(\"indexed\",    \"int\")\n        self.add_output(\"store_size\", \"int\")\n        self.add_output(\"ok\",         \"bool\")\n        self.add_output(\"result\",     \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action   = str(inputs.get(\"action\") or \"build_full\").strip().lower()\n        asset_id = str(inputs.get(\"asset_id\") or \"\").strip()\n        limit    = int(inputs.get(\"limit\") or 10000)\n        try:\n            builder = get_catalog_vector_index_builder()\n            if action == \"rebuild\":\n                result = builder.rebuild_index()\n                ok = result.ok\n                indexed = result.indexed\n            elif action == \"update_asset\":\n                ok = builder.update_asset_index(asset_id)\n                result_dict = {\"updated\": ok, \"asset_id\": asset_id}\n                return {\"indexed\": 1 if ok else 0, \"store_size\": get_asset_vector_store().size(), \"ok\": ok, \"result\": result_dict, \"exec_out\": True}\n            elif action == \"stats\":\n                stats = builder.get_statistics()\n                return {\"indexed\": stats.get(\"store_size\", 0), \"store_size\": stats.get(\"store_size\", 0), \"ok\": True, \"result\": stats, \"exec_out\": True}\n            else:  # build_full\n                result = builder.build_full_index(limit=limit)\n                ok = result.ok\n                indexed = result.indexed\n            return {\n                \"indexed\":    indexed,\n                \"store_size\": get_asset_vector_store().size(),\n                \"ok\":         ok,\n                \"result\":     result.to_dict() if hasattr(result, 'to_dict') else {},\n                \"exec_out\":   True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_vector_index failed: {e}\")\n            return {\"indexed\": 0, \"store_size\": 0, \"ok\": False, \"result\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Vector_Index\n"
+}

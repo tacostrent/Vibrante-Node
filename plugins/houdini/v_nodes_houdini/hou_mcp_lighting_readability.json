@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_lighting_readability",
+    "name": "hou_mcp_lighting_readability",
+    "description": "Evaluate visual readability of a lighting plan: subject visibility (30%), silhouette quality (25%), foreground separation (20%), background separation (15%), contrast balance (10%). Returns score, findings, and recommended adjustments.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "plan_json", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",   "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "result_json",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "score",          "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "adjustments",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",       "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lighting import get_lighting_readability_engine\nimport json\n\nclass Hou_Mcp_Lighting_Readability(BaseNode):\n    name = \"hou_mcp_lighting_readability\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"plan_json\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"result_json\", \"string\")\n        self.add_output(\"score\",       \"float\")\n        self.add_output(\"adjustments\", \"string\")\n\n    async def execute(self, inputs):\n        plan_json = str(inputs.get(\"plan_json\", \"\") or \"\")\n        try:\n            plan_dict = json.loads(plan_json) if plan_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse plan_json: {exc}\")\n            return {\"result_json\": \"{}\", \"score\": 0.0, \"adjustments\": \"\", \"exec_out\": True}\n        try:\n            engine = get_lighting_readability_engine()\n            result = engine.evaluate_readability(plan_dict)\n            adjustments = engine.recommend_adjustments(plan_dict)\n            self.log_info(\n                f\"Readability score={result.score:.2f}. \"\n                f\"Findings: {len(result.findings)}. Recommendations: {len(result.recommendations)}.\"\n            )\n            return {\n                \"result_json\": json.dumps(result.to_dict(), sort_keys=True, default=str),\n                \"score\":       result.score,\n                \"adjustments\": json.dumps(adjustments, default=str),\n                \"exec_out\":    True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Readability evaluation failed: {exc}\")\n            return {\"result_json\": \"{}\", \"score\": 0.0, \"adjustments\": \"\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Lighting_Readability\n"
+}

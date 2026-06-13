@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_surface_placement",
+    "name": "hou_mcp_surface_placement",
+    "description": "Place child assets on the support surface of a host asset at the correct surface height. Uses surface height tables (table=0.75m, bar_counter=1.05m, shelf=1.40m) and distributes items across the surface width. Overflow items are rejected, not placed on the floor.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "host_asset_json",   "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "child_assets_json", "type": "string", "widget_type": "text", "options": null, "default": "[]" },
+        { "name": "host_position_json","type": "string", "widget_type": "text", "options": null, "default": "[0,0,0]" },
+        { "name": "exec_in",           "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "placements_json",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "surface_height",    "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "placement_count",   "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",          "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.layout import get_surface_placement_engine\n\nclass Hou_Mcp_Surface_Placement(BaseNode):\n    name = \"hou_mcp_surface_placement\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"host_asset_json\",    \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"child_assets_json\",  \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"host_position_json\", \"string\", widget_type=\"text\", default=\"[0,0,0]\")\n        self.add_output(\"placements_json\",  \"string\")\n        self.add_output(\"surface_height\",   \"float\")\n        self.add_output(\"placement_count\",  \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            host       = json.loads((inputs.get(\"host_asset_json\") or \"{}\").strip() or \"{}\")\n            children   = json.loads((inputs.get(\"child_assets_json\") or \"[]\").strip() or \"[]\")\n            host_pos   = json.loads((inputs.get(\"host_position_json\") or \"[0,0,0]\").strip() or \"[0,0,0]\")\n        except Exception:\n            self.log_error(\"One or more inputs is not valid JSON.\")\n            return {\"placements_json\": \"[]\", \"surface_height\": 0.0, \"placement_count\": 0, \"exec_out\": True}\n\n        try:\n            result = get_surface_placement_engine().place_on_surface(host, children, host_pos)\n            placements_json = json.dumps([p.to_dict() for p in result.placements], sort_keys=True, indent=2)\n            return {\n                \"placements_json\":  placements_json,\n                \"surface_height\":   result.surface_height,\n                \"placement_count\":  len(result.placements),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Surface placement failed: {exc}\")\n            return {\"placements_json\": \"[]\", \"surface_height\": 0.0, \"placement_count\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Surface_Placement\n"
+}

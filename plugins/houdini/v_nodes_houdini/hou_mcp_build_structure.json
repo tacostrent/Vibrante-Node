@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_build_structure",
+    "name": "hou_mcp_build_structure",
+    "description": "Generate the structural elements of an environment (floor, walls, ceiling) without openings or beams. Returns a flat JSON list of StructuralElements with tx/ty/tz/dimensions/material ready for Houdini node creation.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "environment", "type": "string", "widget_type": "text",  "options": null, "default": "western_room" },
+        { "name": "exec_in",     "type": "any",    "widget_type": null,    "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "elements_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "wall_count",    "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "room_closed",   "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",      "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_realization import get_structural_builder\n\nclass Hou_Mcp_Build_Structure(BaseNode):\n    name = \"hou_mcp_build_structure\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment\", \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_output(\"elements_json\")\n        self.add_output(\"wall_count\",  \"int\")\n        self.add_output(\"room_closed\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        env = (inputs.get(\"environment\") or \"\").strip() or \"western_room\"\n        try:\n            plan = get_structural_builder().build(env)\n            # Return only structural (non-opening) elements\n            structural = [e.to_dict() for e in plan.structural_elements if not e.is_opening]\n            return {\n                \"elements_json\": json.dumps(structural, sort_keys=True, indent=2),\n                \"wall_count\":    plan.wall_count,\n                \"room_closed\":   plan.room_closed,\n                \"exec_out\":      True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Structural build failed: {exc}\")\n            return {\"elements_json\": \"[]\", \"wall_count\": 0, \"room_closed\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Build_Structure\n"
+}

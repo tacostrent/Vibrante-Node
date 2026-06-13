@@ -1,0 +1,26 @@
+{
+    "node_id": "hou_mcp_asset_cache",
+    "name": "hou_mcp_asset_cache",
+    "description": "Asset cache manager: check, register, remove, list, and get statistics for locally cached assets. Actions: exists, get_path, cache, remove, list, stats. Environment: VIBRANTE_ASSET_CACHE.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",     "type": "string", "widget_type": "text", "options": null, "default": "stats" },
+        { "name": "asset_id",   "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "provider",   "type": "string", "widget_type": "text", "options": null, "default": "megascans" },
+        { "name": "local_path", "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "checksum",   "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "version",    "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "exec_in",    "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "local_path", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exists",     "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "entry",      "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "entries",    "type": "list",   "widget_type": null, "options": null, "default": null },
+        { "name": "stats",      "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",   "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.acquisition_online import get_asset_cache_manager\n\nclass Hou_Mcp_Asset_Cache(BaseNode):\n    name = \"hou_mcp_asset_cache\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",     \"string\", widget_type=\"text\", default=\"stats\")\n        self.add_input(\"asset_id\",   \"string\", widget_type=\"text\")\n        self.add_input(\"provider\",   \"string\", widget_type=\"text\", default=\"megascans\")\n        self.add_input(\"local_path\", \"string\", widget_type=\"text\")\n        self.add_input(\"checksum\",   \"string\", widget_type=\"text\")\n        self.add_input(\"version\",    \"string\", widget_type=\"text\")\n        self.add_output(\"local_path\", \"string\")\n        self.add_output(\"exists\",     \"bool\")\n        self.add_output(\"entry\",      \"any\")\n        self.add_output(\"entries\",    \"list\")\n        self.add_output(\"stats\",      \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action   = str(inputs.get(\"action\") or \"stats\").strip().lower()\n        asset_id = str(inputs.get(\"asset_id\") or \"\").strip()\n        provider = str(inputs.get(\"provider\") or \"megascans\").strip()\n        lpath    = str(inputs.get(\"local_path\") or \"\").strip()\n        checksum = str(inputs.get(\"checksum\") or \"\").strip()\n        version  = str(inputs.get(\"version\") or \"\").strip()\n        try:\n            cache = get_asset_cache_manager()\n            if action == \"exists\":\n                ex = cache.asset_exists(asset_id, provider)\n                return {\"local_path\": \"\", \"exists\": ex, \"entry\": {}, \"entries\": [], \"stats\": {}, \"exec_out\": True}\n            elif action == \"get_path\":\n                p = cache.get_asset_path(asset_id, provider) or \"\"\n                return {\"local_path\": p, \"exists\": bool(p), \"entry\": {}, \"entries\": [], \"stats\": {}, \"exec_out\": True}\n            elif action == \"cache\":\n                entry = cache.cache_asset(asset_id, provider, lpath, version=version, checksum=checksum)\n                return {\"local_path\": entry.local_path, \"exists\": True, \"entry\": entry.to_dict(), \"entries\": [], \"stats\": {}, \"exec_out\": True}\n            elif action == \"remove\":\n                ok = cache.remove_asset(asset_id, provider)\n                return {\"local_path\": \"\", \"exists\": False, \"entry\": {\"removed\": ok}, \"entries\": [], \"stats\": {}, \"exec_out\": True}\n            elif action == \"list\":\n                entries = [e.to_dict() for e in cache.list_cached_assets()]\n                return {\"local_path\": \"\", \"exists\": False, \"entry\": {}, \"entries\": entries, \"stats\": cache.cache_statistics(), \"exec_out\": True}\n            else:\n                return {\"local_path\": \"\", \"exists\": False, \"entry\": {}, \"entries\": [], \"stats\": cache.cache_statistics(), \"exec_out\": True}\n        except Exception as e:\n            self.log_error(f\"hou_mcp_asset_cache failed: {e}\")\n            return {\"local_path\": \"\", \"exists\": False, \"entry\": {}, \"entries\": [], \"stats\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Cache\n"
+}

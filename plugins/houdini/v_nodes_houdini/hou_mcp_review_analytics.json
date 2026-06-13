@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_review_analytics",
+    "name": "Hou MCP Review Analytics",
+    "description": "Analyze review trends from accumulated studio knowledge. Returns common failures, common successes, pass rate, trend direction, and actionable recommendations. Reads review records from StudioKnowledgeDB — no bridge calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "environment", "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "workflow",    "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",             "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "analytics_json",       "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "most_common_failure",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "most_common_success",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "pass_rate",            "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "trend_direction",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "average_score",        "type": "float",  "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    environment = str(inputs.get('environment') or self.parameters.get('environment', '') or '')\n    workflow    = str(inputs.get('workflow') or self.parameters.get('workflow', '') or '')\n\n    try:\n        from src.runtime.studio.studio_knowledge import get_studio_knowledge_db\n        from src.runtime.studio.review_analytics import get_review_analytics\n\n        sk = get_studio_knowledge_db()\n        reviews_raw = sk.get_studio_patterns(environment=environment or None, limit=200)\n        # Also pull review records from the studio knowledge store\n        all_records = sk._records  # read-only snapshot\n        reviews = [\n            r for r in all_records\n            if r.get('record_type') == 'review'\n            and (not environment or r.get('environment') == environment)\n            and (not workflow or r.get('workflow') == workflow)\n        ]\n\n        analytics = get_review_analytics()\n        report = analytics.generate_review_report(reviews)\n\n        self.log_info(f'[ReviewAnalytics] {len(reviews)} reviews analyzed. Pass rate: {report[\"analysis\"][\"pass_rate\"]:.2f}')\n        return {\n            'analytics_json':      json.dumps(report, sort_keys=True),\n            'most_common_failure': report.get('most_common_failure') or '',\n            'most_common_success': report.get('most_common_success') or '',\n            'pass_rate':           report['analysis'].get('pass_rate', 0.0),\n            'trend_direction':     report['trends'].get('trend_direction', 'stable'),\n            'average_score':       report['analysis'].get('average_score', 0.0),\n            'exec_out':            True,\n        }\n    except Exception as e:\n        self.log_error(f'[ReviewAnalytics] {e}')\n        return {\n            'analytics_json': json.dumps({'error': str(e)}),\n            'most_common_failure': '', 'most_common_success': '',\n            'pass_rate': 0.0, 'trend_direction': 'unknown',\n            'average_score': 0.0, 'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Review_Analytics(BaseNode):\n        name = 'hou_mcp_review_analytics'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Review_Analytics"
+}

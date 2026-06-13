@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_asset_dependencies",
+    "name": "hou_mcp_asset_dependencies",
+    "description": "Resolve asset dependencies: textures, materials, and external references. Returns dependency lists and flags missing dependencies. No file I/O — analyzes asset metadata only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json", "type": "string", "widget_type": "text", "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "dependency_result_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "textures_json",          "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "materials_json",         "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "references_json",        "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "missing_count",          "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "resolve_ok",             "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.realization import get_asset_dependency_resolver\nimport json\n\nclass Hou_Mcp_Asset_Dependencies(BaseNode):\n    name = \"hou_mcp_asset_dependencies\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\", \"string\", widget_type=\"text\")\n        self.add_output(\"dependency_result_json\", \"string\")\n        self.add_output(\"textures_json\",          \"string\")\n        self.add_output(\"materials_json\",         \"string\")\n        self.add_output(\"references_json\",        \"string\")\n        self.add_output(\"missing_count\",          \"int\")\n        self.add_output(\"resolve_ok\",             \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json = inputs.get(\"asset_json\", \"\") or \"\"\n\n        if not asset_json.strip():\n            self.log_error(\"No asset_json provided.\")\n            return {\"dependency_result_json\": \"{}\", \"textures_json\": \"[]\", \"materials_json\": \"[]\", \"references_json\": \"[]\", \"missing_count\": 0, \"resolve_ok\": False, \"exec_out\": True}\n\n        try:\n            asset = json.loads(asset_json)\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"dependency_result_json\": \"{}\", \"textures_json\": \"[]\", \"materials_json\": \"[]\", \"references_json\": \"[]\", \"missing_count\": 0, \"resolve_ok\": False, \"exec_out\": True}\n\n        try:\n            result = get_asset_dependency_resolver().resolve(asset)\n            self.log_info(f\"Dependencies resolved: {len(result.textures)} textures, {len(result.materials)} materials, {len(result.missing_deps)} missing\")\n            return {\n                \"dependency_result_json\": json.dumps(result.to_dict(), sort_keys=True, default=str),\n                \"textures_json\":          json.dumps(result.textures, default=str),\n                \"materials_json\":         json.dumps(result.materials, default=str),\n                \"references_json\":        json.dumps(result.references, default=str),\n                \"missing_count\":          len(result.missing_deps),\n                \"resolve_ok\":             result.ok,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Dependency resolution failed: {exc}\")\n            return {\"dependency_result_json\": \"{}\", \"textures_json\": \"[]\", \"materials_json\": \"[]\", \"references_json\": \"[]\", \"missing_count\": 0, \"resolve_ok\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Dependencies\n"
+}

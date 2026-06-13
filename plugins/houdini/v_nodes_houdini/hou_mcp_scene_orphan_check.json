@@ -1,0 +1,18 @@
+{
+    "node_id": "hou_mcp_scene_orphan_check",
+    "name": "hou_mcp_scene_orphan_check",
+    "description": "Rule 5 — Orphan Detection: finds assets with no valid semantic parent (chair without nearby table, bottle without table, poster with no wall). Reports ORPHAN_OBJECT violations with detail messages.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "scene_layout_json", "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",           "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "orphans_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "orphan_count",  "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",      "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.scene_validation import get_orphan_detector\n\nclass Hou_Mcp_Scene_Orphan_Check(BaseNode):\n    name = \"hou_mcp_scene_orphan_check\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"orphans_json\")\n        self.add_output(\"orphan_count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw = (inputs.get(\"scene_layout_json\") or \"\").strip()\n        try:\n            scene = json.loads(raw) if raw else {}\n        except Exception:\n            self.log_error(\"scene_layout_json is not valid JSON.\")\n            return {\"orphans_json\": \"[]\", \"orphan_count\": 0, \"exec_out\": True}\n        try:\n            orphans = get_orphan_detector().detect(scene)\n            orphan_dicts = [o.to_dict() for o in orphans]\n            if orphans:\n                for o in orphans:\n                    self.log_error(f\"ORPHAN_OBJECT: {o.detail}\")\n            return {\n                \"orphans_json\": json.dumps(orphan_dicts, sort_keys=True, indent=2),\n                \"orphan_count\": len(orphans),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Orphan detection failed: {exc}\")\n            return {\"orphans_json\": \"[]\", \"orphan_count\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Orphan_Check\n"
+}
