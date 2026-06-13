@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_asset_storage",
+    "name": "hou_mcp_asset_storage",
+    "description": "Query and manage local asset storage registry. Actions: statistics, find (by provider+asset_id), list (all or filtered), exists. No Houdini scene changes.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "action",   "type": "string", "widget_type": "text",  "options": null, "default": "statistics"},
+        {"name": "provider", "type": "string", "widget_type": "text",  "options": null, "default": null},
+        {"name": "asset_id", "type": "string", "widget_type": "text",  "options": null, "default": null},
+        {"name": "category", "type": "string", "widget_type": "text",  "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "storage_root",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "statistics_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "asset_json",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "assets_json",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exists",          "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.cache.asset_storage import get_asset_storage\nimport json\n\nclass Hou_Mcp_Asset_Storage(BaseNode):\n    name = \"hou_mcp_asset_storage\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",   \"string\", widget_type=\"text\", default=\"statistics\")\n        self.add_input(\"provider\", \"string\", widget_type=\"text\")\n        self.add_input(\"asset_id\", \"string\", widget_type=\"text\")\n        self.add_input(\"category\", \"string\", widget_type=\"text\")\n        self.add_output(\"storage_root\",    \"string\")\n        self.add_output(\"statistics_json\", \"string\")\n        self.add_output(\"asset_json\",      \"string\")\n        self.add_output(\"assets_json\",     \"string\")\n        self.add_output(\"exists\",          \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action   = (inputs.get(\"action\") or \"statistics\").strip().lower()\n        provider = inputs.get(\"provider\") or \"\"\n        asset_id = inputs.get(\"asset_id\") or \"\"\n        category = inputs.get(\"category\") or \"\"\n        storage  = get_asset_storage()\n\n        storage_root    = storage.get_storage_root()\n        statistics_json = \"{}\"\n        asset_json      = \"{}\"\n        assets_json     = \"[]\"\n        exists          = False\n\n        try:\n            statistics_json = json.dumps(storage.get_storage_statistics(), default=str)\n\n            if action == \"find\" and provider and asset_id:\n                record = storage.find_asset(provider, asset_id)\n                if record:\n                    asset_json = json.dumps(record.to_dict(), default=str)\n                    exists = True\n\n            elif action == \"exists\" and provider and asset_id:\n                exists = storage.asset_exists(provider, asset_id)\n\n            elif action == \"list\":\n                records = storage.list_assets(\n                    provider=provider or None,\n                    category=category or None,\n                )\n                assets_json = json.dumps([r.to_dict() for r in records], default=str)\n\n        except Exception as exc:\n            self.log_error(f\"AssetStorage error: {exc}\")\n\n        return {\n            \"storage_root\":    storage_root,\n            \"statistics_json\": statistics_json,\n            \"asset_json\":      asset_json,\n            \"assets_json\":     assets_json,\n            \"exists\":          exists,\n            \"exec_out\": True,\n        }\n\ndef register_node():\n    return Hou_Mcp_Asset_Storage\n"
+}

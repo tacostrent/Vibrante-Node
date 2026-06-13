@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_usd_builder",
+    "name": "hou_mcp_usd_builder",
+    "description": "Generate a USD-ready asset hierarchy and metadata descriptor. No USD SDK required — produces descriptive data structures for downstream scene realization.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json",    "type": "string", "widget_type": "text", "options": null, "default": null},
+        {"name": "materials_json","type": "string", "widget_type": "text", "options": null, "default": ""}
+    ],
+    "outputs": [
+        {"name": "usd_asset_json",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "usd_hierarchy_json","type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "usd_metadata_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "build_ok",          "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.realization import get_usd_builder\nimport json\n\nclass Hou_Mcp_Usd_Builder(BaseNode):\n    name = \"hou_mcp_usd_builder\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\",     \"string\", widget_type=\"text\")\n        self.add_input(\"materials_json\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"usd_asset_json\",     \"string\")\n        self.add_output(\"usd_hierarchy_json\", \"string\")\n        self.add_output(\"usd_metadata_json\",  \"string\")\n        self.add_output(\"build_ok\",           \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json    = inputs.get(\"asset_json\", \"\") or \"\"\n        materials_json = inputs.get(\"materials_json\", \"\") or \"\"\n\n        if not asset_json.strip():\n            self.log_error(\"No asset_json provided.\")\n            return {\"usd_asset_json\": \"{}\", \"usd_hierarchy_json\": \"{}\", \"usd_metadata_json\": \"{}\", \"build_ok\": False, \"exec_out\": True}\n\n        try:\n            asset = json.loads(asset_json)\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"usd_asset_json\": \"{}\", \"usd_hierarchy_json\": \"{}\", \"usd_metadata_json\": \"{}\", \"build_ok\": False, \"exec_out\": True}\n\n        materials = []\n        if materials_json.strip():\n            try:\n                materials = json.loads(materials_json)\n                if isinstance(materials, dict):\n                    materials = [materials]\n            except Exception:\n                pass\n\n        try:\n            builder = get_usd_builder()\n            result    = builder.build_usd_asset(asset, materials)\n            hierarchy = builder.build_usd_hierarchy(asset)\n            metadata  = builder.build_usd_metadata(asset)\n            self.log_info(f\"USD build: '{asset.get('name', '')}' ok={result.ok}\")\n            return {\n                \"usd_asset_json\":     json.dumps(result.asset.to_dict() if result.asset else {}, sort_keys=True, default=str),\n                \"usd_hierarchy_json\": json.dumps(hierarchy, sort_keys=True, default=str),\n                \"usd_metadata_json\":  json.dumps(metadata, sort_keys=True, default=str),\n                \"build_ok\":           result.ok,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"USD build failed: {exc}\")\n            return {\"usd_asset_json\": \"{}\", \"usd_hierarchy_json\": \"{}\", \"usd_metadata_json\": \"{}\", \"build_ok\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Usd_Builder\n"
+}

@@ -1,0 +1,26 @@
+{
+    "node_id": "hou_mcp_download_review",
+    "name": "hou_mcp_download_review",
+    "description": "Validate acquisition quality: download_success (35%), integrity (30%), cache_efficiency (20%), provenance_quality (15%). Actions: review_download, review_pipeline. production_ready requires score >= 0.70.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",          "type": "string", "widget_type": "text", "options": null, "default": "review_pipeline" },
+        { "name": "asset_id",        "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "provider",        "type": "string", "widget_type": "text", "options": null, "default": "megascans" },
+        { "name": "local_path",      "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "checksum",        "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "pipeline_result", "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "exec_in",         "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "overall_score",    "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "grade",            "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready", "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "findings",         "type": "list",   "widget_type": null, "options": null, "default": null },
+        { "name": "result",           "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.acquisition_online import get_download_review\n\nclass Hou_Mcp_Download_Review(BaseNode):\n    name = \"hou_mcp_download_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",          \"string\", widget_type=\"text\", default=\"review_pipeline\")\n        self.add_input(\"asset_id\",        \"string\", widget_type=\"text\")\n        self.add_input(\"provider\",        \"string\", widget_type=\"text\", default=\"megascans\")\n        self.add_input(\"local_path\",      \"string\", widget_type=\"text\")\n        self.add_input(\"checksum\",        \"string\", widget_type=\"text\")\n        self.add_input(\"pipeline_result\", \"any\")\n        self.add_output(\"overall_score\",    \"float\")\n        self.add_output(\"grade\",            \"string\")\n        self.add_output(\"production_ready\", \"bool\")\n        self.add_output(\"findings\",         \"list\")\n        self.add_output(\"result\",           \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action          = str(inputs.get(\"action\") or \"review_pipeline\").strip().lower()\n        asset_id        = str(inputs.get(\"asset_id\") or \"\").strip()\n        provider        = str(inputs.get(\"provider\") or \"megascans\").strip()\n        local_path      = str(inputs.get(\"local_path\") or \"\").strip()\n        checksum        = str(inputs.get(\"checksum\") or \"\").strip()\n        pipeline_result = inputs.get(\"pipeline_result\") or {}\n        try:\n            review = get_download_review()\n            if action == \"review_download\":\n                r = review.review_download(asset_id, provider=provider, local_path=local_path, checksum=checksum)\n            else:\n                pr = pipeline_result if isinstance(pipeline_result, dict) else {}\n                r = review.review_pipeline(pr)\n            return {\n                \"overall_score\":    r.overall_score,\n                \"grade\":            r.grade,\n                \"production_ready\": r.production_ready,\n                \"findings\":         r.findings,\n                \"result\":           r.to_dict(),\n                \"exec_out\":         True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_download_review failed: {e}\")\n            return {\"overall_score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"findings\": [], \"result\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Download_Review\n"
+}

@@ -1,257 +1,133 @@
-"""
-Unit tests for src.runtime.intent_parser.
-
-Covers:
-  • known intent keywords resolve correctly
-  • unknown prompt returns intent=None
-  • parameter extraction (name, parent, radius)
-  • style extraction (pyro variants)
-  • ambiguity detection
-  • confidence range 0–1
-  • alternatives list shape
-  • LLM enhancement: mock provider replaces low-confidence deterministic result
-  • LLM enhancement: mock provider does NOT replace if deterministic confidence >= LLM
-  • singleton / reset
-"""
-
+"""Tests for intent_parser.py (Tier 12.8)."""
 from __future__ import annotations
-
 import pytest
-
-from src.runtime.intent_parser import (
-    IntentParser,
-    get_intent_parser,
-    reset_intent_parser_for_tests,
-)
-from src.runtime.llm_provider import (
-    MockLLMProvider,
-    set_llm_provider,
-    reset_llm_provider_for_tests,
+from src.runtime.assets.vector_search import (
+    ParsedIntent, IntentParser, get_intent_parser, reset_intent_parser_for_tests,
 )
 
 
 @pytest.fixture(autouse=True)
 def _reset():
     reset_intent_parser_for_tests()
-    reset_llm_provider_for_tests()
     yield
     reset_intent_parser_for_tests()
-    reset_llm_provider_for_tests()
 
 
-# ---------------------------------------------------------------------------
-# Known intent detection
-# ---------------------------------------------------------------------------
+class TestIntentParser:
+    def test_parse_environment_industrial_hangar(self):
+        parsed = get_intent_parser().parse("Industrial Hangar Hero Machinery")
+        assert parsed.environment == "industrial_hangar"
 
-@pytest.mark.asyncio
-async def test_pyro_intent_detected():
-    parser = get_intent_parser()
-    result = await parser.parse("create a pyro simulation for fire and smoke")
-    assert result["intent"] == "build_pyro_source"
-    assert result["confidence"] > 0.0
+    def test_parse_environment_robotics_lab(self):
+        parsed = get_intent_parser().parse("Robotics Lab Support Sensor")
+        assert parsed.environment == "robotics_lab"
 
+    def test_parse_environment_control_room(self):
+        parsed = get_intent_parser().parse("control room console terminal")
+        assert parsed.environment == "control_room"
 
-@pytest.mark.asyncio
-async def test_geo_intent_detected():
-    parser = get_intent_parser()
-    result = await parser.parse("create a new geometry container")
-    assert result["intent"] == "create_geo_container"
+    def test_parse_environment_sci_fi_corridor(self):
+        parsed = get_intent_parser().parse("sci-fi corridor hatch bulkhead")
+        assert parsed.environment == "sci_fi_corridor"
 
+    def test_parse_environment_abandoned_factory(self):
+        parsed = get_intent_parser().parse("abandoned factory rust decay")
+        assert parsed.environment == "abandoned_factory"
 
-@pytest.mark.asyncio
-async def test_karma_intent_detected():
-    parser = get_intent_parser()
-    result = await parser.parse("set up karma rendering")
-    assert result["intent"] == "setup_karma_renderer"
+    def test_parse_role_hero(self):
+        parsed = get_intent_parser().parse("hero machinery primary")
+        assert parsed.role == "hero"
 
+    def test_parse_role_set_dressing(self):
+        parsed = get_intent_parser().parse("set dressing ambient prop")
+        assert parsed.role == "set_dressing"
 
-@pytest.mark.asyncio
-async def test_usd_export_detected():
-    parser = get_intent_parser()
-    result = await parser.parse("export to usd file")
-    assert result["intent"] == "export_to_usd"
+    def test_parse_role_background(self):
+        parsed = get_intent_parser().parse("background architecture distant")
+        assert parsed.role == "background"
 
+    def test_parse_storytelling_hero_object(self):
+        parsed = get_intent_parser().parse("hero object focal landmark")
+        assert parsed.storytelling == "hero_object"
 
-@pytest.mark.asyncio
-async def test_cache_geometry_detected():
-    parser = get_intent_parser()
-    result = await parser.parse("bake and cache the geometry to disk")
-    assert result["intent"] == "cache_geometry"
+    def test_parse_storytelling_context_builder(self):
+        parsed = get_intent_parser().parse("context builder environment setting")
+        assert parsed.storytelling == "context_builder"
 
+    def test_parse_lookdev_weathered(self):
+        parsed = get_intent_parser().parse("weathered pipe metal structure")
+        assert parsed.lookdev == "weathered"
 
-@pytest.mark.asyncio
-async def test_asset_publish_detected():
-    parser = get_intent_parser()
-    result = await parser.parse("scaffold asset publish structure")
-    assert result["intent"] == "asset_publish_scaffold"
+    def test_parse_lookdev_rusted(self):
+        parsed = get_intent_parser().parse("rusted corroded metal pipe")
+        assert parsed.lookdev == "rusted"
 
+    def test_parse_cinematic_hero_focus(self):
+        parsed = get_intent_parser().parse("hero focus primary focal")
+        assert parsed.cinematic == "hero_focus"
 
-@pytest.mark.asyncio
-async def test_lighting_setup_detected():
-    parser = get_intent_parser()
-    result = await parser.parse("set up solaris lighting rig")
-    assert result["intent"] == "solaris_lighting_setup"
+    def test_parse_cinematic_depth_layer(self):
+        parsed = get_intent_parser().parse("depth layer background atmospheric")
+        assert parsed.cinematic == "depth_layer"
 
+    def test_parse_category_machinery(self):
+        parsed = get_intent_parser().parse("industrial machinery gear turbine")
+        assert parsed.category == "machinery"
 
-# ---------------------------------------------------------------------------
-# Unknown prompt
-# ---------------------------------------------------------------------------
+    def test_parse_category_vehicle(self):
+        parsed = get_intent_parser().parse("combat vehicle hero")
+        assert parsed.category == "vehicle"
 
-@pytest.mark.asyncio
-async def test_unknown_prompt_returns_none_intent():
-    parser = get_intent_parser()
-    result = await parser.parse("xyzzy quux frobble nonsense")
-    assert result["intent"] is None
-    assert result["confidence"] == 0.0
+    def test_empty_text_no_exception(self):
+        parsed = get_intent_parser().parse("")
+        assert isinstance(parsed, ParsedIntent)
+        assert parsed.confidence == 0.0
 
+    def test_none_input_no_exception(self):
+        parsed = get_intent_parser().parse(None)
+        assert isinstance(parsed, ParsedIntent)
 
-# ---------------------------------------------------------------------------
-# Parameter extraction
-# ---------------------------------------------------------------------------
+    def test_confidence_nonzero_when_fields_found(self):
+        parsed = get_intent_parser().parse("Industrial Hangar Hero Machinery")
+        assert parsed.confidence > 0.0
 
-@pytest.mark.asyncio
-async def test_extracts_name_parameter():
-    parser = get_intent_parser()
-    result = await parser.parse("create a geo container called my_rock")
-    assert result["parameters"].get("name") == "my_rock"
+    def test_deterministic(self):
+        text = "Industrial Hangar Hero Set Dressing Weathered"
+        p1 = get_intent_parser().parse(text)
+        p2 = get_intent_parser().parse(text)
+        assert p1.to_dict() == p2.to_dict()
 
+    def test_to_dict_from_dict(self):
+        parsed = get_intent_parser().parse("robotics lab support sensor")
+        d = parsed.to_dict()
+        r = ParsedIntent.from_dict(d)
+        assert r.environment == parsed.environment
+        assert r.role == parsed.role
 
-@pytest.mark.asyncio
-async def test_extracts_parent_parameter():
-    parser = get_intent_parser()
-    result = await parser.parse("build pyro inside /obj/geo1")
-    assert result["parameters"].get("parent") == "/obj/geo1"
+    def test_as_query_text(self):
+        parsed = get_intent_parser().parse("industrial hangar hero machinery")
+        text = parsed.as_query_text()
+        assert isinstance(text, str)
+        assert len(text) > 0
 
+    def test_to_filter_dict_excludes_empty(self):
+        parsed = get_intent_parser().parse("hero")
+        filters = parsed.to_filter_dict()
+        assert all(v for v in filters.values())
 
-@pytest.mark.asyncio
-async def test_extracts_radius_parameter():
-    parser = get_intent_parser()
-    result = await parser.parse("create a sphere with radius 3.5")
-    assert result["parameters"].get("radius") == "3.5"
+    def test_extract_environment(self):
+        parser = get_intent_parser()
+        assert parser.extract_environment("robotics lab") == "robotics_lab"
+        assert parser.extract_environment("nothing here") == ""
 
+    def test_extract_role(self):
+        assert get_intent_parser().extract_role("hero asset") == "hero"
 
-# ---------------------------------------------------------------------------
-# Style extraction
-# ---------------------------------------------------------------------------
+    def test_extract_category(self):
+        assert get_intent_parser().extract_category("vehicle combat") == "vehicle"
 
-@pytest.mark.asyncio
-async def test_pyro_explosion_style():
-    parser = get_intent_parser()
-    result = await parser.parse("create a pyro explosion")
-    assert result["parameters"].get("style") == "explosion"
-
-
-@pytest.mark.asyncio
-async def test_pyro_smoke_style():
-    parser = get_intent_parser()
-    result = await parser.parse("build a smoke puff effect")
-    assert result["parameters"].get("style") == "smoke"
-
-
-@pytest.mark.asyncio
-async def test_pyro_fire_style():
-    parser = get_intent_parser()
-    result = await parser.parse("create a fire flame effect")
-    assert result["parameters"].get("style") == "fire"
-
-
-# ---------------------------------------------------------------------------
-# Ambiguity detection
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_clear_intent_not_ambiguous():
-    parser = get_intent_parser()
-    result = await parser.parse("create a pyro fire simulation")
-    # Single clear intent should not be ambiguous
-    assert isinstance(result["ambiguous"], bool)
-
-
-@pytest.mark.asyncio
-async def test_result_has_alternatives():
-    parser = get_intent_parser()
-    result = await parser.parse("create a geo node")
-    assert isinstance(result["alternatives"], list)
-
-
-# ---------------------------------------------------------------------------
-# Output shape
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_result_has_required_keys():
-    parser = get_intent_parser()
-    result = await parser.parse("any prompt here")
-    for key in ("intent", "parameters", "confidence", "alternatives",
-                "ambiguous", "raw_prompt", "matched_keywords", "llm_enhanced"):
-        assert key in result, f"Missing key: {key}"
-
-
-@pytest.mark.asyncio
-async def test_confidence_in_range():
-    parser = get_intent_parser()
-    result = await parser.parse("build a pyro simulation")
-    assert 0.0 <= result["confidence"] <= 1.0
-
-
-@pytest.mark.asyncio
-async def test_raw_prompt_preserved():
-    parser = get_intent_parser()
-    prompt = "create smoke inside /obj/geo1"
-    result = await parser.parse(prompt)
-    assert result["raw_prompt"] == prompt
-
-
-# ---------------------------------------------------------------------------
-# LLM enhancement
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_llm_enhances_unknown_intent():
-    """Mock LLM can resolve what the keyword matcher missed."""
-    mock = MockLLMProvider(responses={
-        "weird_prompt": {
-            "intent": "build_pyro_source",
-            "confidence": 0.95,
-            "parameters": {"style": "fire"},
-        }
-    })
-    set_llm_provider(mock)
-    parser = IntentParser()
-    result = await parser.parse("weird_prompt xyzzy")
-    assert result["intent"] == "build_pyro_source"
-    assert result["llm_enhanced"] is True
-
-
-@pytest.mark.asyncio
-async def test_llm_does_not_override_high_confidence_deterministic():
-    """If deterministic confidence > LLM confidence, keep deterministic."""
-    mock = MockLLMProvider(responses={
-        "pyro": {
-            "intent": "create_geo_container",   # wrong intent from mock
-            "confidence": 0.3,
-        }
-    })
-    set_llm_provider(mock)
-    parser = IntentParser()
-    result = await parser.parse("build a pyro fire simulation")
-    # Deterministic confidence for pyro should be high — keep it
-    assert result["intent"] == "build_pyro_source"
-    assert result["llm_enhanced"] is False
-
-
-# ---------------------------------------------------------------------------
-# Singleton
-# ---------------------------------------------------------------------------
-
-def test_singleton_same_instance():
-    a = get_intent_parser()
-    b = get_intent_parser()
-    assert a is b
-
-
-def test_reset_creates_fresh_singleton():
-    a = get_intent_parser()
-    reset_intent_parser_for_tests()
-    b = get_intent_parser()
-    assert a is not b
+    def test_statistics_increments(self):
+        parser = get_intent_parser()
+        before = parser.get_statistics()["parse_count"]
+        parser.parse("pipe")
+        assert parser.get_statistics()["parse_count"] == before + 1

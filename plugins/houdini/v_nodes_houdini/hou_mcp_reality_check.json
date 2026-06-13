@@ -1,0 +1,76 @@
+{
+    "node_id": "hou_mcp_reality_check",
+    "name": "hou_mcp_reality_check",
+    "description": "Reality Intelligence (\u00a754 Tier 15.0+): runs the full pipeline \u2014 human reasoning, functional zones, support rules, floating-object raycast, beam connections, architectural integrity, density, composition, correction plan and visual review. production_ready requires ALL nine success criteria; visual believability is the final authority.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {
+            "name": "scene_layout_json",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": "{}"
+        },
+        {
+            "name": "observed_scene_json",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": ""
+        },
+        {
+            "name": "exec_in",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "outputs": [
+        {
+            "name": "reality_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "correction_plan_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "production_ready",
+            "type": "bool",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "grade",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "score",
+            "type": "float",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "exec_out",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.reality import get_reality_intelligence_engine\n\n_EMPTY = {\"reality_json\": \"{}\", \"correction_plan_json\": \"{}\",\n          \"production_ready\": False, \"grade\": \"F\", \"score\": 0.0, \"exec_out\": True}\n\nclass Hou_Mcp_Reality_Check(BaseNode):\n    name = \"hou_mcp_reality_check\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"observed_scene_json\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"reality_json\")\n        self.add_output(\"correction_plan_json\")\n        self.add_output(\"production_ready\", \"bool\")\n        self.add_output(\"grade\")\n        self.add_output(\"score\", \"float\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            scene = json.loads((inputs.get(\"scene_layout_json\") or \"{}\").strip() or \"{}\")\n        except Exception:\n            self.log_error(\"scene_layout_json is not valid JSON.\")\n            return dict(_EMPTY)\n        observed = None\n        raw_obs = (inputs.get(\"observed_scene_json\") or \"\").strip()\n        if raw_obs:\n            try:\n                observed = json.loads(raw_obs)\n            except Exception:\n                self.log_error(\"observed_scene_json is not valid JSON \u2014 ignoring.\")\n        try:\n            result = get_reality_intelligence_engine().evaluate(scene, observed)\n            d = result.to_dict()\n            return {\n                \"reality_json\": json.dumps(d, sort_keys=True, indent=2),\n                \"correction_plan_json\": json.dumps(d.get(\"correction_plan\", {}), sort_keys=True, indent=2),\n                \"production_ready\": result.production_ready,\n                \"grade\": result.grade,\n                \"score\": result.score,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Reality check failed: {exc}\")\n            return dict(_EMPTY)\n\ndef register_node():\n    return Hou_Mcp_Reality_Check\n"
+}

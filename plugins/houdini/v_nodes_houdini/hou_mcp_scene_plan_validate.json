@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_scene_plan_validate",
+    "name": "hou_mcp_scene_plan_validate",
+    "description": "Validate a ScenePlan JSON for structural correctness: zone completeness, camera targets, composition rules, asset query validity. Returns a validation report. No Houdini scene modifications.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_plan_json", "type": "string", "widget_type": "text", "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "valid",           "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "errors_json",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "warnings_json",   "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "check_count",     "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "validated_plan_json", "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.planning import get_scene_plan_validator, get_plan_serializer\nimport json\n\nclass Hou_Mcp_Scene_Plan_Validate(BaseNode):\n    name = \"hou_mcp_scene_plan_validate\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_plan_json\",   \"string\", widget_type=\"text\")\n        self.add_output(\"valid\",              \"bool\")\n        self.add_output(\"errors_json\",        \"string\")\n        self.add_output(\"warnings_json\",      \"string\")\n        self.add_output(\"check_count\",        \"int\")\n        self.add_output(\"validated_plan_json\",\"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        plan_json = inputs.get(\"scene_plan_json\", \"\") or \"\"\n        if not plan_json.strip():\n            self.log_error(\"No scene_plan_json provided.\")\n            return {\"valid\": False, \"errors_json\": json.dumps([\"No plan provided\"]),\n                    \"warnings_json\": \"[]\", \"check_count\": 0,\n                    \"validated_plan_json\": \"\", \"exec_out\": True}\n        try:\n            serializer = get_plan_serializer()\n            plan = serializer.from_json(plan_json)\n            report = get_scene_plan_validator().validate(plan)\n            validated_json = serializer.to_json(plan)\n            self.log_info(f\"Validation: valid={report.valid}, errors={len(report.errors)}, warnings={len(report.warnings)}\")\n            return {\n                \"valid\":               report.valid,\n                \"errors_json\":         json.dumps(report.errors),\n                \"warnings_json\":       json.dumps(report.warnings),\n                \"check_count\":         report.check_count,\n                \"validated_plan_json\": validated_json,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Validation failed: {exc}\")\n            return {\"valid\": False, \"errors_json\": json.dumps([str(exc)]),\n                    \"warnings_json\": \"[]\", \"check_count\": 0,\n                    \"validated_plan_json\": \"\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Plan_Validate\n"
+}

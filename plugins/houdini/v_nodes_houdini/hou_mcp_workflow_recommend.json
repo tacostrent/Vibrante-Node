@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_workflow_recommend",
+    "name": "Hou MCP Workflow Recommend",
+    "description": "Recommend a WorkflowPack from a natural language intent using production memory, pattern library, studio knowledge, and default matching. Returns the recommended pack name, confidence score, and matched environment. No bridge calls — purely advisory.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "intent",      "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "max_results", "type": "int",    "widget_type": "int",  "options": null, "default": 3 }
+    ],
+    "outputs": [
+        { "name": "exec_out",            "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "recommended_pack",    "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "confidence",          "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "matched_environment", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "recommendations_json","type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "source",              "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "ok",                  "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.workflows import get_workflow_recommendation_engine\n\n    intent      = str(inputs.get('intent') or self.parameters.get('intent', '') or '')\n    max_results = int(inputs.get('max_results') or self.parameters.get('max_results', 3) or 3)\n\n    if not intent.strip():\n        self.log_error('[WorkflowRecommend] intent is empty')\n        return {\n            'recommended_pack': '',\n            'confidence': 0.0,\n            'matched_environment': '',\n            'recommendations_json': '[]',\n            'source': 'none',\n            'ok': False,\n            'exec_out': True,\n        }\n\n    try:\n        engine = get_workflow_recommendation_engine()\n        result = engine.recommend_pack(intent, max_results=max_results)\n        top    = result.top_recommendation\n\n        self.log_info(\n            f'[WorkflowRecommend] intent={intent!r}: '\n            f'top={top.pack_name if top else \"none\"!r}, '\n            f'env={result.matched_environment!r}, '\n            f'confidence={top.confidence if top else 0.0:.2f}'\n        )\n\n        return {\n            'recommended_pack':     top.pack_name if top else '',\n            'confidence':           top.confidence if top else 0.0,\n            'matched_environment':  result.matched_environment or '',\n            'recommendations_json': json.dumps([r.to_dict() for r in result.recommendations], sort_keys=True),\n            'source':               top.source if top else 'none',\n            'ok':                   bool(top),\n            'exec_out':             True,\n        }\n    except Exception as e:\n        self.log_error(f'[WorkflowRecommend] {e}')\n        return {\n            'recommended_pack': '',\n            'confidence': 0.0,\n            'matched_environment': '',\n            'recommendations_json': '[]',\n            'source': 'none',\n            'ok': False,\n            'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Workflow_Recommend(BaseNode):\n        name = 'hou_mcp_workflow_recommend'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Workflow_Recommend"
+}

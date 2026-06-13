@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_architectural_features",
+    "name": "hou_mcp_architectural_features",
+    "description": "Tier 10.5 — Structural Openings & Architectural Features. Accepts the shell_json from hou_mcp_build_shell and produces a complete ArchitecturalPlan (door/window openings, fireplace, beams, wall shelves) plus a full EnvironmentArchitectureReview. ARCHITECTURE_STATUS = PASS only if all anchors are resolved and no floating features exist. Does not call the Houdini bridge — pure planning. Use hou_mcp_architecture_realize to create actual geometry.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "shell_json",  "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "plan_json",           "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "review_json",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "architecture_status", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "architecture_score",  "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "architecture_report", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready",    "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",            "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.architectural_features import (\n    get_architectural_plan_builder,\n    get_environment_architecture_review,\n    ARCHITECTURE_STATUS_FAIL,\n)\n\nclass Hou_Mcp_Architectural_Features(BaseNode):\n    name = \"hou_mcp_architectural_features\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"shell_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"plan_json\")\n        self.add_output(\"review_json\")\n        self.add_output(\"architecture_status\")\n        self.add_output(\"architecture_score\", \"float\")\n        self.add_output(\"architecture_report\")\n        self.add_output(\"production_ready\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw_shell = (inputs.get(\"shell_json\") or \"{}\").strip()\n        try:\n            shell_dict = json.loads(raw_shell)\n            if not isinstance(shell_dict, dict):\n                shell_dict = {}\n        except Exception:\n            shell_dict = {}\n\n        try:\n            plan   = get_architectural_plan_builder().build(shell_dict)\n            review = get_environment_architecture_review().review(plan, shell_dict)\n            return {\n                \"plan_json\":           json.dumps(plan.to_dict(), sort_keys=True, indent=2),\n                \"review_json\":         json.dumps(review.to_dict(), sort_keys=True, indent=2),\n                \"architecture_status\": review.status,\n                \"architecture_score\":  review.architecture_score,\n                \"architecture_report\": review.architecture_report,\n                \"production_ready\":    review.production_ready,\n                \"exec_out\":            True,\n            }\n        except Exception as exc:\n            self.log_error(f\"hou_mcp_architectural_features failed: {exc}\")\n            return {\n                \"plan_json\": \"{}\", \"review_json\": \"{}\",\n                \"architecture_status\": ARCHITECTURE_STATUS_FAIL,\n                \"architecture_score\": 0.0,\n                \"architecture_report\": f\"ERROR: {exc}\",\n                \"production_ready\": False, \"exec_out\": True,\n            }\n\ndef register_node():\n    return Hou_Mcp_Architectural_Features\n"
+}

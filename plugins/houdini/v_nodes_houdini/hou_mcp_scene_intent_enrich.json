@@ -1,0 +1,18 @@
+{
+    "node_id": "hou_mcp_scene_intent_enrich",
+    "name": "hou_mcp_scene_intent_enrich",
+    "description": "Deterministically enrich a SceneIntent with implied requirements. Example: 'apocalyptic city' automatically gains fog, smoke, and debris atmospheric effects. All enrichments are logged with reason and source. Never executes scene operations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_intent_json", "type": "string", "widget_type": "text", "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "enriched_intent_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "enrichment_count",     "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "enrichment_notes",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "enrichment_applied",   "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.semantic import get_scene_intent_enricher, get_intent_serializer\nimport json\n\nclass Hou_Mcp_Scene_Intent_Enrich(BaseNode):\n    name = \"hou_mcp_scene_intent_enrich\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_intent_json\", \"string\", widget_type=\"text\")\n        self.add_output(\"enriched_intent_json\", \"string\")\n        self.add_output(\"enrichment_count\",     \"int\")\n        self.add_output(\"enrichment_notes\",     \"string\")\n        self.add_output(\"enrichment_applied\",   \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        intent_json = inputs.get(\"scene_intent_json\", \"\") or \"\"\n        if not intent_json.strip():\n            self.log_error(\"No scene_intent_json provided.\")\n            return {\"enriched_intent_json\": \"\", \"enrichment_count\": 0,\n                    \"enrichment_notes\": \"[]\", \"enrichment_applied\": False, \"exec_out\": True}\n        try:\n            serializer = get_intent_serializer()\n            intent = serializer.from_json(intent_json)\n            notes_before = len(intent.extraction_notes)\n            enricher = get_scene_intent_enricher()\n            enricher.enrich(intent)\n            new_notes = intent.extraction_notes[notes_before:]\n            enriched_json = serializer.to_json(intent)\n            enrichment_count = len(new_notes)\n            self.log_info(f\"Enrichment applied {enrichment_count} inferences to intent {intent.intent_id[:8]}\")\n            return {\n                \"enriched_intent_json\": enriched_json,\n                \"enrichment_count\":     enrichment_count,\n                \"enrichment_notes\":     json.dumps(new_notes),\n                \"enrichment_applied\":   intent.enrichment_applied,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Enrichment failed: {exc}\")\n            return {\"enriched_intent_json\": intent_json, \"enrichment_count\": 0,\n                    \"enrichment_notes\": \"[]\", \"enrichment_applied\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Intent_Enrich\n"
+}

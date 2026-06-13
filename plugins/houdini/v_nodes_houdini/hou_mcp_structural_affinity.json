@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_structural_affinity",
+    "name": "hou_mcp_structural_affinity",
+    "description": "Query environment-structural affinity data. Given an environment name, returns the preferred structural roles (boosted +0.10 confidence), irrelevant roles (capped at 0.50), and the raw affinity score (+1/0/-1) for any role/environment pair. Useful for understanding why a classification confidence changed after environment adjustment.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "environment",  "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "role",         "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "preferred_roles",  "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "irrelevant_roles", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "affinity_score",   "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "environments",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.structure import get_environment_structural_affinity\nimport json\n\nclass Hou_Mcp_Structural_Affinity(BaseNode):\n    name = \"hou_mcp_structural_affinity\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment\",  \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"role\",         \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"preferred_roles\",  \"string\")\n        self.add_output(\"irrelevant_roles\", \"string\")\n        self.add_output(\"affinity_score\",   \"float\")\n        self.add_output(\"environments\",     \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        environment = str(inputs.get(\"environment\") or \"\")\n        role        = str(inputs.get(\"role\") or \"\")\n\n        affinity = get_environment_structural_affinity()\n\n        preferred  = affinity.preferred_roles(environment)\n        irrelevant = affinity.irrelevant_roles(environment)\n        score      = affinity.affinity_score(role, environment) if role else 0.0\n        envs       = affinity.supported_environments()\n\n        self.log_info(\n            f\"Structural affinity [{environment}]: \"\n            f\"{len(preferred)} preferred, {len(irrelevant)} irrelevant roles\"\n        )\n        if role:\n            label = \"preferred\" if score > 0 else (\"irrelevant\" if score < 0 else \"neutral\")\n            self.log_info(f\"  Role '{role}' is {label} in {environment!r}\")\n\n        return {\n            \"preferred_roles\":  json.dumps(preferred,  sort_keys=True),\n            \"irrelevant_roles\": json.dumps(irrelevant, sort_keys=True),\n            \"affinity_score\":   score,\n            \"environments\":     json.dumps(envs, sort_keys=True),\n            \"exec_out\":         True,\n        }\n\ndef register_node():\n    return Hou_Mcp_Structural_Affinity\n"
+}

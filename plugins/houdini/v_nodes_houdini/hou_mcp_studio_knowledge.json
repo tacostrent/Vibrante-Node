@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_studio_knowledge",
+    "name": "Hou MCP Studio Knowledge",
+    "description": "Browse and record accumulated cross-project studio knowledge. Actions: stats, record_success, record_failure, record_pattern, successes, failures, patterns. Records workflow success/failure outcomes that persist as studio-wide intelligence.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "action",      "type": "string", "widget_type": "text", "options": null, "default": "stats" },
+        { "name": "workflow",    "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "environment", "type": "string", "widget_type": "text", "options": null, "default": "" },
+        { "name": "score",       "type": "float",  "widget_type": "float","options": null, "default": 0.0 },
+        { "name": "failure_type","type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",      "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "result_json",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "success_count", "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "failure_count", "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "success_rate",  "type": "float",  "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    action      = str(inputs.get('action') or self.parameters.get('action', 'stats') or 'stats')\n    workflow    = str(inputs.get('workflow') or self.parameters.get('workflow', '') or '')\n    environment = str(inputs.get('environment') or self.parameters.get('environment', '') or '')\n    score       = float(inputs.get('score') or self.parameters.get('score', 0.0) or 0.0)\n    failure_type = str(inputs.get('failure_type') or self.parameters.get('failure_type', '') or '')\n\n    try:\n        from src.runtime.studio.studio_knowledge import get_studio_knowledge_db\n        sk = get_studio_knowledge_db()\n\n        if action == 'record_success' and workflow:\n            sk.record_success(workflow=workflow, environment=environment, score=score)\n            result = {'status': 'recorded', 'type': 'success', 'workflow': workflow}\n            self.log_info(f'[StudioKnowledge] Recorded success: {workflow!r}')\n        elif action == 'record_failure' and workflow:\n            sk.record_failure(workflow=workflow, environment=environment, failure_type=failure_type)\n            result = {'status': 'recorded', 'type': 'failure', 'workflow': workflow}\n            self.log_info(f'[StudioKnowledge] Recorded failure: {workflow!r}')\n        elif action == 'record_pattern' and workflow:\n            sk.record_pattern(pattern_id=workflow, pattern_type='scene_pattern', environment=environment, outcome='success')\n            result = {'status': 'recorded', 'type': 'pattern', 'pattern_id': workflow}\n        elif action == 'successes':\n            result = {'successes': sk.get_studio_successes(environment=environment or None, limit=20)}\n        elif action == 'failures':\n            result = {'failures': sk.get_studio_failures(environment=environment or None, limit=20)}\n        elif action == 'patterns':\n            result = {'patterns': sk.get_studio_patterns(environment=environment or None, limit=20)}\n        else:\n            result = sk.get_studio_statistics()\n\n        stats = sk.get_studio_statistics()\n        return {\n            'result_json':   json.dumps(result, sort_keys=True),\n            'success_count': stats.get('total_successes', 0),\n            'failure_count': stats.get('total_failures', 0),\n            'success_rate':  stats.get('success_rate', 0.0),\n            'exec_out':      True,\n        }\n    except Exception as e:\n        self.log_error(f'[StudioKnowledge] {e}')\n        return {\n            'result_json':   json.dumps({'error': str(e)}),\n            'success_count': 0,\n            'failure_count': 0,\n            'success_rate':  0.0,\n            'exec_out':      True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Studio_Knowledge(BaseNode):\n        name = 'hou_mcp_studio_knowledge'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Studio_Knowledge"
+}

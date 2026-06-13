@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_relationship_graph_builder",
+    "name": "hou_mcp_relationship_graph_builder",
+    "description": "Build a semantic relationship graph from a list of assets BEFORE any layout phase. Applies deterministic rules (chair→table, fireplace→wall, bottle→table, etc.) to create directed edges. Outputs PASS/FAIL status plus orphan asset detection. Must run after Asset Classification and before Layout.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "assets_json",   "type": "string", "widget_type": "text", "options": null, "default": "[]" },
+        { "name": "environment",   "type": "string", "widget_type": "text", "options": null, "default": "western_room" },
+        { "name": "exec_in",       "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "graph_json",                "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "relationship_count",        "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "assets_with_relationships", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "orphan_assets",             "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "status",                    "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",                  "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out_fail",             "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.layout.relationship_graph_builder import (\n    get_relationship_graph_builder,\n    RELATIONSHIP_GRAPH_STATUS_PASS,\n    RELATIONSHIP_GRAPH_STATUS_FAIL,\n)\n\nclass Hou_Mcp_Relationship_Graph_Builder(BaseNode):\n    name = \"hou_mcp_relationship_graph_builder\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"assets_json\",  \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"environment\",  \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_output(\"graph_json\",                \"string\")\n        self.add_output(\"relationship_count\",        \"int\")\n        self.add_output(\"assets_with_relationships\", \"string\")\n        self.add_output(\"orphan_assets\",             \"string\")\n        self.add_output(\"status\",                    \"string\")\n        self.add_output(\"exec_out_fail\",             \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw         = (inputs.get(\"assets_json\") or \"\").strip()\n        environment = (inputs.get(\"environment\") or \"\").strip()\n\n        try:\n            assets = json.loads(raw) if raw else []\n        except Exception:\n            self.log_error(\"assets_json is not valid JSON.\")\n            return {\n                \"graph_json\": \"{}\", \"relationship_count\": 0,\n                \"assets_with_relationships\": \"[]\", \"orphan_assets\": \"[]\",\n                \"status\": RELATIONSHIP_GRAPH_STATUS_FAIL,\n                \"exec_out\": True, \"exec_out_fail\": True,\n            }\n\n        result = get_relationship_graph_builder().build_graph(assets, environment)\n\n        if result.validation_errors:\n            for err in result.validation_errors:\n                self.log_error(f\"[RelGraph] {err}\")\n        if result.warnings:\n            for w in result.warnings:\n                self.log_warning(f\"[RelGraph] {w}\")\n        if result.orphan_assets:\n            self.log_warning(f\"[RelGraph] Orphan assets: {result.orphan_assets}\")\n\n        is_fail = result.status == RELATIONSHIP_GRAPH_STATUS_FAIL\n\n        return {\n            \"graph_json\":                json.dumps(result.relationship_graph.to_dict(), sort_keys=True, indent=2),\n            \"relationship_count\":        result.relationship_count,\n            \"assets_with_relationships\": json.dumps(result.assets_with_relationships, sort_keys=True),\n            \"orphan_assets\":             json.dumps(result.orphan_assets, sort_keys=True),\n            \"status\":                    result.status,\n            \"exec_out\":      not is_fail,\n            \"exec_out_fail\": is_fail,\n        }\n\ndef register_node():\n    return Hou_Mcp_Relationship_Graph_Builder\n"
+}

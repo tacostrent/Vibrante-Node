@@ -1,0 +1,83 @@
+{
+    "node_id": "hou_mcp_reality_correction",
+    "name": "hou_mcp_reality_correction",
+    "description": "Relationship Correction Pass (\u00a754 Tier 15.0+): plans geometry fixes for floating props, unsupported assets, chairs not facing their anchor, wall intersections and isolated assets \u2014 then APPLIES them to actual Houdini geometry when apply=true and a node_path_map is given. Modifies geometry, not metadata.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {
+            "name": "scene_layout_json",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": "{}"
+        },
+        {
+            "name": "node_path_map_json",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": "{}"
+        },
+        {
+            "name": "apply",
+            "type": "bool",
+            "widget_type": "checkbox",
+            "options": null,
+            "default": false
+        },
+        {
+            "name": "exec_in",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "outputs": [
+        {
+            "name": "correction_plan_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "apply_result_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "clean",
+            "type": "bool",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "op_count",
+            "type": "int",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "applied_count",
+            "type": "int",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "exec_out",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.reality import get_reality_correction_pass, get_correction_applier\n\n_EMPTY = {\"correction_plan_json\": \"{}\", \"apply_result_json\": \"{}\", \"clean\": False,\n          \"op_count\": 0, \"applied_count\": 0, \"exec_out\": True}\n\nclass Hou_Mcp_Reality_Correction(BaseNode):\n    name = \"hou_mcp_reality_correction\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"node_path_map_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"apply\", \"bool\", widget_type=\"checkbox\", default=False)\n        self.add_output(\"correction_plan_json\")\n        self.add_output(\"apply_result_json\")\n        self.add_output(\"clean\", \"bool\")\n        self.add_output(\"op_count\", \"int\")\n        self.add_output(\"applied_count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            scene = json.loads((inputs.get(\"scene_layout_json\") or \"{}\").strip() or \"{}\")\n            path_map = json.loads((inputs.get(\"node_path_map_json\") or \"{}\").strip() or \"{}\")\n        except Exception:\n            self.log_error(\"scene_layout_json / node_path_map_json is not valid JSON.\")\n            return dict(_EMPTY)\n        try:\n            plan = get_reality_correction_pass().build_correction_plan(scene)\n            for f in plan.findings:\n                self.log_error(f)\n            apply_result = {}\n            applied = 0\n            if inputs.get(\"apply\") and path_map:\n                res = get_correction_applier().apply(\n                    [o.to_dict() for o in plan.ops], path_map)\n                apply_result = res.to_dict()\n                applied = res.applied\n            return {\n                \"correction_plan_json\": json.dumps(plan.to_dict(), sort_keys=True, indent=2),\n                \"apply_result_json\": json.dumps(apply_result, sort_keys=True, indent=2),\n                \"clean\": plan.clean,\n                \"op_count\": len(plan.ops),\n                \"applied_count\": applied,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Reality correction failed: {exc}\")\n            return dict(_EMPTY)\n\ndef register_node():\n    return Hou_Mcp_Reality_Correction\n"
+}

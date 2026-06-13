@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_shell_review",
+    "name": "hou_mcp_shell_review",
+    "description": "6-dimension quality review of a completed environment shell. Scores: floor_integrity(0.25) + wall_integrity(0.25) + ceiling_integrity(0.20) + anchor_coverage(0.15) + enclosure_quality(0.10) + phase_completion(0.05). Grade A/B = production_ready. Blocking findings: floor missing, wall missing, ceiling missing, enclosure invalid, no anchors defined.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "shell_json", "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",    "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "review_json",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "overall_score",    "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "grade",            "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready", "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_shell import get_shell_review\n\nclass Hou_Mcp_Shell_Review(BaseNode):\n    name = \"hou_mcp_shell_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"shell_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"review_json\")\n        self.add_output(\"overall_score\", \"float\")\n        self.add_output(\"grade\")\n        self.add_output(\"production_ready\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw = (inputs.get(\"shell_json\") or \"{}\").strip()\n        try:\n            result = get_shell_review().review_dict(json.loads(raw) if raw else {})\n            return {\n                \"review_json\":    json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"overall_score\":  result.overall_score,\n                \"grade\":          result.grade,\n                \"production_ready\": result.production_ready,\n                \"exec_out\":       True,\n            }\n        except Exception as exc:\n            self.log_error(f\"hou_mcp_shell_review failed: {exc}\")\n            return {\"review_json\": \"{}\", \"overall_score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Shell_Review\n"
+}

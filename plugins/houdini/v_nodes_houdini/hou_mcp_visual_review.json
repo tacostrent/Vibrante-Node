@@ -1,0 +1,69 @@
+{
+    "node_id": "hou_mcp_visual_review",
+    "name": "hou_mcp_visual_review",
+    "description": "Visual Review Pass (\u00a754 Tier 15.0+): answers the four artist questions \u2014 would an Environment Artist approve, production-game quality, film-set quality, would a human use the room \u2014 from nine derived success criteria. production_ready only when ALL criteria hold; visual believability is the final authority.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {
+            "name": "scene_layout_json",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": "{}"
+        },
+        {
+            "name": "exec_in",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "outputs": [
+        {
+            "name": "review_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "production_ready",
+            "type": "bool",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "grade",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "score",
+            "type": "float",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "artist_would_approve",
+            "type": "bool",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "exec_out",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.reality import get_visual_review_engine\n\n_EMPTY = {\"review_json\": \"{}\", \"production_ready\": False, \"grade\": \"F\",\n          \"score\": 0.0, \"artist_would_approve\": False, \"exec_out\": True}\n\nclass Hou_Mcp_Visual_Review(BaseNode):\n    name = \"hou_mcp_visual_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"review_json\")\n        self.add_output(\"production_ready\", \"bool\")\n        self.add_output(\"grade\")\n        self.add_output(\"score\", \"float\")\n        self.add_output(\"artist_would_approve\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            scene = json.loads((inputs.get(\"scene_layout_json\") or \"{}\").strip() or \"{}\")\n        except Exception:\n            self.log_error(\"scene_layout_json is not valid JSON.\")\n            return dict(_EMPTY)\n        try:\n            result = get_visual_review_engine().review(scene)\n            for f in result.findings:\n                self.log_error(f)\n            return {\n                \"review_json\": json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"production_ready\": result.production_ready,\n                \"grade\": result.grade,\n                \"score\": result.score,\n                \"artist_would_approve\": result.artist_would_approve,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Visual review failed: {exc}\")\n            return dict(_EMPTY)\n\ndef register_node():\n    return Hou_Mcp_Visual_Review\n"
+}

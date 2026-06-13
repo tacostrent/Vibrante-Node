@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_asset_placement",
+    "name": "Hou MCP Asset Placement",
+    "description": "Generate deterministic world-space placement plans for all assets in an EnvironmentPlan. Returns positions, rotations, and scales per asset derived from PlacementTemplates. No randomness. No Houdini mutations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",               "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "environment_plan_json", "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "placement_plan_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "plan_id",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "total_placed",     "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "zone_counts_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "ok",               "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.assets.assembly import get_asset_placement_engine, EnvironmentPlan\n\n    env_plan_json = str(inputs.get('environment_plan_json') or '')\n    if not env_plan_json.strip():\n        self.log_error('[AssetPlacement] environment_plan_json is required.')\n        return {'placement_plan_json': '{}', 'plan_id': '', 'total_placed': 0, 'zone_counts_json': '{}', 'ok': False, 'exec_out': True}\n\n    try:\n        env_dict = json.loads(env_plan_json)\n        env_plan = EnvironmentPlan.from_dict(env_dict)\n\n        engine = get_asset_placement_engine()\n        plan   = engine.generate_placement_plan(env_plan)\n\n        self.log_info(\n            f'[AssetPlacement] {env_plan.environment!r}: '\n            f'{plan.total_placed} asset(s) placed, ok={plan.ok}'\n        )\n        if plan.warnings:\n            for w in plan.warnings:\n                self.log_warning(f'[AssetPlacement] {w}')\n\n        return {\n            'placement_plan_json': json.dumps(plan.to_dict()),\n            'plan_id':        plan.plan_id,\n            'total_placed':   plan.total_placed,\n            'zone_counts_json': json.dumps(plan.zone_counts),\n            'ok':             plan.ok,\n            'exec_out':       True,\n        }\n    except Exception as e:\n        self.log_error(f'[AssetPlacement] {e}')\n        return {'placement_plan_json': '{}', 'plan_id': '', 'total_placed': 0, 'zone_counts_json': '{}', 'ok': False, 'exec_out': True}\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Asset_Placement(BaseNode):\n        name = 'hou_mcp_asset_placement'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Asset_Placement"
+}

@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_asset_staging",
+    "name": "hou_mcp_asset_staging",
+    "description": "Project-local asset staging: stage individual assets, full environments, or build project cache. Actions: stage, stage_environment, build_cache, cleanup, list, stats. Environment: VIBRANTE_PROJECT_STAGING.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",      "type": "string", "widget_type": "text", "options": null, "default": "stats" },
+        { "name": "project_id",  "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "asset_id",    "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "provider",    "type": "string", "widget_type": "text", "options": null, "default": "megascans" },
+        { "name": "environment", "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "top_k",       "type": "int",    "widget_type": "int",  "options": null, "default": 20 },
+        { "name": "dry_run",     "type": "bool",   "widget_type": "checkbox", "options": null, "default": false },
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "entry",       "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "entries",     "type": "list", "widget_type": null, "options": null, "default": null },
+        { "name": "stats",       "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",    "type": "any",  "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.acquisition_online import get_project_asset_staging\n\nclass Hou_Mcp_Asset_Staging(BaseNode):\n    name = \"hou_mcp_asset_staging\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",      \"string\", widget_type=\"text\", default=\"stats\")\n        self.add_input(\"project_id\",  \"string\", widget_type=\"text\")\n        self.add_input(\"asset_id\",    \"string\", widget_type=\"text\")\n        self.add_input(\"provider\",    \"string\", widget_type=\"text\", default=\"megascans\")\n        self.add_input(\"environment\", \"string\", widget_type=\"text\")\n        self.add_input(\"top_k\",       \"int\",    widget_type=\"int\",  default=20)\n        self.add_input(\"dry_run\",     \"bool\",   widget_type=\"checkbox\", default=False)\n        self.add_output(\"entry\",   \"any\")\n        self.add_output(\"entries\", \"list\")\n        self.add_output(\"stats\",   \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action      = str(inputs.get(\"action\") or \"stats\").strip().lower()\n        project_id  = str(inputs.get(\"project_id\") or \"\").strip()\n        asset_id    = str(inputs.get(\"asset_id\") or \"\").strip()\n        provider    = str(inputs.get(\"provider\") or \"megascans\").strip()\n        environment = str(inputs.get(\"environment\") or \"\").strip()\n        top_k       = int(inputs.get(\"top_k\") or 20)\n        dry_run     = bool(inputs.get(\"dry_run\", False))\n        try:\n            staging = get_project_asset_staging()\n            if action == \"stage\":\n                e = staging.stage_asset(project_id, asset_id, provider=provider, environment=environment)\n                return {\"entry\": e.to_dict(), \"entries\": [], \"stats\": staging.get_statistics(), \"exec_out\": True}\n            elif action == \"stage_environment\":\n                entries = staging.stage_environment(project_id, environment, top_k=top_k)\n                return {\"entry\": {}, \"entries\": [e.to_dict() for e in entries], \"stats\": staging.get_statistics(), \"exec_out\": True}\n            elif action == \"build_cache\":\n                result = staging.build_project_cache(project_id)\n                return {\"entry\": result, \"entries\": result.get(\"entries\", []), \"stats\": staging.get_statistics(), \"exec_out\": True}\n            elif action == \"cleanup\":\n                result = staging.cleanup(project_id, dry_run=dry_run)\n                return {\"entry\": result, \"entries\": [], \"stats\": staging.get_statistics(), \"exec_out\": True}\n            elif action == \"list\":\n                entries = [e.to_dict() for e in staging.get_project_assets(project_id)]\n                return {\"entry\": {}, \"entries\": entries, \"stats\": staging.get_statistics(), \"exec_out\": True}\n            else:\n                return {\"entry\": {}, \"entries\": [], \"stats\": staging.get_statistics(), \"exec_out\": True}\n        except Exception as e:\n            self.log_error(f\"hou_mcp_asset_staging failed: {e}\")\n            return {\"entry\": {}, \"entries\": [], \"stats\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Staging\n"
+}

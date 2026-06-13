@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_workflow_review",
+    "name": "Hou MCP Workflow Review",
+    "description": "Evaluate workflow execution quality across four dimensions: environment, cinematic, production, and execution. Returns a grade, overall score, production_ready flag, and specific findings. 'Execution successful' is never an acceptable review — every dimension returns specific criteria.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",              "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "pack_name",            "type": "string", "widget_type": "text", "options": null, "default": "industrial_hangar_pack" },
+        { "name": "execution_result_json","type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",        "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "review_json",     "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "grade",           "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "overall_score",   "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready","type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "findings_json",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "review_summary",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "ok",              "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.workflows import (\n        get_workflow_registry, get_workflow_review, get_workflow_statistics,\n        get_workflow_blueprint,\n    )\n\n    pack_name   = str(inputs.get('pack_name') or self.parameters.get('pack_name', 'industrial_hangar_pack') or '')\n    exec_json   = str(inputs.get('execution_result_json') or '')\n\n    try:\n        registry = get_workflow_registry()\n        pack     = registry.get_pack(pack_name)\n        if not pack:\n            self.log_error(f'[WorkflowReview] Pack not found: {pack_name!r}')\n            return {\n                'review_json': json.dumps({'ok': False, 'error': f'Pack not found: {pack_name}'}),\n                'grade': 'F', 'overall_score': 0.0, 'production_ready': False,\n                'findings_json': '[]', 'review_summary': f'Pack not found: {pack_name}',\n                'ok': False, 'exec_out': True,\n            }\n\n        exec_result = {}\n        if exec_json.strip():\n            try:\n                exec_result = json.loads(exec_json)\n            except Exception:\n                exec_result = {}\n\n        builder   = get_workflow_blueprint()\n        blueprint = builder.build_blueprint(pack)\n        reviewer  = get_workflow_review()\n        report    = reviewer.generate_report(pack, blueprint, exec_result)\n\n        stats = get_workflow_statistics()\n        stats.record_execution(\n            pack_name,\n            'committed' if report.production_ready else 'failed',\n            score=report.overall_score,\n            grade=report.grade,\n        )\n\n        self.log_info(\n            f'[WorkflowReview] {pack_name!r}: '\n            f'grade={report.grade}, score={report.overall_score:.2f}, '\n            f'ready={report.production_ready}'\n        )\n        if report.findings:\n            for f in report.findings:\n                self.log_warning(f'[WorkflowReview] {f}')\n\n        return {\n            'review_json':     json.dumps(report.to_dict(), sort_keys=True),\n            'grade':           report.grade,\n            'overall_score':   report.overall_score,\n            'production_ready': report.production_ready,\n            'findings_json':   json.dumps(report.findings),\n            'review_summary':  report.review_summary,\n            'ok':              True,\n            'exec_out':        True,\n        }\n    except Exception as e:\n        self.log_error(f'[WorkflowReview] {e}')\n        return {\n            'review_json': json.dumps({'ok': False, 'error': str(e)}),\n            'grade': 'F', 'overall_score': 0.0, 'production_ready': False,\n            'findings_json': '[]', 'review_summary': str(e),\n            'ok': False, 'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Workflow_Review(BaseNode):\n        name = 'hou_mcp_workflow_review'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Workflow_Review"
+}

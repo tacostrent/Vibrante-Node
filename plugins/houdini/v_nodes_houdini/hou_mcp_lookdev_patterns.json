@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_lookdev_patterns",
+    "name": "hou_mcp_lookdev_patterns",
+    "description": "Browse and rank lookdev recipes. Pass asset_json to rank patterns by environment affinity, or use query/environment to search. Returns the material set for the top-matching pattern.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "query",       "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "environment", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "asset_json",  "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "patterns_json",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "pattern_count",    "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "top_pattern_name", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lookdev import get_lookdev_patterns\nimport json\n\nclass Hou_Mcp_Lookdev_Patterns(BaseNode):\n    name = \"hou_mcp_lookdev_patterns\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"query\",       \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"environment\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"asset_json\",  \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"patterns_json\",    \"string\")\n        self.add_output(\"pattern_count\",    \"int\")\n        self.add_output(\"top_pattern_name\", \"string\")\n\n    async def execute(self, inputs):\n        query       = str(inputs.get(\"query\",       \"\") or \"\")\n        environment = str(inputs.get(\"environment\", \"\") or \"\")\n        asset_json  = str(inputs.get(\"asset_json\",  \"\") or \"\")\n        try:\n            lib = get_lookdev_patterns()\n            if asset_json.strip():\n                try:\n                    asset_dict = json.loads(asset_json)\n                except Exception:\n                    asset_dict = {}\n                patterns = lib.rank_patterns(asset_dict if isinstance(asset_dict, dict) else {})\n            else:\n                patterns = lib.search_patterns(query=query, environment=environment)\n            top_name = patterns[0].name if patterns else \"\"\n            self.log_info(f\"Lookdev patterns: found {len(patterns)} pattern(s). Top: {top_name!r}.\")\n            return {\n                \"patterns_json\":    json.dumps([p.to_dict() for p in patterns], sort_keys=True, default=str),\n                \"pattern_count\":    len(patterns),\n                \"top_pattern_name\": top_name,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Lookdev patterns query failed: {exc}\")\n            return {\"patterns_json\": \"[]\", \"pattern_count\": 0, \"top_pattern_name\": \"\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Lookdev_Patterns\n"
+}

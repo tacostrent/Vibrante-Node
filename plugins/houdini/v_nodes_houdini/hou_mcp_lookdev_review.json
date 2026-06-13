@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_lookdev_review",
+    "name": "hou_mcp_lookdev_review",
+    "description": "Evaluate lookdev quality across 4 dimensions: material consistency (30%), environment coherence (25%), renderer compatibility (25%), visual quality (20%). production_ready requires score >= 0.70.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "lookdev_json", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "review_json",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "score",            "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "grade",            "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "production_ready", "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lookdev import get_lookdev_review\nimport json\n\nclass Hou_Mcp_Lookdev_Review(BaseNode):\n    name = \"hou_mcp_lookdev_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"lookdev_json\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"review_json\",      \"string\")\n        self.add_output(\"score\",            \"float\")\n        self.add_output(\"grade\",            \"string\")\n        self.add_output(\"production_ready\", \"bool\")\n\n    async def execute(self, inputs):\n        lookdev_json = str(inputs.get(\"lookdev_json\", \"\") or \"\")\n        try:\n            lookdev_dict = json.loads(lookdev_json) if lookdev_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse lookdev_json: {exc}\")\n            return {\"review_json\": \"{}\", \"score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n        try:\n            engine = get_lookdev_review()\n            result = engine.review_lookdev(lookdev_dict)\n            self.log_info(\n                f\"Lookdev review: grade={result.grade}, score={result.score:.2f}, \"\n                f\"production_ready={result.production_ready}. \"\n                f\"Findings: {len(result.findings)}.\"\n            )\n            return {\n                \"review_json\":      json.dumps(result.to_dict(), sort_keys=True, default=str),\n                \"score\":            result.score,\n                \"grade\":            result.grade,\n                \"production_ready\": result.production_ready,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Lookdev review failed: {exc}\")\n            return {\"review_json\": \"{}\", \"score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Lookdev_Review\n"
+}

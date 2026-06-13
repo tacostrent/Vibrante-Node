@@ -1,0 +1,62 @@
+{
+    "node_id": "hou_mcp_floating_objects",
+    "name": "hou_mcp_floating_objects",
+    "description": "No Floating Objects Rule (\u00a754 Tier 15.0+): any asset whose bottom is above floor+0.10 m must pass raycast_down() against support geometry. Failures are BLOCKING and include an automatic relocation suggestion (suggested_ty).",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {
+            "name": "scene_layout_json",
+            "type": "string",
+            "widget_type": "text",
+            "options": null,
+            "default": "{}"
+        },
+        {
+            "name": "exec_in",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "outputs": [
+        {
+            "name": "floating_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "violations_json",
+            "type": "string",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "ok",
+            "type": "bool",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "violation_count",
+            "type": "int",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        },
+        {
+            "name": "exec_out",
+            "type": "any",
+            "widget_type": null,
+            "options": null,
+            "default": null
+        }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.reality import get_floating_object_detector\n\n_EMPTY = {\"floating_json\": \"{}\", \"violations_json\": \"[]\", \"ok\": False,\n          \"violation_count\": 0, \"exec_out\": True}\n\nclass Hou_Mcp_Floating_Objects(BaseNode):\n    name = \"hou_mcp_floating_objects\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"floating_json\")\n        self.add_output(\"violations_json\")\n        self.add_output(\"ok\", \"bool\")\n        self.add_output(\"violation_count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        try:\n            scene = json.loads((inputs.get(\"scene_layout_json\") or \"{}\").strip() or \"{}\")\n        except Exception:\n            self.log_error(\"scene_layout_json is not valid JSON.\")\n            return dict(_EMPTY)\n        try:\n            result = get_floating_object_detector().detect(scene)\n            for f in result.findings:\n                self.log_error(f)\n            return {\n                \"floating_json\": json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"violations_json\": json.dumps([v.to_dict() for v in result.violations], sort_keys=True, indent=2),\n                \"ok\": result.ok,\n                \"violation_count\": len(result.violations),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Floating object detection failed: {exc}\")\n            return dict(_EMPTY)\n\ndef register_node():\n    return Hou_Mcp_Floating_Objects\n"
+}

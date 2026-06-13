@@ -1,0 +1,28 @@
+{
+    "node_id": "hou_mcp_asset_fetch",
+    "name": "hou_mcp_asset_fetch",
+    "description": "Intelligent asset fetcher: cache-first acquisition for semantically-selected assets. Actions: ensure_available, fetch, fetch_assets, fetch_environment. Never downloads blindly.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",       "type": "string", "widget_type": "text",     "options": null, "default": "ensure_available" },
+        { "name": "asset_id",     "type": "string", "widget_type": "text",     "options": null, "default": null },
+        { "name": "provider",     "type": "string", "widget_type": "text",     "options": null, "default": "megascans" },
+        { "name": "environment",  "type": "string", "widget_type": "text",     "options": null, "default": null },
+        { "name": "asset_list",   "type": "any",    "widget_type": null,       "options": null, "default": null },
+        { "name": "download_url", "type": "string", "widget_type": "text",     "options": null, "default": null },
+        { "name": "dest_dir",     "type": "string", "widget_type": "text",     "options": null, "default": null },
+        { "name": "quality",      "type": "string", "widget_type": "text",     "options": null, "default": "medium" },
+        { "name": "top_k",        "type": "int",    "widget_type": "int",      "options": null, "default": 10 },
+        { "name": "exec_in",      "type": "any",    "widget_type": null,       "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "local_path",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "source",       "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "results",      "type": "list",   "widget_type": null, "options": null, "default": null },
+        { "name": "result",       "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",     "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.acquisition_online import get_asset_fetcher\n\nclass Hou_Mcp_Asset_Fetch(BaseNode):\n    name = \"hou_mcp_asset_fetch\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",       \"string\", widget_type=\"text\", default=\"ensure_available\")\n        self.add_input(\"asset_id\",     \"string\", widget_type=\"text\")\n        self.add_input(\"provider\",     \"string\", widget_type=\"text\", default=\"megascans\")\n        self.add_input(\"environment\",  \"string\", widget_type=\"text\")\n        self.add_input(\"asset_list\",   \"any\")\n        self.add_input(\"download_url\", \"string\", widget_type=\"text\")\n        self.add_input(\"dest_dir\",     \"string\", widget_type=\"text\")\n        self.add_input(\"quality\",      \"string\", widget_type=\"text\", default=\"medium\")\n        self.add_input(\"top_k\",        \"int\",    widget_type=\"int\",  default=10)\n        self.add_output(\"local_path\",  \"string\")\n        self.add_output(\"source\",      \"string\")\n        self.add_output(\"results\",     \"list\")\n        self.add_output(\"result\",      \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action      = str(inputs.get(\"action\") or \"ensure_available\").strip().lower()\n        asset_id    = str(inputs.get(\"asset_id\") or \"\").strip()\n        provider    = str(inputs.get(\"provider\") or \"megascans\").strip()\n        environment = str(inputs.get(\"environment\") or \"\").strip()\n        asset_list  = inputs.get(\"asset_list\") or []\n        download_url= str(inputs.get(\"download_url\") or \"\").strip()\n        dest_dir    = str(inputs.get(\"dest_dir\") or \"\").strip()\n        quality     = str(inputs.get(\"quality\") or \"medium\").strip()\n        top_k       = int(inputs.get(\"top_k\") or 10)\n        try:\n            fetcher = get_asset_fetcher()\n            if action == \"fetch_environment\":\n                results = fetcher.fetch_environment_assets(environment, top_k=top_k, dest_dir=dest_dir, quality=quality)\n                return {\"local_path\": \"\", \"source\": \"multi\", \"results\": [r.to_dict() for r in results], \"result\": {}, \"exec_out\": True}\n            elif action == \"fetch_assets\":\n                lst = asset_list if isinstance(asset_list, list) else []\n                results = fetcher.fetch_assets(lst, dest_dir=dest_dir, quality=quality)\n                return {\"local_path\": \"\", \"source\": \"multi\", \"results\": [r.to_dict() for r in results], \"result\": {}, \"exec_out\": True}\n            elif action == \"fetch\":\n                r = fetcher.fetch_asset(asset_id, provider=provider, download_url=download_url, dest_dir=dest_dir, quality=quality, force_download=True)\n            else:\n                r = fetcher.ensure_asset_available(asset_id, provider=provider)\n            return {\"local_path\": r.local_path, \"source\": r.source, \"results\": [r.to_dict()], \"result\": r.to_dict(), \"exec_out\": True}\n        except Exception as e:\n            self.log_error(f\"hou_mcp_asset_fetch failed: {e}\")\n            return {\"local_path\": \"\", \"source\": \"\", \"results\": [], \"result\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Fetch\n"
+}

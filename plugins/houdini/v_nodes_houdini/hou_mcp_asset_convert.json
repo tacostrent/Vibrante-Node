@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_asset_convert",
+    "name": "hou_mcp_asset_convert",
+    "description": "Convert an asset descriptor to a target format (default: usd). Uses the CONVERSION_MATRIX to validate the conversion path. No real file conversion — generates a ConversionResult descriptor.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json",     "type": "string", "widget_type": "text", "options": null, "default": null},
+        {"name": "target_format",  "type": "string", "widget_type": "text", "options": null, "default": "usd"}
+    ],
+    "outputs": [
+        {"name": "conversion_result_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "source_format",          "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "target_format_out",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "conversion_ok",          "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.realization import get_asset_converter\nimport json\n\nclass Hou_Mcp_Asset_Convert(BaseNode):\n    name = \"hou_mcp_asset_convert\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\",    \"string\", widget_type=\"text\")\n        self.add_input(\"target_format\", \"string\", widget_type=\"text\", default=\"usd\")\n        self.add_output(\"conversion_result_json\", \"string\")\n        self.add_output(\"source_format\",          \"string\")\n        self.add_output(\"target_format_out\",      \"string\")\n        self.add_output(\"conversion_ok\",          \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json    = inputs.get(\"asset_json\", \"\") or \"\"\n        target_format = str(inputs.get(\"target_format\") or \"usd\")\n\n        if not asset_json.strip():\n            self.log_error(\"No asset_json provided.\")\n            return {\"conversion_result_json\": \"{}\", \"source_format\": \"\", \"target_format_out\": target_format, \"conversion_ok\": False, \"exec_out\": True}\n\n        try:\n            asset = json.loads(asset_json)\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"conversion_result_json\": \"{}\", \"source_format\": \"\", \"target_format_out\": target_format, \"conversion_ok\": False, \"exec_out\": True}\n\n        try:\n            result = get_asset_converter().convert(asset, target_format)\n            self.log_info(f\"Converted '{result.asset_name}' {result.source_format}->{result.target_format} ok={result.ok}\")\n            return {\n                \"conversion_result_json\": json.dumps(result.to_dict(), sort_keys=True, default=str),\n                \"source_format\":          result.source_format,\n                \"target_format_out\":      result.target_format,\n                \"conversion_ok\":          result.ok,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Asset conversion failed: {exc}\")\n            return {\"conversion_result_json\": \"{}\", \"source_format\": \"\", \"target_format_out\": target_format, \"conversion_ok\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Convert\n"
+}

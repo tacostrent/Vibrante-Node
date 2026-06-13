@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_environment_builder",
+    "name": "Hou MCP Environment Builder",
+    "description": "Build a zone-structured EnvironmentPlan from an environment name and optional recommended assets. Deterministic semantic assembly — no Houdini mutations. Supports: industrial_hangar, robotics_lab, control_room, sci_fi_corridor, abandoned_factory.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",          "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "environment",      "type": "string", "widget_type": "text", "options": null, "default": "industrial_hangar" },
+        { "name": "recommendations_json", "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "environment_plan_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "plan_id",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "zone_count",       "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "asset_count",      "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "has_hero_zone",    "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "ok",               "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.assets.assembly import get_environment_builder\n\n    environment = str(inputs.get('environment') or self.parameters.get('environment', 'industrial_hangar') or 'industrial_hangar')\n    recs_json   = str(inputs.get('recommendations_json') or '')\n\n    recommendations = None\n    if recs_json.strip():\n        try:\n            recommendations = json.loads(recs_json)\n            if not isinstance(recommendations, list):\n                recommendations = None\n        except Exception:\n            recommendations = None\n\n    try:\n        builder = get_environment_builder()\n        plan    = builder.build_environment(environment, recommendations)\n\n        plan_dict = plan.to_dict()\n        self.log_info(\n            f'[EnvironmentBuilder] {environment!r}: '\n            f'{len(plan.zones)} zones, {plan.asset_count} assets, ok={plan.ok}'\n        )\n        if plan.warnings:\n            for w in plan.warnings:\n                self.log_warning(f'[EnvironmentBuilder] {w}')\n\n        return {\n            'environment_plan_json': json.dumps(plan_dict),\n            'plan_id':    plan.plan_id,\n            'zone_count': len(plan.zones),\n            'asset_count': plan.asset_count,\n            'has_hero_zone': plan.has_hero_zone,\n            'ok':         plan.ok,\n            'exec_out':   True,\n        }\n    except Exception as e:\n        self.log_error(f'[EnvironmentBuilder] {e}')\n        return {\n            'environment_plan_json': json.dumps({'ok': False, 'errors': [str(e)]}),\n            'plan_id': '',\n            'zone_count': 0,\n            'asset_count': 0,\n            'has_hero_zone': False,\n            'ok': False,\n            'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Environment_Builder(BaseNode):\n        name = 'hou_mcp_environment_builder'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Environment_Builder"
+}

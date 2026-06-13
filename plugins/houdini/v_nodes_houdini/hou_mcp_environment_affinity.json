@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_environment_affinity",
+    "name": "hou_mcp_environment_affinity",
+    "description": "Check environment affinity for a single asset — returns preferred keywords, rejected keywords, affinity score, and whether the asset passes the environment suitability threshold.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "asset_json",          "type": "string",  "widget_type": "text",  "options": null, "default": "{}" },
+        { "name": "environment",         "type": "string",  "widget_type": "text",  "options": null, "default": "western_room" },
+        { "name": "exec_in",             "type": "any",     "widget_type": null,    "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "affinity_score",      "type": "float",   "widget_type": null,    "options": null, "default": null },
+        { "name": "preferred_keywords",  "type": "string",  "widget_type": null,    "options": null, "default": null },
+        { "name": "rejected_keywords",   "type": "string",  "widget_type": null,    "options": null, "default": null },
+        { "name": "passes_threshold",    "type": "bool",    "widget_type": null,    "options": null, "default": null },
+        { "name": "exec_out",            "type": "any",     "widget_type": null,    "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.assets.suitability import get_environment_affinity\n\n_PASS_THRESHOLD = 0.50\n\nclass Hou_Mcp_Environment_Affinity(BaseNode):\n    name = \"hou_mcp_environment_affinity\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\",         \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"environment\",        \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_output(\"affinity_score\",    \"float\")\n        self.add_output(\"preferred_keywords\",\"string\")\n        self.add_output(\"rejected_keywords\", \"string\")\n        self.add_output(\"passes_threshold\",  \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw = (inputs.get(\"asset_json\") or \"\").strip()\n        environment = (inputs.get(\"environment\") or \"\").strip()\n\n        if not environment:\n            self.log_error(\"No environment provided.\")\n            return {\"affinity_score\": 0.0, \"preferred_keywords\": \"[]\", \"rejected_keywords\": \"[]\", \"passes_threshold\": False, \"exec_out\": True}\n\n        try:\n            asset = json.loads(raw) if raw else {}\n        except Exception:\n            self.log_error(\"asset_json is not valid JSON.\")\n            return {\"affinity_score\": 0.0, \"preferred_keywords\": \"[]\", \"rejected_keywords\": \"[]\", \"passes_threshold\": False, \"exec_out\": True}\n\n        try:\n            ea = get_environment_affinity()\n            score = ea.score(asset, environment)\n            preferred = ea.get_preferred(environment)\n            rejected = ea.get_rejected(environment)\n            passes = score >= _PASS_THRESHOLD\n            asset_name = asset.get(\"name\", \"(unknown)\")\n            self.log_info(\n                f\"{asset_name} environment affinity for '{environment}': \"\n                f\"{score:.3f} ({'PASS' if passes else 'FAIL'})\"\n            )\n            return {\n                \"affinity_score\": score,\n                \"preferred_keywords\": json.dumps(preferred),\n                \"rejected_keywords\": json.dumps(rejected),\n                \"passes_threshold\": passes,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Environment affinity check failed: {exc}\")\n            return {\"affinity_score\": 0.0, \"preferred_keywords\": \"[]\", \"rejected_keywords\": \"[]\", \"passes_threshold\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Environment_Affinity\n"
+}

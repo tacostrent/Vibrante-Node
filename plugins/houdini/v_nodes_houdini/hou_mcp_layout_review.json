@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_layout_review",
+    "name": "hou_mcp_layout_review",
+    "description": "Review the semantic quality of a completed layout plan. Evaluates 5 dimensions: relationship_accuracy (0.30), surface_accuracy (0.25), wall_attachment_accuracy (0.20), cluster_quality (0.15), contextual_quality (0.10). Blocking findings include 'bottle on floor when table exists' and 'poster not attached to wall'.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "layout_plan_json", "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",          "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "review_json",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "overall_score",    "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "grade",            "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready", "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.layout import get_layout_review\n\nclass Hou_Mcp_Layout_Review(BaseNode):\n    name = \"hou_mcp_layout_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"layout_plan_json\",  \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"review_json\",       \"string\")\n        self.add_output(\"overall_score\",     \"float\")\n        self.add_output(\"grade\",             \"string\")\n        self.add_output(\"production_ready\",  \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw = (inputs.get(\"layout_plan_json\") or \"\").strip()\n\n        try:\n            plan = json.loads(raw) if raw else {}\n        except Exception:\n            self.log_error(\"layout_plan_json is not valid JSON.\")\n            return {\"review_json\": \"{}\", \"overall_score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n\n        try:\n            result = get_layout_review().review(plan)\n            return {\n                \"review_json\":     json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"overall_score\":   result.overall_score,\n                \"grade\":           result.grade,\n                \"production_ready\": result.production_ready,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Layout review failed: {exc}\")\n            return {\"review_json\": \"{}\", \"overall_score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Layout_Review\n"
+}

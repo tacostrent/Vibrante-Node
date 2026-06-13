@@ -1,0 +1,26 @@
+{
+    "node_id": "hou_mcp_asset_search",
+    "name": "hou_mcp_asset_search",
+    "description": "Semantic asset search using production intent. Query by environment, role, storytelling, lookdev, cinematic usage, or natural language intent. No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "intent",       "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "environment",  "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "role",         "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "storytelling", "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "lookdev",      "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "cinematic",    "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "provider",     "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "limit",        "type": "int",    "widget_type": "int",  "options": null, "default": 20 },
+        { "name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "assets",      "type": "list", "widget_type": null, "options": null, "default": null },
+        { "name": "total",       "type": "int",  "widget_type": null, "options": null, "default": null },
+        { "name": "query_info",  "type": "any",  "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",    "type": "any",  "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.semantic import get_asset_query_engine\n\nclass Hou_Mcp_Asset_Search(BaseNode):\n    name = \"hou_mcp_asset_search\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"intent\",       \"string\", widget_type=\"text\")\n        self.add_input(\"environment\",  \"string\", widget_type=\"text\")\n        self.add_input(\"role\",         \"string\", widget_type=\"text\")\n        self.add_input(\"storytelling\", \"string\", widget_type=\"text\")\n        self.add_input(\"lookdev\",      \"string\", widget_type=\"text\")\n        self.add_input(\"cinematic\",    \"string\", widget_type=\"text\")\n        self.add_input(\"provider\",     \"string\", widget_type=\"text\")\n        self.add_input(\"limit\",        \"int\",    widget_type=\"int\", default=20)\n        self.add_output(\"assets\",     \"list\")\n        self.add_output(\"total\",      \"int\")\n        self.add_output(\"query_info\", \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        intent      = str(inputs.get(\"intent\") or \"\").strip()\n        environment = str(inputs.get(\"environment\") or \"\").strip()\n        role        = str(inputs.get(\"role\") or \"\").strip()\n        storytelling= str(inputs.get(\"storytelling\") or \"\").strip()\n        lookdev     = str(inputs.get(\"lookdev\") or \"\").strip()\n        cinematic   = str(inputs.get(\"cinematic\") or \"\").strip()\n        provider    = str(inputs.get(\"provider\") or \"\").strip()\n        limit       = int(inputs.get(\"limit\") or 20)\n        try:\n            engine = get_asset_query_engine()\n            if intent and not any([environment, role, storytelling, lookdev, cinematic]):\n                result = engine.query_intent(intent, limit=limit)\n            else:\n                result = engine.query(\n                    text=intent,\n                    environment=environment,\n                    role=role,\n                    storytelling=storytelling,\n                    lookdev=lookdev,\n                    cinematic=cinematic,\n                    provider=provider,\n                    limit=limit,\n                )\n            return {\n                \"assets\":     result.assets,\n                \"total\":      result.total,\n                \"query_info\": result.to_dict(),\n                \"exec_out\":   True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_asset_search failed: {e}\")\n            return {\"assets\": [], \"total\": 0, \"query_info\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Asset_Search\n"
+}

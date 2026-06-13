@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_geometry_metrics",
+    "name": "hou_mcp_geometry_metrics",
+    "description": "Extract AssetMetrics for an asset and expose individual metric values as outputs. Provides: bbox_min, bbox_max, volume, footprint, placement_radius, pivot_position, surface_count, contact_count, and the complete metrics JSON for downstream nodes.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json",  "type": "string", "widget_type": "text", "options": null, "default": "{}"},
+        {"name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "metrics_json",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "bbox_min_json",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "bbox_max_json",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "volume_m3",         "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "footprint_m2",      "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "placement_radius",  "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "surface_count",     "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "contact_count",     "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "source",            "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",          "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.geometry import get_geometry_analyzer, get_geometry_serializer\nimport json\n\nclass Hou_Mcp_Geometry_Metrics(BaseNode):\n    name = \"hou_mcp_geometry_metrics\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"metrics_json\",     \"string\")\n        self.add_output(\"bbox_min_json\",    \"string\")\n        self.add_output(\"bbox_max_json\",    \"string\")\n        self.add_output(\"volume_m3\",        \"float\")\n        self.add_output(\"footprint_m2\",     \"float\")\n        self.add_output(\"placement_radius\", \"float\")\n        self.add_output(\"surface_count\",    \"int\")\n        self.add_output(\"contact_count\",    \"int\")\n        self.add_output(\"source\",           \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json = str(inputs.get(\"asset_json\", \"{}\") or \"{}\")\n        try:\n            asset = json.loads(asset_json) if asset_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"metrics_json\": \"{}\", \"bbox_min_json\": \"[0,0,0]\", \"bbox_max_json\": \"[1,1,1]\", \"volume_m3\": 1.0, \"footprint_m2\": 1.0, \"placement_radius\": 0.5, \"surface_count\": 0, \"contact_count\": 0, \"source\": \"estimated\", \"exec_out\": True}\n\n        try:\n            analyzer   = get_geometry_analyzer()\n            serializer = get_geometry_serializer()\n            result  = analyzer.analyze_asset(asset)\n            metrics = result.metrics\n\n            contact_count = sum(c.count for c in metrics.ground_contacts) if metrics else 0\n            self.log_info(\n                f\"Metrics: {result.asset_id} vol={result.volume_m3:.3f} m3 \"\n                f\"footprint={result.footprint_m2:.3f} m2 surfaces={result.surface_count} \"\n                f\"contacts={contact_count}\"\n            )\n\n            return {\n                \"metrics_json\":     serializer.serialize_metrics(metrics) if metrics else \"{}\",\n                \"bbox_min_json\":    json.dumps(metrics.bbox_min if metrics else [0,0,0]),\n                \"bbox_max_json\":    json.dumps(metrics.bbox_max if metrics else [1,1,1]),\n                \"volume_m3\":        result.volume_m3,\n                \"footprint_m2\":     result.footprint_m2,\n                \"placement_radius\": result.placement_radius,\n                \"surface_count\":    result.surface_count,\n                \"contact_count\":    contact_count,\n                \"source\":           result.source,\n                \"exec_out\":         True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Geometry metrics extraction failed: {exc}\")\n            return {\"metrics_json\": \"{}\", \"bbox_min_json\": \"[0,0,0]\", \"bbox_max_json\": \"[1,1,1]\", \"volume_m3\": 1.0, \"footprint_m2\": 1.0, \"placement_radius\": 0.5, \"surface_count\": 0, \"contact_count\": 0, \"source\": \"estimated\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Geometry_Metrics\n"
+}

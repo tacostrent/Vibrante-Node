@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_material_library",
+    "name": "hou_mcp_material_library",
+    "description": "Browse and search material definitions from the Material Library. Returns material entries with properties and tags. Supports query and category filtering.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "query",    "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "category", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",  "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "materials_json",  "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "material_count",  "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "statistics_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",        "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lookdev import get_material_library\nimport json\n\nclass Hou_Mcp_Material_Library(BaseNode):\n    name = \"hou_mcp_material_library\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"query\",    \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"category\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"materials_json\",  \"string\")\n        self.add_output(\"material_count\",  \"int\")\n        self.add_output(\"statistics_json\", \"string\")\n\n    async def execute(self, inputs):\n        query    = str(inputs.get(\"query\",    \"\") or \"\")\n        category = str(inputs.get(\"category\", \"\") or \"\")\n        try:\n            lib = get_material_library()\n            materials = lib.search_materials(query=query, category=category)\n            stats = lib.get_statistics()\n            self.log_info(f\"Material Library: found {len(materials)} material(s).\")\n            return {\n                \"materials_json\":  json.dumps([m.to_dict() for m in materials], sort_keys=True, default=str),\n                \"material_count\":  len(materials),\n                \"statistics_json\": json.dumps(stats, sort_keys=True, default=str),\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Material Library query failed: {exc}\")\n            return {\"materials_json\": \"[]\", \"material_count\": 0, \"statistics_json\": \"{}\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Material_Library\n"
+}

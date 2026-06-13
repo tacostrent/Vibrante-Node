@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_scene_plausibility",
+    "name": "hou_mcp_scene_plausibility",
+    "description": "Rule 4 — Human Plausibility: simulates five human-usage checks (can_sit, can_access table, can_reach props, door_clear, floor_space) and returns plausibility_score 0.0-1.0. Score >= 0.90 → plausibility_valid = True.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "scene_layout_json", "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",           "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "plausibility_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "plausibility_score", "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "plausibility_valid", "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",           "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.scene_validation import get_plausibility_engine\n\nclass Hou_Mcp_Scene_Plausibility(BaseNode):\n    name = \"hou_mcp_scene_plausibility\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_layout_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"plausibility_json\")\n        self.add_output(\"plausibility_score\", \"float\")\n        self.add_output(\"plausibility_valid\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw = (inputs.get(\"scene_layout_json\") or \"\").strip()\n        try:\n            scene = json.loads(raw) if raw else {}\n        except Exception:\n            self.log_error(\"scene_layout_json is not valid JSON.\")\n            return {\"plausibility_json\": \"{}\", \"plausibility_score\": 0.0, \"plausibility_valid\": False, \"exec_out\": True}\n        try:\n            result = get_plausibility_engine().evaluate(scene)\n            for f in result.findings:\n                self.log_error(f\"Plausibility: {f}\")\n            return {\n                \"plausibility_json\":  json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"plausibility_score\": result.plausibility_score,\n                \"plausibility_valid\": result.plausibility_valid,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Plausibility evaluation failed: {exc}\")\n            return {\"plausibility_json\": \"{}\", \"plausibility_score\": 0.0, \"plausibility_valid\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Plausibility\n"
+}

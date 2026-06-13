@@ -60,6 +60,18 @@ def _check_env():
             f"  {'OK' if scripts_ok else 'MISSING — folder not found'}"
         )
 
+    # Asset acquisition paths — print so users can verify at a glance
+    lib = os.environ.get("VIBRANTE_MEGASCANS_LIBRARY", "")
+    cache = os.environ.get("VIBRANTE_ASSET_CACHE", "")
+    if lib:
+        exists = os.path.isdir(lib)
+        print(
+            f"[Vibrante-Node] VIBRANTE_MEGASCANS_LIBRARY = {lib}"
+            f"  {'OK' if exists else 'WARNING: path does not exist'}"
+        )
+    if cache:
+        print(f"[Vibrante-Node] VIBRANTE_ASSET_CACHE       = {cache}")
+
     return ok
 
 

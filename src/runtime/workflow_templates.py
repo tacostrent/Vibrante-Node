@@ -216,6 +216,40 @@ _BUILTIN_TEMPLATES: List[Dict[str, Any]] = [
         ],
     },
 
+    # ----- Scene from assets (environment assembly) -------------------------
+    {
+        "template_id": "scene_from_assets",
+        "description":  "Build a complete scene from real Megascans assets: intent → catalog search → structural routing → semantic layout → Houdini placement.",
+        "required_capabilities": ["build_node_chain"],
+        "tags": ["environment", "assets", "scene", "layout", "megascans", "structural_routing"],
+        "estimated_cost": {"memory_impact": 0.5, "cook_cost": 0.4, "risk_level": "low"},
+        "constraints": [],
+        "variables": {
+            "intent":        "Natural-language scene description (e.g. 'western saloon with table and chairs')",
+            "top_k":         "Maximum number of assets to import (default 10)",
+            "parent":        "Houdini parent path for imported assets (default '/obj')",
+            "environment":   "Target environment type (e.g. 'western_room', 'saloon', 'castle_hall')",
+            "room_half_width": "Half-width of the scene bounding box in metres (default 5.0)",
+        },
+        "operations": [
+            {
+                "op":   "build_node_chain",
+                "spec": {
+                    "intent": "scene_from_assets",
+                    "tool":   "build_scene_from_assets",
+                    "args": {
+                        "intent":          "{intent}",
+                        "top_k":           "{top_k}",
+                        "parent":          "{parent}",
+                        "environment":     "{environment}",
+                        "room_half_width": "{room_half_width}",
+                    },
+                    "notes": "Runs the full Tier 12.8 → 10.3.5 → 9.8 → 9.9 pipeline. Do NOT use primitive geometry nodes for this intent.",
+                },
+            }
+        ],
+    },
+
     # ----- Solaris lighting setup -------------------------------------------
     {
         "template_id": "solaris_lighting_setup",

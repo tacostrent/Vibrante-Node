@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_scene_plan_create",
+    "name": "hou_mcp_scene_plan_create",
+    "description": "Transform a SceneIntent JSON into a structured ScenePlan. Creates zones, composition rules, camera targets, and asset queries deterministically. No Houdini scene modifications. Planning only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_intent_json", "type": "string", "widget_type": "text", "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "scene_plan_json",       "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "plan_id",               "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "zone_count",            "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "asset_query_count",     "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "estimated_complexity",  "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "planning_ok",           "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.planning import get_scene_planner, get_plan_serializer\nfrom src.runtime.semantic import get_intent_serializer\nimport json\n\nclass Hou_Mcp_Scene_Plan_Create(BaseNode):\n    name = \"hou_mcp_scene_plan_create\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_intent_json\", \"string\", widget_type=\"text\")\n        self.add_output(\"scene_plan_json\",      \"string\")\n        self.add_output(\"plan_id\",              \"string\")\n        self.add_output(\"zone_count\",           \"int\")\n        self.add_output(\"asset_query_count\",    \"int\")\n        self.add_output(\"estimated_complexity\", \"string\")\n        self.add_output(\"planning_ok\",          \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        intent_json = inputs.get(\"scene_intent_json\", \"\") or \"\"\n        if not intent_json.strip():\n            self.log_error(\"No scene_intent_json provided.\")\n            return {\"scene_plan_json\": \"\", \"plan_id\": \"\", \"zone_count\": 0,\n                    \"asset_query_count\": 0, \"estimated_complexity\": \"\",\n                    \"planning_ok\": False, \"exec_out\": True}\n        try:\n            intent = get_intent_serializer().from_json(intent_json)\n            result = get_scene_planner().plan(intent)\n            if not result.ok or result.plan is None:\n                self.log_error(f\"Planning failed: {result.errors}\")\n                return {\"scene_plan_json\": \"\", \"plan_id\": \"\", \"zone_count\": 0,\n                        \"asset_query_count\": 0, \"estimated_complexity\": \"\",\n                        \"planning_ok\": False, \"exec_out\": True}\n            plan = result.plan\n            plan_json = get_plan_serializer().to_json(plan)\n            self.log_info(f\"Plan created: {len(plan.zones)} zones, {len(plan.asset_queries)} queries, complexity={plan.estimated_complexity!r}\")\n            return {\n                \"scene_plan_json\":      plan_json,\n                \"plan_id\":              plan.plan_id,\n                \"zone_count\":           len(plan.zones),\n                \"asset_query_count\":    len(plan.asset_queries),\n                \"estimated_complexity\": plan.estimated_complexity,\n                \"planning_ok\":          True,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Scene planning failed: {exc}\")\n            return {\"scene_plan_json\": \"\", \"plan_id\": \"\", \"zone_count\": 0,\n                    \"asset_query_count\": 0, \"estimated_complexity\": \"\",\n                    \"planning_ok\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Scene_Plan_Create\n"
+}

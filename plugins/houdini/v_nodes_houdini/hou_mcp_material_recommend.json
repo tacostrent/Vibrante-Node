@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_material_recommend",
+    "name": "hou_mcp_material_recommend",
+    "description": "Recommend production-proven materials for an asset using the priority chain: Lookdev Patterns (0.85) → Material Knowledge (0.70) → Renderer Default (0.50).",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "renderer",   "type": "string", "widget_type": "text", "options": null, "default": "usd_preview_surface"},
+        {"name": "exec_in",    "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "recommendation_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "material_name",        "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "confidence",           "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",             "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lookdev import get_material_recommendation_engine\nimport json\n\nclass Hou_Mcp_Material_Recommend(BaseNode):\n    name = \"hou_mcp_material_recommend\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"renderer\",   \"string\", widget_type=\"text\", default=\"usd_preview_surface\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"recommendation_json\", \"string\")\n        self.add_output(\"material_name\",        \"string\")\n        self.add_output(\"confidence\",           \"float\")\n\n    async def execute(self, inputs):\n        asset_json = str(inputs.get(\"asset_json\", \"\") or \"\")\n        renderer   = str(inputs.get(\"renderer\",   \"usd_preview_surface\") or \"usd_preview_surface\")\n        try:\n            asset_dict = json.loads(asset_json) if asset_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"recommendation_json\": \"{}\", \"material_name\": \"\", \"confidence\": 0.0, \"exec_out\": True}\n        try:\n            engine = get_material_recommendation_engine()\n            result = engine.recommend_material(asset_dict, renderer)\n            first_rec = result.recommendations[0] if result.recommendations else None\n            mat_name   = first_rec.material_name if first_rec else \"\"\n            confidence = first_rec.confidence    if first_rec else 0.0\n            self.log_info(f\"Material recommendation: {mat_name} (confidence={confidence:.2f}, source={first_rec.source if first_rec else 'none'}).\")\n            return {\n                \"recommendation_json\": json.dumps(result.to_dict(), sort_keys=True, default=str),\n                \"material_name\":        mat_name,\n                \"confidence\":           confidence,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Material recommendation failed: {exc}\")\n            return {\"recommendation_json\": \"{}\", \"material_name\": \"\", \"confidence\": 0.0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Material_Recommend\n"
+}

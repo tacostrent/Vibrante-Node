@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_storytelling_layout",
+    "name": "Hou MCP Storytelling Layout",
+    "description": "Generate visual storytelling structure from an EnvironmentPlan: hero beat, support beats, viewer path, visual flow direction, and camera hint. Planning only — no Houdini mutations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",               "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "environment_plan_json", "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",          "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "story_layout_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "layout_id",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "theme",             "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "hero_zone",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "viewer_path_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "visual_flow",       "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "beat_count",        "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "ok",                "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.assets.assembly import get_storytelling_layout_engine, EnvironmentPlan\n\n    env_plan_json = str(inputs.get('environment_plan_json') or '')\n    if not env_plan_json.strip():\n        self.log_error('[StorytellingLayout] environment_plan_json is required.')\n        return {'story_layout_json': '{}', 'layout_id': '', 'theme': '', 'hero_zone': '', 'viewer_path_json': '[]', 'visual_flow': '', 'beat_count': 0, 'ok': False, 'exec_out': True}\n\n    try:\n        env_dict = json.loads(env_plan_json)\n        env_plan = EnvironmentPlan.from_dict(env_dict)\n\n        engine = get_storytelling_layout_engine()\n        layout = engine.generate_story_layout(env_plan)\n\n        self.log_info(\n            f'[StorytellingLayout] {env_plan.environment!r}: '\n            f'theme={layout.theme!r}, {len(layout.beats)} beats, ok={layout.ok}'\n        )\n        if layout.warnings:\n            for w in layout.warnings:\n                self.log_warning(f'[StorytellingLayout] {w}')\n\n        return {\n            'story_layout_json': json.dumps(layout.to_dict()),\n            'layout_id':    layout.layout_id,\n            'theme':        layout.theme,\n            'hero_zone':    layout.hero_zone,\n            'viewer_path_json': json.dumps(layout.viewer_path),\n            'visual_flow':  layout.visual_flow,\n            'beat_count':   len(layout.beats),\n            'ok':           layout.ok,\n            'exec_out':     True,\n        }\n    except Exception as e:\n        self.log_error(f'[StorytellingLayout] {e}')\n        return {'story_layout_json': '{}', 'layout_id': '', 'theme': '', 'hero_zone': '', 'viewer_path_json': '[]', 'visual_flow': '', 'beat_count': 0, 'ok': False, 'exec_out': True}\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Storytelling_Layout(BaseNode):\n        name = 'hou_mcp_storytelling_layout'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Storytelling_Layout"
+}

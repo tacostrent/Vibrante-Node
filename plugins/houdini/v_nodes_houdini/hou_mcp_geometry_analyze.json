@@ -1,0 +1,26 @@
+{
+    "node_id": "hou_mcp_geometry_analyze",
+    "name": "hou_mcp_geometry_analyze",
+    "description": "Full geometry intelligence for one asset: bounding box (explicit or estimated), pivot type, ground contacts, support surfaces, 6-class scale classification (tiny/small/medium/large/structural/hero), and production role. No Houdini bridge calls — works on asset metadata dicts.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json",      "type": "string", "widget_type": "text",  "options": null, "default": "{}"},
+        {"name": "placement_type",  "type": "string", "widget_type": "text",  "options": null, "default": ""},
+        {"name": "exec_in",         "type": "any",    "widget_type": null,    "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "analysis_json",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "metrics_json",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "width_m",           "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "height_m",          "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "depth_m",           "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "scale_class",       "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "role",              "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "pivot_type",        "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "is_structural",     "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",          "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.geometry import get_geometry_analyzer, get_geometry_serializer\nimport json\n\nclass Hou_Mcp_Geometry_Analyze(BaseNode):\n    name = \"hou_mcp_geometry_analyze\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\",     \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"placement_type\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"analysis_json\",  \"string\")\n        self.add_output(\"metrics_json\",   \"string\")\n        self.add_output(\"width_m\",        \"float\")\n        self.add_output(\"height_m\",       \"float\")\n        self.add_output(\"depth_m\",        \"float\")\n        self.add_output(\"scale_class\",    \"string\")\n        self.add_output(\"role\",           \"string\")\n        self.add_output(\"pivot_type\",     \"string\")\n        self.add_output(\"is_structural\",  \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json = str(inputs.get(\"asset_json\", \"{}\") or \"{}\")\n        placement_type_override = str(inputs.get(\"placement_type\") or \"\")\n\n        try:\n            asset = json.loads(asset_json) if asset_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"analysis_json\": \"{}\", \"metrics_json\": \"{}\", \"width_m\": 1.0, \"height_m\": 1.0, \"depth_m\": 1.0, \"scale_class\": \"medium\", \"role\": \"prop\", \"pivot_type\": \"bottom_center\", \"is_structural\": False, \"exec_out\": True}\n\n        if placement_type_override:\n            asset[\"placement_type\"] = placement_type_override\n\n        try:\n            analyzer   = get_geometry_analyzer()\n            serializer = get_geometry_serializer()\n            result  = analyzer.analyze_asset(asset)\n            metrics = result.metrics\n\n            self.log_info(\n                f\"Geometry: {result.asset_id} {result.width_m:.2f}x{result.height_m:.2f}x{result.depth_m:.2f} m \"\n                f\"scale={result.scale_class} role={result.role} pivot={result.pivot_type} \"\n                f\"source={result.source}\"\n            )\n\n            return {\n                \"analysis_json\": serializer.serialize_analysis(result),\n                \"metrics_json\":  serializer.serialize_metrics(metrics) if metrics else \"{}\",\n                \"width_m\":       result.width_m,\n                \"height_m\":      result.height_m,\n                \"depth_m\":       result.depth_m,\n                \"scale_class\":   result.scale_class,\n                \"role\":          result.role,\n                \"pivot_type\":    result.pivot_type,\n                \"is_structural\": result.is_structural,\n                \"exec_out\":      True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Geometry analysis failed: {exc}\")\n            return {\"analysis_json\": \"{}\", \"metrics_json\": \"{}\", \"width_m\": 1.0, \"height_m\": 1.0, \"depth_m\": 1.0, \"scale_class\": \"medium\", \"role\": \"prop\", \"pivot_type\": \"bottom_center\", \"is_structural\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Geometry_Analyze\n"
+}

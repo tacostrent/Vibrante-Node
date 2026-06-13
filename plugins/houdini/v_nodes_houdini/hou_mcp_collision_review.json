@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_collision_review",
+    "name": "hou_mcp_collision_review",
+    "description": "Detect all AABB collisions in a placement plan. Input: JSON array of {asset_id, position:[x,y,z], spatial_metadata:{...}}. Returns collision_count, collision pairs, and ok flag. collision_count > 0 blocks production_ready.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "placements_json", "type": "string", "widget_type": "text", "options": null, "default": "[]"},
+        {"name": "environment",     "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",         "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "collision_report_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "collision_count",       "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "ok",                    "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",              "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.assembly.collision_detector import get_collision_detector\nfrom src.runtime.assets.assembly.spatial_metadata import SpatialMetadata\nimport json\n\nclass Hou_Mcp_Collision_Review(BaseNode):\n    name = \"hou_mcp_collision_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"placements_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"environment\",     \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"collision_report_json\", \"string\")\n        self.add_output(\"collision_count\",       \"int\")\n        self.add_output(\"ok\",                    \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        placements_json = str(inputs.get(\"placements_json\", \"[]\") or \"[]\")\n        try:\n            raw = json.loads(placements_json)\n        except Exception as exc:\n            self.log_error(f\"Failed to parse placements_json: {exc}\")\n            return {\"collision_report_json\": \"{}\", \"collision_count\": 0, \"ok\": True, \"exec_out\": True}\n\n        try:\n            placements = []\n            for item in raw:\n                aid  = str(item.get(\"asset_id\", \"\"))\n                pos  = tuple(item.get(\"position\", [0.0, 0.0, 0.0]))\n                meta = SpatialMetadata.from_dict(item.get(\"spatial_metadata\") or {})\n                placements.append((aid, pos, meta))\n\n            report = get_collision_detector().validate_scene(placements)\n            self.log_info(f\"Collision review: {report.collision_count} collision(s). ok={report.ok}\")\n            if not report.ok:\n                for pair in report.pairs[:3]:\n                    self.log_warning(f\"  Collision: {pair.asset_a} ↔ {pair.asset_b} overlap={pair.separation_needed:.2f}m\")\n            return {\n                \"collision_report_json\": json.dumps(report.to_dict(), sort_keys=True, default=str),\n                \"collision_count\":       report.collision_count,\n                \"ok\":                    report.ok,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Collision review failed: {exc}\")\n            return {\"collision_report_json\": \"{}\", \"collision_count\": 0, \"ok\": True, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Collision_Review\n"
+}

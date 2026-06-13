@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_material_assign",
+    "name": "hou_mcp_material_assign",
+    "description": "Generate a semantic material assignment plan for a list of assets. Outputs transaction operation dicts — no direct Houdini mutations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "assets_json", "type": "string", "widget_type": "text", "options": null, "default": "[]"},
+        {"name": "renderer",    "type": "string", "widget_type": "text", "options": null, "default": "usd_preview_surface"},
+        {"name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "plan_json",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "total_assigned", "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "plan_ok",        "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",       "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lookdev import get_material_assignment_engine\nimport json\n\nclass Hou_Mcp_Material_Assign(BaseNode):\n    name = \"hou_mcp_material_assign\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"assets_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"renderer\",    \"string\", widget_type=\"text\", default=\"usd_preview_surface\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"plan_json\",      \"string\")\n        self.add_output(\"total_assigned\", \"int\")\n        self.add_output(\"plan_ok\",        \"bool\")\n\n    async def execute(self, inputs):\n        assets_json = str(inputs.get(\"assets_json\", \"[]\") or \"[]\")\n        renderer    = str(inputs.get(\"renderer\",    \"usd_preview_surface\") or \"usd_preview_surface\")\n        try:\n            asset_list = json.loads(assets_json)\n            if not isinstance(asset_list, list):\n                asset_list = []\n        except Exception as exc:\n            self.log_error(f\"Failed to parse assets_json: {exc}\")\n            return {\"plan_json\": \"{}\", \"total_assigned\": 0, \"plan_ok\": False, \"exec_out\": True}\n        try:\n            engine = get_material_assignment_engine()\n            plan = engine.generate_assignment_plan(asset_list, renderer)\n            self.log_info(f\"Assignment plan: {plan.total_assigned}/{plan.total_assets} assets assigned (ok={plan.ok}).\")\n            return {\n                \"plan_json\":      json.dumps(plan.to_dict(), sort_keys=True, default=str),\n                \"total_assigned\": plan.total_assigned,\n                \"plan_ok\":        plan.ok,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Material assignment failed: {exc}\")\n            return {\"plan_json\": \"{}\", \"total_assigned\": 0, \"plan_ok\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Material_Assign\n"
+}

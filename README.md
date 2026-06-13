@@ -119,14 +119,14 @@ vibrante-node
 **AppImage (self-contained, no Python required):**
 
 ```bash
-chmod +x Vibrante-Node-2.4.0-x86_64.AppImage
-./Vibrante-Node-2.4.0-x86_64.AppImage
+chmod +x Vibrante-Node-2.5.0-x86_64.AppImage
+./Vibrante-Node-2.5.0-x86_64.AppImage
 ```
 
 **Ubuntu/Debian .deb:**
 
 ```bash
-sudo dpkg -i vibrante-node_2.4.0_amd64.deb
+sudo dpkg -i vibrante-node_2.5.0_amd64.deb
 vibrante-node
 ```
 
@@ -194,20 +194,21 @@ python src/main.py
 - **Python Script Node** — inline QScintilla code editor; scripts persisted inside the workflow JSON
 - **Scripting Console** — full API access for programmatic graph manipulation at runtime
 
-### AI Orchestration Runtime *(Advanced, v2.4.0)*
+### AI Orchestration Runtime *(Advanced, v2.4.0+)*
 
 - **MCP Server Mode** — run `scripts/run_vibrante_mcp.py`; Claude Desktop, Codex CLI, and Cursor connect via stdio and receive 12 tools for scene inspection, planning, validation, and execution
 - **Safe Transactional Mutations** — all operations are validated, recorded, and reversible; high-risk plans require explicit approval before execution
 - **AI Planning Pipeline** — natural language → plan → preview → approved execution; no arbitrary scene mutation
-- **26 New Nodes** — 3 generic MCP client nodes + 23 Houdini AI nodes (`hou_mcp_scene_context`, `hou_mcp_transaction`, `hou_mcp_ai_plan`, `hou_mcp_ai_execute`, and more)
+- **200+ Houdini AI Nodes** — full semantic assembly pipeline from `hou_mcp_scene_intent_extract` through `hou_mcp_reality_check`
 
-### Production Semantic Intelligence *(Advanced, v2.4.0)*
+### Production Semantic Intelligence *(Advanced, v2.5.0)*
 
+- **Semantic Scene Intent System** — NL prompt → `SceneIntent` dataclass via deterministic extraction + optional LLM enhancement; fully typed schema with 14 enum-constrained fields
+- **Scene Planning Runtime** — `SceneIntent` → `ScenePlan` with zones, asset queries, camera targets, and composition rules; all planning-only, no Houdini mutation
+- **Asset Intelligence (Tier 8)** — Sketchfab, Polyhaven, and Local Library providers; 6-factor deterministic asset ranking with production memory boost
 - **Goal Decomposition** — "create cinematic explosion scene" automatically expands to 6 ordered workflows and 34 staged operations via deterministic keyword matching
-- **Semantic Vocabulary** — 14 cinematic workflows catalogued with stage sequences, artistic goals, synonyms, and orchestration hints (`config/semantic_vocabulary.json`)
-- **Workflow Packs** — 10 JSON blueprints across `fx_pack`, `lighting_pack`, `camera_pack`, `render_pack` defining exact stage-by-stage production sequences
-- **Artistic Constraints** — per-workflow required and advisory constraints enforced at review time (motion blur, EXR output, emission AOV, cryptomatte, world-unit depth)
-- **Cinematic Review Engine** — generates specific production critique per stage ("smoke breakup lacks variation", "depth pass not in world units") — not generic success messages
+- **Workflow Packs** — 13 JSON blueprints defining stage-by-stage production sequences for environments, FX, lighting, camera, and rendering
+- **Cinematic Review Engine** — generates specific production critique per stage — not generic success messages
 - **Runtime Narration** — `[Planning]`, `[Execution]`, `[Review]` blocks replace opaque "running..." status with specific orchestration reasoning
 
 ---
@@ -320,7 +321,7 @@ Vibrante-Node is a layered execution platform. The workflow graph drives the exe
 
 A full Houdini plugin ships in `plugins/houdini/`. It starts a JSON-RPC server (`vibrante_hou_server.py`) inside a live Houdini session. The `HouBridge` client communicates over TCP with `TCP_NODELAY` and 30-second timeout, automatic reconnect, and per-call thread locking.
 
-**v2.4.0 additions:** `get_selection()` (selected node paths), `network_summary(path)` (children with type+category in one round-trip).
+**v2.4.0 additions:** `get_selection()` (selected node paths), `network_summary(path)` (children with type+category in one round-trip). **v2.5.0 additions:** `VIBRANTE_MEGASCANS_LIBRARY` path checked in startup diagnostics; `vibrante_node.json` expanded with 12 acquisition and storage env vars.
 
 **Setup:** configure `VIBRANTE_NODE_APP` in `plugins/houdini/vibrante_node.json`, install the package in Houdini, then launch from the Vibrante-Node shelf or menu.
 
@@ -353,7 +354,23 @@ pip install "mcp>=1.0.0" pydantic toposort
 python scripts/run_vibrante_mcp.py
 ```
 
-**Configure Claude Desktop** (`~/.claude/settings.json`):
+On Windows, use the full interpreter path (e.g. `C:/Python311/python.exe`) and forward slashes in all paths below.
+
+**Claude Code** (CLI / VS Code extension):
+
+```bash
+claude mcp add-json vibrante '{
+  "command": "python",
+  "args": ["/path/to/Vibrante-Node/scripts/run_vibrante_mcp.py"],
+  "env": { "VIBRANTE_HOU_PORT": "18811" }
+}' --scope user
+```
+
+This registers the server in `~/.claude.json` (user scope — available in every project). For a per-project setup, put the same `mcpServers` block in a `.mcp.json` file at the repository root instead. Verify with `claude mcp get vibrante`, or `/mcp` inside a session.
+
+> **Note:** Claude Code does **not** read `mcpServers` from `~/.claude/settings.json` — a server defined there is silently ignored. Use `claude mcp add` / `.mcp.json` as shown above.
+
+**Claude Desktop** — Settings → Developer → Edit Config, or edit the file directly (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
@@ -366,6 +383,26 @@ python scripts/run_vibrante_mcp.py
   }
 }
 ```
+
+**Codex CLI** (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.vibrante]
+command = "python"
+args    = ["/path/to/Vibrante-Node/scripts/run_vibrante_mcp.py"]
+```
+
+**Cursor** (`.cursor/mcp.json` in the workspace root, or `~/.cursor/mcp.json` globally) — same JSON block as Claude Desktop.
+
+**Optional environment variables** (set in the server's `env` block):
+
+| Variable | Purpose |
+|---|---|
+| `VIBRANTE_HOU_PORT` | Port of the live Houdini bridge (default `18811`) |
+| `VIBRANTE_NODE_APP` | Absolute path to the Vibrante-Node app root |
+| `VIBRANTE_MEGASCANS_TOKEN` | Megascans / Fab API token — enables online asset acquisition (all tools stay offline-safe if unset) |
+| `VIBRANTE_ASSET_CACHE` | Local asset cache directory used by the download pipeline |
+| `VIBRANTE_MEGASCANS_LIBRARY` / `VIBRANTE_FAB_LIBRARY` | Paths to your local Megascans / Fab libraries for scanning and indexing |
 
 The server exposes 12 semantic tools across four categories — Runtime, Knowledge, Planning, and Execution. Planning and knowledge tools work without Houdini; only `execute_workflow_transaction` touches the scene, and only after validation passes. All 40+ runtime modules run headlessly without Qt — CI/CD pipelines can import `src.runtime` directly.
 
@@ -495,7 +532,7 @@ Set it in Edit → Preferences → Application Paths (requires restart)
 
 **AppImage fails to start on Linux**
 ```bash
-QT_QPA_PLATFORM=xcb ./Vibrante-Node-2.4.0-x86_64.AppImage
+QT_QPA_PLATFORM=xcb ./Vibrante-Node-2.5.0-x86_64.AppImage
 ```
 
 **Node Builder corrupts exec ports on edit**
@@ -541,13 +578,14 @@ Pass approver="your_name" to authorize execution.
 
 | Version | Type | Highlights |
 |---|---|---|
-| [v2.4.0](RELEASE_v2.4.0.md) | Minor | 26 new nodes (3 generic MCP client + 23 Houdini AI); runtime extensions layer (Tiers 1–6): MCP server, AI planning, transactions; node ID cleanup; 3 bug fixes |
-| [v2.3.0](RELEASE_v2.3.0.md) | Minor | HTTP Request node; Authenticode signing tools; Node Builder fixes; canvas drag-trail fix |
-| [v2.2.1](RELEASE_v2.2.1.md) | Patch | About dialog crash fix; LICENSE bundled in exe |
-| [v2.2.0](RELEASE_v2.2.0.md) | Minor | Settings dialog; EnvManager; reactive propagation fix; 10 new website examples |
-| [v2.1.1](RELEASE_v2.1.1.md) | Patch | Scripting Console theme fix; Windows VERSIONINFO in exe |
-| [v2.1.0](RELEASE_v2.1.0.md) | Minor | Unsaved-changes detection; type-mismatch warning; F5 shortcut fix |
-| [v2.0.0](RELEASE_v2.0.0.md) | Major | GroupNode; mini-map; canvas search; autosave; wire inspector; execution timing |
+| [v2.5.0](RELEASE_v2.5.0.md) | Minor | Semantic Scene Intent System; 200+ Houdini AI nodes; full environment assembly pipeline (Tiers 8–15.0+); networkx dependency; 250+ new tests |
+| [v2.4.0](releases/RELEASE_v2.4.0.md) | Minor | 26 new nodes (3 generic MCP client + 23 Houdini AI); runtime extensions layer (Tiers 1–6): MCP server, AI planning, transactions; node ID cleanup; 3 bug fixes |
+| [v2.3.0](releases/RELEASE_v2.3.0.md) | Minor | HTTP Request node; Authenticode signing tools; Node Builder fixes; canvas drag-trail fix |
+| [v2.2.1](releases/RELEASE_v2.2.1.md) | Patch | About dialog crash fix; LICENSE bundled in exe |
+| [v2.2.0](releases/RELEASE_v2.2.0.md) | Minor | Settings dialog; EnvManager; reactive propagation fix; 10 new website examples |
+| [v2.1.1](releases/RELEASE_v2.1.1.md) | Patch | Scripting Console theme fix; Windows VERSIONINFO in exe |
+| [v2.1.0](releases/RELEASE_v2.1.0.md) | Minor | Unsaved-changes detection; type-mismatch warning; F5 shortcut fix |
+| [v2.0.0](releases/RELEASE_v2.0.0.md) | Major | GroupNode; mini-map; canvas search; autosave; wire inspector; execution timing |
 | [v1.8.x](releases/) | — | QScintilla editor; hot-reload; init-first ordering; Houdini bridge hardening |
 
 ---

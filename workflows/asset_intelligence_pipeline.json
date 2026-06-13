@@ -1,0 +1,267 @@
+{
+    "nodes": [
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000001",
+            "node_id": "hou_mcp_scene_intent_extract",
+            "position": [-1200.0, 0.0],
+            "parameters": {
+                "prompt": "Create an industrial sci-fi facility with robots, machinery, and atmospheric fog",
+                "context_json": "{}",
+                "scene_intent_json": "",
+                "intent_id": "",
+                "environment": "",
+                "confidence": 0.0,
+                "extraction_method": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000002",
+            "node_id": "hou_mcp_scene_intent_enrich",
+            "position": [-880.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "enriched_intent_json": "",
+                "enrichment_count": 0,
+                "enrichment_notes": "[]",
+                "enrichment_applied": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000003",
+            "node_id": "hou_mcp_scene_plan_create",
+            "position": [-560.0, 0.0],
+            "parameters": {
+                "scene_intent_json": "",
+                "scene_plan_json": "",
+                "plan_id": "",
+                "zone_count": 0,
+                "asset_query_count": 0,
+                "estimated_complexity": "",
+                "planning_ok": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000004",
+            "node_id": "hou_mcp_scene_asset_query_generate",
+            "position": [-240.0, 0.0],
+            "parameters": {
+                "scene_plan_json": "",
+                "zone_filter": "",
+                "required_only": false,
+                "queries_json": "[]",
+                "query_count": 0,
+                "required_count": 0,
+                "categories_json": "[]"
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000005",
+            "node_id": "hou_mcp_asset_discover",
+            "position": [80.0, 0.0],
+            "parameters": {
+                "scene_plan_json": "",
+                "asset_queries_json": "",
+                "limit_per_provider": 20,
+                "discovery_result_json": "{}",
+                "total_assets": 0,
+                "providers_queried": "[]",
+                "query_count": 0,
+                "discovery_ok": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000006",
+            "node_id": "hou_mcp_asset_validate",
+            "position": [400.0, 0.0],
+            "parameters": {
+                "discovery_result_json": "{}",
+                "assets_json": "",
+                "zone": "",
+                "renderer": "",
+                "scene_scale": "",
+                "valid_assets_json": "[]",
+                "rejected_assets_json": "[]",
+                "rejection_reasons": "{}",
+                "valid_count": 0,
+                "rejected_count": 0,
+                "validation_ok": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000007",
+            "node_id": "hou_mcp_asset_rank",
+            "position": [720.0, 0.0],
+            "parameters": {
+                "valid_assets_json": "[]",
+                "scene_intent_json": "",
+                "scene_plan_json": "",
+                "zone": "",
+                "category": "",
+                "top_k": 10,
+                "recommendations_json": "[]",
+                "ranked_count": 0,
+                "top_asset_name": "",
+                "top_score": 0.0,
+                "ranking_ok": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000008",
+            "node_id": "hou_mcp_asset_recommend",
+            "position": [1040.0, 100.0],
+            "parameters": {
+                "scene_plan_json": "",
+                "scene_intent_json": "",
+                "renderer": "",
+                "scene_scale": "",
+                "top_k_per_query": 5,
+                "recommendations_json": "[]",
+                "by_zone_json": "{}",
+                "by_category_json": "{}",
+                "total_discovered": 0,
+                "total_recommended": 0,
+                "total_rejected": 0,
+                "pipeline_ok": false
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-000000000009",
+            "node_id": "console_print",
+            "position": [1360.0, 0.0],
+            "parameters": {
+                "message": ""
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-00000000000a",
+            "node_id": "sticky_note",
+            "position": [-1250.0, -180.0],
+            "parameters": {
+                "text": "TIER 6–7: Scene Intent + Plan\n\nExtract a SceneIntent from the prompt,\nenrich it, then generate a ScenePlan\nwith asset queries per zone.",
+                "color": "#2d5a8e",
+                "width": 660.0,
+                "height": 140.0
+            },
+            "state": "idle"
+        },
+        {
+            "instance_id": "b2000001-0000-4000-8000-00000000000b",
+            "node_id": "sticky_note",
+            "position": [-20.0, -180.0],
+            "parameters": {
+                "text": "TIER 8: Asset Intelligence\n\nDiscover → Validate → Rank → Recommend\nAll steps are deterministic, provider-agnostic,\nand inspection-ready. No downloads.",
+                "color": "#2d8e5a",
+                "width": 800.0,
+                "height": 140.0
+            },
+            "state": "idle"
+        }
+    ],
+    "connections": [
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000001",
+            "from_port": "scene_intent_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000002",
+            "to_port":   "scene_intent_json"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000001",
+            "from_port": "exec_out",
+            "to_node":   "b2000001-0000-4000-8000-000000000002",
+            "to_port":   "exec_in"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000002",
+            "from_port": "enriched_intent_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000003",
+            "to_port":   "scene_intent_json"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000002",
+            "from_port": "exec_out",
+            "to_node":   "b2000001-0000-4000-8000-000000000003",
+            "to_port":   "exec_in"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000003",
+            "from_port": "scene_plan_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000004",
+            "to_port":   "scene_plan_json"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000003",
+            "from_port": "exec_out",
+            "to_node":   "b2000001-0000-4000-8000-000000000004",
+            "to_port":   "exec_in"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000004",
+            "from_port": "queries_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000005",
+            "to_port":   "asset_queries_json"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000004",
+            "from_port": "exec_out",
+            "to_node":   "b2000001-0000-4000-8000-000000000005",
+            "to_port":   "exec_in"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000005",
+            "from_port": "discovery_result_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000006",
+            "to_port":   "discovery_result_json"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000005",
+            "from_port": "exec_out",
+            "to_node":   "b2000001-0000-4000-8000-000000000006",
+            "to_port":   "exec_in"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000006",
+            "from_port": "valid_assets_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000007",
+            "to_port":   "valid_assets_json"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000006",
+            "from_port": "exec_out",
+            "to_node":   "b2000001-0000-4000-8000-000000000007",
+            "to_port":   "exec_in"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000007",
+            "from_port": "exec_out",
+            "to_node":   "b2000001-0000-4000-8000-000000000009",
+            "to_port":   "exec_in"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000007",
+            "from_port": "recommendations_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000009",
+            "to_port":   "message"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000003",
+            "from_port": "scene_plan_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000008",
+            "to_port":   "scene_plan_json"
+        },
+        {
+            "from_node": "b2000001-0000-4000-8000-000000000002",
+            "from_port": "enriched_intent_json",
+            "to_node":   "b2000001-0000-4000-8000-000000000008",
+            "to_port":   "scene_intent_json"
+        }
+    ]
+}

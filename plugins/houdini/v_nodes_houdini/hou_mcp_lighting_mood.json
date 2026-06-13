@@ -1,0 +1,20 @@
+{
+    "node_id": "hou_mcp_lighting_mood",
+    "name": "hou_mcp_lighting_mood",
+    "description": "Infer or build a lighting mood profile. Actions: infer (extract mood from intent text), profile (build MoodProfile for a named mood), list (all known moods).",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "action",      "type": "string", "widget_type": "text", "options": null, "default": "infer"},
+        {"name": "intent_text", "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "mood",        "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "result_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "mood",        "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",    "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lighting import get_lighting_mood_engine\nimport json\n\nclass Hou_Mcp_Lighting_Mood(BaseNode):\n    name = \"hou_mcp_lighting_mood\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",      \"string\", widget_type=\"text\", default=\"infer\")\n        self.add_input(\"intent_text\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"mood\",        \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"result_json\", \"string\")\n        self.add_output(\"mood\",        \"string\")\n\n    async def execute(self, inputs):\n        action      = str(inputs.get(\"action\",      \"infer\") or \"infer\").lower().strip()\n        intent_text = str(inputs.get(\"intent_text\", \"\") or \"\")\n        mood        = str(inputs.get(\"mood\",        \"\") or \"\")\n        try:\n            engine = get_lighting_mood_engine()\n            if action == \"profile\":\n                profile = engine.build_mood_profile(mood)\n                result  = profile.to_dict()\n                out_mood = profile.mood\n            elif action == \"list\":\n                moods  = engine.list_moods()\n                result = moods\n                out_mood = \"\"\n            else:  # infer\n                out_mood = engine.infer_mood(intent_text)\n                profile  = engine.build_mood_profile(out_mood) if out_mood else None\n                result   = profile.to_dict() if profile else {\"mood\": out_mood}\n            self.log_info(f\"Lighting mood action={action}: mood={out_mood}.\")\n            return {\n                \"result_json\": json.dumps(result, sort_keys=True, default=str),\n                \"mood\":        out_mood,\n                \"exec_out\":    True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Lighting mood action failed: {exc}\")\n            return {\"result_json\": \"{}\", \"mood\": \"\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Lighting_Mood\n"
+}

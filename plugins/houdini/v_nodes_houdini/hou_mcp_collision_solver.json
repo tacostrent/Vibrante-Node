@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_collision_solver",
+    "name": "hou_mcp_collision_solver",
+    "description": "Detect and resolve AABB collisions among a set of world-space transforms. Returns collision-free transforms and a per-collision resolution report. Supports push-apart, slide, and rotate resolution strategies.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "transforms_json", "type": "string", "widget_type": "text",  "options": null, "default": "[]" },
+        { "name": "room_half_width", "type": "float",  "widget_type": "float", "options": null, "default": 4.0 },
+        { "name": "exec_in",         "type": "any",    "widget_type": null,    "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "transforms_json",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "collisions_json",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "collisions_found",         "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "collisions_remaining",     "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",                 "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.layout_realization import get_collision_solver, ResolvedTransform\n\nclass Hou_Mcp_Collision_Solver(BaseNode):\n    name = \"hou_mcp_collision_solver\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"transforms_json\", \"string\", widget_type=\"text\",  default=\"[]\")\n        self.add_input(\"room_half_width\", \"float\",  widget_type=\"float\", default=4.0)\n        self.add_output(\"transforms_json\")\n        self.add_output(\"collisions_json\")\n        self.add_output(\"collisions_found\",     \"int\")\n        self.add_output(\"collisions_remaining\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw     = (inputs.get(\"transforms_json\") or \"\").strip()\n        room_hw = float(inputs.get(\"room_half_width\") or 4.0)\n\n        try:\n            raw_list   = json.loads(raw) if raw else []\n            transforms = [ResolvedTransform.from_dict(t) for t in raw_list]\n        except Exception:\n            self.log_error(\"transforms_json is not valid JSON.\")\n            return {\"transforms_json\": \"[]\", \"collisions_json\": \"[]\", \"collisions_found\": 0, \"collisions_remaining\": 0, \"exec_out\": True}\n\n        try:\n            result = get_collision_solver().solve(transforms, room_half_width=room_hw)\n            t_json = json.dumps([t.to_dict() for t in result.transforms],  sort_keys=True, indent=2)\n            c_json = json.dumps([r.to_dict() for r in result.records],     sort_keys=True, indent=2)\n            return {\n                \"transforms_json\":      t_json,\n                \"collisions_json\":      c_json,\n                \"collisions_found\":     result.collisions_found,\n                \"collisions_remaining\": result.collisions_remaining,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Collision solving failed: {exc}\")\n            return {\"transforms_json\": raw, \"collisions_json\": \"[]\", \"collisions_found\": 0, \"collisions_remaining\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Collision_Solver\n"
+}

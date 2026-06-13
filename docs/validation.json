@@ -1,61 +1,26 @@
 {
-  "total_findings": 0,
+  "total_findings": 7,
   "errors": 0,
-  "warnings": 0,
+  "warnings": 7,
   "example_summary": {
-    "ok": 322,
+    "ok": 323,
     "integration": 35,
     "syntax_error": 0,
     "json_error": 0,
-    "skip": 106
+    "skip": 111
   },
   "per_page": {
-    "12_examples_library.md": {
+    "02_getting_started.md": {
       "ok": true,
       "errors": 0,
-      "warnings": 0
-    },
-    "10_contribution_guide.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "08_api_reference.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "01_introduction.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
+      "warnings": 3
     },
     "14_custom_nodes_api.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
     },
-    "06_backend_architecture.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "02_getting_started.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
     "11_troubleshooting.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "03_user_guide.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "07_frontend_architecture.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -70,7 +35,37 @@
       "errors": 0,
       "warnings": 0
     },
-    "13_general_purpose_automation.md": {
+    "12_examples_library.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "08_api_reference.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "01_introduction.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "06_backend_architecture.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 4
+    },
+    "03_user_guide.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "10_contribution_guide.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "07_frontend_architecture.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -79,9 +74,64 @@
       "ok": true,
       "errors": 0,
       "warnings": 0
+    },
+    "13_general_purpose_automation.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
     }
   },
-  "findings": [],
+  "findings": [
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `initialize_runtime_context` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "02_getting_started.md",
+      "line": 660
+    },
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `query_scene_context` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "02_getting_started.md",
+      "line": 661
+    },
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `plan_scene` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "02_getting_started.md",
+      "line": 662
+    },
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `transaction_manager` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "06_backend_architecture.md",
+      "line": 741
+    },
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `validation_engine` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "06_backend_architecture.md",
+      "line": 741
+    },
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `runtime_constraints` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "06_backend_architecture.md",
+      "line": 741
+    },
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `rollback_errors` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "06_backend_architecture.md",
+      "line": 768
+    }
+  ],
   "known_node_ids": [
     "Console Sink",
     "Data Processor",

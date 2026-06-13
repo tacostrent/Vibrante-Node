@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_lighting_plan",
+    "name": "hou_mcp_lighting_plan",
+    "description": "Build a renderer-agnostic lighting plan (key, fill, rim, practicals, volumetrics, color strategy, exposure) from intent, environment, and mood. Never creates Houdini lights — produces a plan dict only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "intent_text",  "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "environment",  "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "mood",         "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "subjects_json","type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "exec_in",      "type": "any",    "widget_type": null,   "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "plan_json",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "plan_id",      "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",     "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.lighting import get_lighting_plan_builder\nimport json\n\nclass Hou_Mcp_Lighting_Plan(BaseNode):\n    name = \"hou_mcp_lighting_plan\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"intent_text\",   \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"environment\",   \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"mood\",          \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"subjects_json\", \"string\", widget_type=\"text\", default=\"\")\n        # [AUTO-GENERATED-PORTS-END]\n        self.add_output(\"plan_json\", \"string\")\n        self.add_output(\"plan_id\",   \"string\")\n\n    async def execute(self, inputs):\n        intent_text   = str(inputs.get(\"intent_text\",   \"\") or \"\")\n        environment   = str(inputs.get(\"environment\",   \"\") or \"\")\n        mood          = str(inputs.get(\"mood\",          \"\") or \"\")\n        subjects_json = str(inputs.get(\"subjects_json\", \"\") or \"\")\n        try:\n            subjects = json.loads(subjects_json) if subjects_json.strip() else []\n            if not isinstance(subjects, list):\n                subjects = []\n        except Exception:\n            subjects = []\n        try:\n            builder = get_lighting_plan_builder()\n            plan    = builder.build_plan(\n                intent_text=intent_text,\n                environment=environment,\n                mood=mood,\n                subjects=subjects,\n            )\n            self.log_info(\n                f\"Lighting plan built: id={plan.plan_id}, env={plan.environment}, \"\n                f\"mood={plan.mood}, volumetrics={bool(plan.volumetrics)}.\"\n            )\n            return {\n                \"plan_json\": json.dumps(plan.to_dict(), sort_keys=True, default=str),\n                \"plan_id\":   plan.plan_id,\n                \"exec_out\":  True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Lighting plan build failed: {exc}\")\n            return {\"plan_json\": \"{}\", \"plan_id\": \"\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Lighting_Plan\n"
+}

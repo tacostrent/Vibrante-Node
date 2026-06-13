@@ -1,0 +1,19 @@
+{
+    "node_id": "hou_mcp_build_openings",
+    "name": "hou_mcp_build_openings",
+    "description": "Generate door, window, archway, vent, and other opening elements for an environment. Each opening references its parent wall via wall_id. Returns openings_json with position, dimensions, material, and wall_id.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "environment", "type": "string", "widget_type": "text", "options": null, "default": "western_room" },
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "openings_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "door_count",    "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "window_count",  "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",      "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_realization import get_room_shell_builder\n\nclass Hou_Mcp_Build_Openings(BaseNode):\n    name = \"hou_mcp_build_openings\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment\", \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_output(\"openings_json\")\n        self.add_output(\"door_count\",   \"int\")\n        self.add_output(\"window_count\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        env = (inputs.get(\"environment\") or \"\").strip() or \"western_room\"\n        try:\n            shell = get_room_shell_builder().build(env)\n            openings = [e.to_dict() for e in shell.openings]\n            door_types = {\"door\", \"swing_door\", \"sliding_door\", \"loading_door\", \"archway\", \"hangar_opening\"}\n            win_types  = {\"window\", \"skylight\", \"porthole\", \"arrow_slit\", \"vent\"}\n            door_count   = sum(1 for e in shell.openings if e.element_type in door_types)\n            window_count = sum(1 for e in shell.openings if e.element_type in win_types)\n            return {\n                \"openings_json\": json.dumps(openings, sort_keys=True, indent=2),\n                \"door_count\":    door_count,\n                \"window_count\":  window_count,\n                \"exec_out\":      True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Opening build failed: {exc}\")\n            return {\"openings_json\": \"[]\", \"door_count\": 0, \"window_count\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Build_Openings\n"
+}

@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_apply_layout",
+    "name": "hou_mcp_apply_layout",
+    "description": "Apply a ResolvedSceneLayout to Houdini by setting tx, ty, tz, rx, ry, rz on each asset's Houdini node. Requires a node_path_map JSON mapping asset_id to Houdini node paths. Returns applied/skipped/failed counts.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "transforms_json",   "type": "string", "widget_type": "text", "options": null, "default": "[]" },
+        { "name": "node_path_map_json","type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "exec_in",           "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "result_json",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "applied",      "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "skipped",      "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "failed",       "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",     "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.layout_realization import get_layout_application_engine, ResolvedTransform\n\nclass Hou_Mcp_Apply_Layout(BaseNode):\n    name = \"hou_mcp_apply_layout\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"transforms_json\",    \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"node_path_map_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"result_json\")\n        self.add_output(\"applied\", \"int\")\n        self.add_output(\"skipped\", \"int\")\n        self.add_output(\"failed\",  \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw_t = (inputs.get(\"transforms_json\")    or \"\").strip()\n        raw_m = (inputs.get(\"node_path_map_json\") or \"\").strip()\n\n        try:\n            raw_list      = json.loads(raw_t) if raw_t else []\n            transforms    = [ResolvedTransform.from_dict(t) for t in raw_list]\n            node_path_map = json.loads(raw_m) if raw_m else {}\n        except Exception:\n            self.log_error(\"Input JSON is not valid.\")\n            return {\"result_json\": \"{}\", \"applied\": 0, \"skipped\": 0, \"failed\": 0, \"exec_out\": True}\n\n        try:\n            result = get_layout_application_engine().apply_layout(transforms, node_path_map)\n            return {\n                \"result_json\": json.dumps(result.to_dict(), sort_keys=True, indent=2),\n                \"applied\":     result.applied,\n                \"skipped\":     result.skipped,\n                \"failed\":      result.failed,\n                \"exec_out\":    True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Layout application failed: {exc}\")\n            return {\"result_json\": \"{}\", \"applied\": 0, \"skipped\": 0, \"failed\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Apply_Layout\n"
+}

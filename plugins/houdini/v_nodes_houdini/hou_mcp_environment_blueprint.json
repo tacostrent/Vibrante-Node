@@ -1,0 +1,18 @@
+{
+    "node_id": "hou_mcp_environment_blueprint",
+    "name": "hou_mcp_environment_blueprint",
+    "description": "Fetch the EnvironmentBlueprint for a named environment from the template library. Returns the blueprint as JSON along with its atmosphere profile and construction order. No Houdini scene mutations — planning only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "environment_name", "type": "string", "widget_type": "text", "options": null, "default": "western_room"}
+    ],
+    "outputs": [
+        {"name": "blueprint_json",         "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "atmosphere_profile",     "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "construction_order_json","type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "is_valid",               "type": "bool",   "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.environment.environment_template_library import get_environment_template_library\nimport json\n\nclass Hou_Mcp_Environment_Blueprint(BaseNode):\n    name = \"hou_mcp_environment_blueprint\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"environment_name\", \"string\", widget_type=\"text\", default=\"western_room\")\n        self.add_output(\"blueprint_json\", \"string\")\n        self.add_output(\"atmosphere_profile\", \"string\")\n        self.add_output(\"construction_order_json\", \"string\")\n        self.add_output(\"is_valid\", \"bool\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        env_name = (inputs.get(\"environment_name\") or \"\").strip()\n        if not env_name:\n            self.log_error(\"No environment_name provided.\")\n            return {\"blueprint_json\": \"{}\", \"atmosphere_profile\": \"\", \"construction_order_json\": \"[]\", \"is_valid\": False, \"exec_out\": True}\n\n        try:\n            lib = get_environment_template_library()\n            bp = lib.get_template(env_name)\n            errors = bp.validate()\n            is_valid = len(errors) == 0\n            if errors:\n                self.log_error(f\"Blueprint validation errors: {errors}\")\n            else:\n                self.log_info(f\"Blueprint for '{env_name}': category={bp.environment_category}, atmosphere={bp.atmosphere_profile}\")\n            return {\n                \"blueprint_json\":          json.dumps(bp.to_dict(), sort_keys=True, default=str),\n                \"atmosphere_profile\":      bp.atmosphere_profile,\n                \"construction_order_json\": json.dumps(bp.construction_order, default=str),\n                \"is_valid\":                is_valid,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Blueprint fetch failed: {exc}\")\n            return {\"blueprint_json\": \"{}\", \"atmosphere_profile\": \"\", \"construction_order_json\": \"[]\", \"is_valid\": False, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Environment_Blueprint\n"
+}

@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_shell_gate",
+    "name": "hou_mcp_shell_gate",
+    "description": "Evaluate the environment readiness gate from a completed shell_json. Returns gate_passed (bool), gate_status (ENVIRONMENT_READY or ENVIRONMENT_NOT_READY), severity (OK or BLOCKING), and blocked_systems list. Wire exec_out_ready to FurnitureClusterBuilder and exec_out_blocked to an error handler.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "shell_json",          "type": "string", "widget_type": "text", "options": null, "default": "{}" },
+        { "name": "required_wall_count", "type": "int",    "widget_type": "int",  "options": null, "default": 4 },
+        { "name": "exec_in",             "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "gate_json",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "gate_passed",        "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "gate_status",        "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "severity",           "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "blocked_systems",    "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out_ready",     "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out_blocked",   "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",           "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.environment_shell import get_environment_readiness_gate, ENVIRONMENT_READY\n\nclass Hou_Mcp_Shell_Gate(BaseNode):\n    name = \"hou_mcp_shell_gate\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"shell_json\",          \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"required_wall_count\", \"int\",    widget_type=\"int\",  default=4)\n        self.add_output(\"gate_json\")\n        self.add_output(\"gate_passed\",      \"bool\")\n        self.add_output(\"gate_status\")\n        self.add_output(\"severity\")\n        self.add_output(\"blocked_systems\")\n        self.add_output(\"exec_out_ready\",   \"any\")\n        self.add_output(\"exec_out_blocked\", \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw          = (inputs.get(\"shell_json\") or \"{}\").strip()\n        required     = int(inputs.get(\"required_wall_count\") or 4)\n        try:\n            shell_dict = json.loads(raw)\n        except Exception:\n            shell_dict = {}\n\n        try:\n            gate = get_environment_readiness_gate().check_dict(shell_dict, required)\n            gate_passed = gate.gate_passed\n            return {\n                \"gate_json\":       json.dumps(gate.to_dict(), sort_keys=True, indent=2),\n                \"gate_passed\":     gate_passed,\n                \"gate_status\":     gate.gate_status,\n                \"severity\":        gate.severity,\n                \"blocked_systems\": json.dumps(gate.blocked_systems),\n                \"exec_out_ready\":  True if gate_passed else None,\n                \"exec_out_blocked\": None if gate_passed else True,\n                \"exec_out\":        True,\n            }\n        except Exception as exc:\n            self.log_error(f\"hou_mcp_shell_gate failed: {exc}\")\n            return {\"gate_json\": \"{}\", \"gate_passed\": False, \"gate_status\": \"ENVIRONMENT_NOT_READY\", \"severity\": \"BLOCKING\", \"blocked_systems\": \"[]\", \"exec_out_ready\": None, \"exec_out_blocked\": True, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Shell_Gate\n"
+}

@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_workflow_statistics",
+    "name": "Hou MCP Workflow Statistics",
+    "description": "Display workflow analytics — total executions, success rate, average score, rollback rate, and top workflows. Optionally filter by a specific pack name for per-pack statistics. No bridge calls — reads in-memory statistics only.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",   "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "pack_name", "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",          "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "statistics_json",   "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "total_executions",  "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "success_rate",      "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "average_score",     "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "rollback_rate",     "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "ok",                "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    from src.runtime.workflows import get_workflow_statistics\n\n    pack_name = str(inputs.get('pack_name') or self.parameters.get('pack_name', '') or '')\n\n    try:\n        stats = get_workflow_statistics()\n\n        if pack_name.strip():\n            data = stats.get_pack_statistics(pack_name)\n            self.log_info(\n                f'[WorkflowStatistics] Pack {pack_name!r}: '\n                f'executions={data[\"executions\"]}, '\n                f'success_rate={data[\"success_rate\"]:.2f}'\n            )\n            return {\n                'statistics_json':  json.dumps(data, sort_keys=True),\n                'total_executions': data.get('executions', 0),\n                'success_rate':     data.get('success_rate', 0.0),\n                'average_score':    data.get('average_score', 0.0),\n                'rollback_rate':    0.0,\n                'ok':               True,\n                'exec_out':         True,\n            }\n\n        data = stats.get_runtime_statistics()\n        self.log_info(\n            f'[WorkflowStatistics] Runtime: '\n            f'executions={data[\"total_executions\"]}, '\n            f'success_rate={data[\"success_rate\"]:.2f}, '\n            f'avg_score={data[\"average_score\"]:.2f}'\n        )\n        return {\n            'statistics_json':  json.dumps(data, sort_keys=True),\n            'total_executions': data.get('total_executions', 0),\n            'success_rate':     data.get('success_rate', 0.0),\n            'average_score':    data.get('average_score', 0.0),\n            'rollback_rate':    data.get('rollback_rate', 0.0),\n            'ok':               True,\n            'exec_out':         True,\n        }\n    except Exception as e:\n        self.log_error(f'[WorkflowStatistics] {e}')\n        return {\n            'statistics_json': json.dumps({'error': str(e)}),\n            'total_executions': 0,\n            'success_rate': 0.0,\n            'average_score': 0.0,\n            'rollback_rate': 0.0,\n            'ok': False,\n            'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Workflow_Statistics(BaseNode):\n        name = 'hou_mcp_workflow_statistics'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Workflow_Statistics"
+}

@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_retrieval_review",
+    "name": "hou_mcp_retrieval_review",
+    "description": "Evaluate semantic retrieval quality. Actions: review_results, review_query, review_pipeline. Returns score, grade, production_ready, findings. No Houdini calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "action",        "type": "string", "widget_type": "text", "options": null, "default": "review_query" },
+        { "name": "intent_text",   "type": "string", "widget_type": "text", "options": null, "default": null },
+        { "name": "query_context", "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "results",       "type": "list",   "widget_type": null,   "options": null, "default": null },
+        { "name": "top_k",         "type": "int",    "widget_type": "int",  "options": null, "default": 10 },
+        { "name": "exec_in",       "type": "any",    "widget_type": null,   "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "score",            "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "grade",            "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready", "type": "bool",   "widget_type": null, "options": null, "default": null },
+        { "name": "findings",         "type": "list",   "widget_type": null, "options": null, "default": null },
+        { "name": "review",           "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",         "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.vector_search import get_retrieval_review\n\nclass Hou_Mcp_Retrieval_Review(BaseNode):\n    name = \"hou_mcp_retrieval_review\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",        \"string\", widget_type=\"text\", default=\"review_query\")\n        self.add_input(\"intent_text\",   \"string\", widget_type=\"text\")\n        self.add_input(\"query_context\", \"any\")\n        self.add_input(\"results\",       \"list\")\n        self.add_input(\"top_k\",         \"int\",    widget_type=\"int\", default=10)\n        self.add_output(\"score\",            \"float\")\n        self.add_output(\"grade\",            \"string\")\n        self.add_output(\"production_ready\", \"bool\")\n        self.add_output(\"findings\",         \"list\")\n        self.add_output(\"review\",           \"any\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action        = str(inputs.get(\"action\") or \"review_query\").strip().lower()\n        intent_text   = str(inputs.get(\"intent_text\") or \"\").strip()\n        query_context = inputs.get(\"query_context\") or {}\n        results       = inputs.get(\"results\") or []\n        top_k         = int(inputs.get(\"top_k\") or 10)\n        try:\n            reviewer = get_retrieval_review()\n            if action == \"review_results\":\n                rev = reviewer.review_results(\n                    dict(query_context) if isinstance(query_context, dict) else {},\n                    list(results) if isinstance(results, list) else [],\n                )\n            elif action == \"review_pipeline\":\n                rev = reviewer.review_pipeline()\n            else:\n                rev = reviewer.review_query(intent_text, top_k=top_k)\n            d = rev.to_dict()\n            return {\n                \"score\":            d.get(\"score\", 0.0),\n                \"grade\":            d.get(\"grade\", \"F\"),\n                \"production_ready\": d.get(\"production_ready\", False),\n                \"findings\":         d.get(\"findings\", []),\n                \"review\":           d,\n                \"exec_out\":         True,\n            }\n        except Exception as e:\n            self.log_error(f\"hou_mcp_retrieval_review failed: {e}\")\n            return {\"score\": 0.0, \"grade\": \"F\", \"production_ready\": False, \"findings\": [str(e)], \"review\": {}, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Retrieval_Review\n"
+}

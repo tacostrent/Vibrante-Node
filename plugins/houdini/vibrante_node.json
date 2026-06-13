@@ -1,12 +1,24 @@
 {
     "recommends": "houdini_version >= '20.5'",
     "env": [
-        {
-            "VIBRANTE_NODE_APP": "<VIBRANTE NODE DIR>"
-        },
-        {
-            "VIBRANTE_PYTHON_EXE": "<PYTHON EXE PATH>"
-        }
+        { "VIBRANTE_NODE_APP":   "<VIBRANTE NODE DIR>" },
+        { "VIBRANTE_PYTHON_EXE": "<PYTHON EXE PATH>" },
+
+        { "VIBRANTE_MEGASCANS_LIBRARY": "<path to your local Megascans Downloaded/3d folder>" },
+        { "VIBRANTE_FAB_LIBRARY":       "<path to your local Fab Library folder>" },
+        { "VIBRANTE_MEGASCANS_TOKEN":   "<your Megascans/Fab bearer token — leave blank if offline>" },
+        { "VIBRANTE_PROJECT_STAGING":   "<path for per-project staged assets>" },
+
+        { "VIBRANTE_ASSET_STORAGE":          "<root folder for Vibrante databases — e.g. E:/vibrante_db>" },
+        { "VIBRANTE_ASSET_CACHE":            "<subfolder for asset cache and vector index — e.g. E:/vibrante_db/vector_cache>" },
+
+        { "VIBRANTE_SEMANTIC_MEMORY_PATH":   "<VIBRANTE_ASSET_STORAGE>/semantic_memory.jsonl" },
+        { "VIBRANTE_PLANNING_MEMORY_PATH":   "<VIBRANTE_ASSET_STORAGE>/planning_memory.jsonl" },
+        { "VIBRANTE_PRODUCTION_MEMORY_PATH": "<VIBRANTE_ASSET_STORAGE>/production_memory.jsonl" },
+        { "VIBRANTE_ASSET_GRAPH_PATH":       "<VIBRANTE_ASSET_STORAGE>/asset_graph.jsonl" },
+        { "VIBRANTE_KNOWLEDGE_GRAPH_PATH":   "<VIBRANTE_ASSET_STORAGE>/knowledge_graph.jsonl" },
+        { "VIBRANTE_STUDIO_KNOWLEDGE_DB_PATH": "<VIBRANTE_ASSET_STORAGE>/studio_knowledge.jsonl" },
+        { "VIBRANTE_PROJECT_MEMORY_PATH":    "<VIBRANTE_ASSET_STORAGE>/project_memory.jsonl" }
     ],
     "path": "$VIBRANTE_NODE_APP/plugins/houdini/houdini"
 }

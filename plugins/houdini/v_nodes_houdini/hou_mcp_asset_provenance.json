@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_asset_provenance",
+    "name": "hou_mcp_asset_provenance",
+    "description": "Track asset origin, download history, and usage across sessions via AssetProvenance. Actions: report, history, record_usage, statistics. No Houdini scene changes.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_id",      "type": "string", "widget_type": "text", "options": null, "default": null},
+        {"name": "provider",      "type": "string", "widget_type": "text", "options": null, "default": "sketchfab_live"},
+        {"name": "action",        "type": "string", "widget_type": "text", "options": null, "default": "report"},
+        {"name": "scene_type",    "type": "string", "widget_type": "text", "options": null, "default": null},
+        {"name": "workflow_name", "type": "string", "widget_type": "text", "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "provenance_report_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "history_json",           "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "record_count",           "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "statistics_json",        "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.metadata.asset_provenance import get_asset_provenance\nimport json\n\nclass Hou_Mcp_Asset_Provenance(BaseNode):\n    name = \"hou_mcp_asset_provenance\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_id\",      \"string\", widget_type=\"text\")\n        self.add_input(\"provider\",      \"string\", widget_type=\"text\", default=\"sketchfab_live\")\n        self.add_input(\"action\",        \"string\", widget_type=\"text\", default=\"report\")\n        self.add_input(\"scene_type\",    \"string\", widget_type=\"text\")\n        self.add_input(\"workflow_name\", \"string\", widget_type=\"text\")\n        self.add_output(\"provenance_report_json\", \"string\")\n        self.add_output(\"history_json\",           \"string\")\n        self.add_output(\"record_count\",           \"int\")\n        self.add_output(\"statistics_json\",        \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_id      = inputs.get(\"asset_id\") or \"\"\n        provider      = inputs.get(\"provider\") or \"sketchfab_live\"\n        action        = (inputs.get(\"action\") or \"report\").strip().lower()\n        scene_type    = inputs.get(\"scene_type\") or None\n        workflow_name = inputs.get(\"workflow_name\") or None\n        prov          = get_asset_provenance()\n\n        provenance_report_json = \"{}\"\n        history_json           = \"[]\"\n        record_count           = 0\n        statistics_json        = \"{}\"\n\n        try:\n            if action == \"report\" and asset_id:\n                report = prov.build_provenance_report(asset_id, provider)\n                provenance_report_json = json.dumps(report, default=str)\n                record_count = len(report.get(\"records\", []))\n\n            elif action == \"history\" and asset_id:\n                history = prov.get_asset_history(asset_id, provider)\n                history_json = json.dumps(history, default=str)\n                record_count = len(history)\n\n            elif action == \"record_usage\" and asset_id:\n                prov.record_usage(asset_id, provider, scene_type, workflow_name)\n                self.log_info(f\"Recorded usage: {asset_id} in {scene_type or 'unknown'}\")\n\n            statistics_json = json.dumps(prov.get_statistics(), default=str)\n\n        except Exception as exc:\n            self.log_error(f\"AssetProvenance error: {exc}\")\n\n        return {\n            \"provenance_report_json\": provenance_report_json,\n            \"history_json\":           history_json,\n            \"record_count\":           record_count,\n            \"statistics_json\":        statistics_json,\n            \"exec_out\": True,\n        }\n\ndef register_node():\n    return Hou_Mcp_Asset_Provenance\n"
+}

@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_asset_sync",
+    "name": "hou_mcp_asset_sync",
+    "description": "Synchronize local and external asset libraries. Actions: sync_provider, sync_library (local dir scan), validate (compare storage vs provider), history. No Houdini scene changes.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "action",        "type": "string", "widget_type": "text", "options": null, "default": "sync_provider"},
+        {"name": "provider_name", "type": "string", "widget_type": "text", "options": null, "default": null},
+        {"name": "library_path",  "type": "string", "widget_type": "text", "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "sync_report_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "assets_found",     "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "assets_new",       "type": "int",    "widget_type": null, "options": null, "default": null},
+        {"name": "valid",            "type": "bool",   "widget_type": null, "options": null, "default": null},
+        {"name": "history_json",     "type": "string", "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.cache.asset_sync import get_asset_sync\nimport json\n\nclass Hou_Mcp_Asset_Sync(BaseNode):\n    name = \"hou_mcp_asset_sync\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"action\",        \"string\", widget_type=\"text\", default=\"sync_provider\")\n        self.add_input(\"provider_name\", \"string\", widget_type=\"text\")\n        self.add_input(\"library_path\",  \"string\", widget_type=\"text\")\n        self.add_output(\"sync_report_json\", \"string\")\n        self.add_output(\"assets_found\",     \"int\")\n        self.add_output(\"assets_new\",       \"int\")\n        self.add_output(\"valid\",            \"bool\")\n        self.add_output(\"history_json\",     \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        action        = (inputs.get(\"action\") or \"sync_provider\").strip().lower()\n        provider_name = inputs.get(\"provider_name\") or \"\"\n        library_path  = inputs.get(\"library_path\") or \"\"\n        sync          = get_asset_sync()\n\n        sync_report_json = \"{}\"\n        assets_found     = 0\n        assets_new       = 0\n        valid            = False\n        history_json     = \"[]\"\n\n        try:\n            if action == \"sync_provider\" and provider_name:\n                report = sync.sync_provider(provider_name)\n                sync_report_json = json.dumps(report.to_dict(), default=str)\n                assets_found = report.assets_found\n                assets_new   = report.assets_new\n                valid        = len(report.errors) == 0\n                self.log_info(f\"Sync '{provider_name}': found={assets_found} new={assets_new}\")\n\n            elif action == \"sync_library\" and library_path and provider_name:\n                report = sync.sync_library(library_path, provider_name)\n                sync_report_json = json.dumps(report.to_dict(), default=str)\n                assets_found = report.assets_found\n                assets_new   = report.assets_new\n                valid        = len(report.errors) == 0\n\n            elif action == \"validate\" and provider_name:\n                result = sync.validate_sync(provider_name)\n                sync_report_json = json.dumps(result, default=str)\n                valid = result.get(\"valid\", False)\n\n            elif action == \"history\":\n                history_json = json.dumps(sync.get_sync_history(), default=str)\n\n        except Exception as exc:\n            self.log_error(f\"AssetSync error: {exc}\")\n\n        return {\n            \"sync_report_json\": sync_report_json,\n            \"assets_found\":     assets_found,\n            \"assets_new\":       assets_new,\n            \"valid\":            valid,\n            \"history_json\":     history_json,\n            \"exec_out\": True,\n        }\n\ndef register_node():\n    return Hou_Mcp_Asset_Sync\n"
+}

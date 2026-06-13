@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_constraint_solver",
+    "name": "hou_mcp_constraint_solver",
+    "description": "Apply scene-level spatial constraints to a set of transforms: minimum spacing, cluster spacing, wall clearance, door clearance, and hero asset visibility. Returns corrected transforms and a violations report.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "transforms_json",  "type": "string", "widget_type": "text",  "options": null, "default": "[]" },
+        { "name": "room_half_width",  "type": "float",  "widget_type": "float", "options": null, "default": 4.0 },
+        { "name": "hero_asset_id",    "type": "string", "widget_type": "text",  "options": null, "default": "" },
+        { "name": "exec_in",          "type": "any",    "widget_type": null,    "options": null, "default": null }
+    ],
+    "outputs": [
+        { "name": "transforms_json",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "violations_json",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "violations_found",     "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "violations_remaining", "type": "int",    "widget_type": null, "options": null, "default": null },
+        { "name": "exec_out",             "type": "any",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.layout_realization import get_scene_constraint_solver, ResolvedTransform\n\nclass Hou_Mcp_Constraint_Solver(BaseNode):\n    name = \"hou_mcp_constraint_solver\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"transforms_json\", \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"room_half_width\", \"float\",  widget_type=\"float\", default=4.0)\n        self.add_input(\"hero_asset_id\",   \"string\", widget_type=\"text\",  default=\"\")\n        self.add_output(\"transforms_json\")\n        self.add_output(\"violations_json\")\n        self.add_output(\"violations_found\",     \"int\")\n        self.add_output(\"violations_remaining\", \"int\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        raw      = (inputs.get(\"transforms_json\") or \"\").strip()\n        room_hw  = float(inputs.get(\"room_half_width\") or 4.0)\n        hero_id  = (inputs.get(\"hero_asset_id\") or \"\").strip()\n\n        try:\n            raw_list = json.loads(raw) if raw else []\n            transforms = [ResolvedTransform.from_dict(t) for t in raw_list]\n        except Exception:\n            self.log_error(\"transforms_json is not valid JSON.\")\n            return {\"transforms_json\": \"[]\", \"violations_json\": \"[]\", \"violations_found\": 0, \"violations_remaining\": 0, \"exec_out\": True}\n\n        try:\n            result = get_scene_constraint_solver().solve_constraints(\n                transforms, room_half_width=room_hw, hero_asset_id=hero_id\n            )\n            t_json = json.dumps([t.to_dict() for t in result.transforms], sort_keys=True, indent=2)\n            v_json = json.dumps([v.to_dict() for v in result.violations],  sort_keys=True, indent=2)\n            return {\n                \"transforms_json\":      t_json,\n                \"violations_json\":      v_json,\n                \"violations_found\":     result.violations_found,\n                \"violations_remaining\": result.violations_remaining,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Constraint solving failed: {exc}\")\n            return {\"transforms_json\": raw, \"violations_json\": \"[]\", \"violations_found\": 0, \"violations_remaining\": 0, \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Constraint_Solver\n"
+}

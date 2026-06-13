@@ -1,0 +1,24 @@
+{
+    "node_id": "hou_mcp_knowledge_recommendation",
+    "name": "Hou MCP Knowledge Recommendation",
+    "description": "Recommend studio-approved production strategies using the studio knowledge priority chain: Studio Standards (0.90) → Cross-Project Learning (0.85) → Production Memory (0.80) → Pattern Library (0.70) → Defaults (0.50). Returns workflow, lighting, camera, atmosphere, and overall strategy recommendations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",     "type": "any",    "widget_type": null,   "options": null, "default": null },
+        { "name": "environment", "type": "string", "widget_type": "text", "options": null, "default": "industrial_hangar" },
+        { "name": "intent",      "type": "string", "widget_type": "text", "options": null, "default": "" }
+    ],
+    "outputs": [
+        { "name": "exec_out",              "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "strategy_json",         "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "recommended_workflow",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "recommended_lighting",  "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "recommended_camera",    "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "recommended_atmosphere","type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "overall_confidence",    "type": "float",  "widget_type": null, "options": null, "default": null },
+        { "name": "production_ready",      "type": "bool",   "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    environment = str(inputs.get('environment') or self.parameters.get('environment', 'industrial_hangar') or 'industrial_hangar')\n    intent      = str(inputs.get('intent') or self.parameters.get('intent', '') or '')\n\n    try:\n        from src.runtime.studio.knowledge_recommendation import get_knowledge_recommendation_engine\n        engine = get_knowledge_recommendation_engine()\n\n        # If intent provided, try to resolve environment from it first\n        if intent and not environment:\n            env_rec = engine.recommend_environment(intent)\n            environment = env_rec.get('recommended_environment', environment) or environment\n\n        strategy = engine.recommend_production_strategy(environment)\n\n        self.log_info(\n            f'[KnowledgeRec] {environment}: workflow={strategy[\"workflow\"][\"recommended_workflow\"]!r} '\n            f'confidence={strategy[\"overall_confidence\"]:.2f}'\n        )\n        return {\n            'strategy_json':          json.dumps(strategy, sort_keys=True),\n            'recommended_workflow':   strategy['workflow'].get('recommended_workflow') or '',\n            'recommended_lighting':   strategy['lighting'].get('recommended_lighting') or '',\n            'recommended_camera':     strategy['camera'].get('recommended_camera') or '',\n            'recommended_atmosphere': strategy['atmosphere'].get('recommended_atmosphere') or '',\n            'overall_confidence':     strategy.get('overall_confidence', 0.0),\n            'production_ready':       strategy.get('production_ready', False),\n            'exec_out':               True,\n        }\n    except Exception as e:\n        self.log_error(f'[KnowledgeRec] {e}')\n        return {\n            'strategy_json':          json.dumps({'error': str(e)}),\n            'recommended_workflow':   '', 'recommended_lighting': '',\n            'recommended_camera':     '', 'recommended_atmosphere': '',\n            'overall_confidence':     0.0, 'production_ready': False,\n            'exec_out':               True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Knowledge_Recommendation(BaseNode):\n        name = 'hou_mcp_knowledge_recommendation'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Knowledge_Recommendation"
+}

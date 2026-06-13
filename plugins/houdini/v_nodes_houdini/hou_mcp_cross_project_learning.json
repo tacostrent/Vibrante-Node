@@ -1,0 +1,23 @@
+{
+    "node_id": "hou_mcp_cross_project_learning",
+    "name": "Hou MCP Cross Project Learning",
+    "description": "Generate a cross-project learning report from accumulated studio knowledge. Identifies best workflows, best lighting/camera/atmosphere, successful patterns, and recurring failures. Reads from live StudioKnowledgeDB — no bridge calls.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        { "name": "exec_in",       "type": "any",    "widget_type": null,       "options": null, "default": null },
+        { "name": "environment",   "type": "string", "widget_type": "text",     "options": null, "default": "" },
+        { "name": "include_failed","type": "bool",   "widget_type": "checkbox", "options": null, "default": true }
+    ],
+    "outputs": [
+        { "name": "exec_out",             "type": "any",    "widget_type": null, "options": null, "default": null },
+        { "name": "learning_report_json", "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "best_workflow",        "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "best_lighting",        "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "best_camera",          "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "best_atmosphere",      "type": "string", "widget_type": null, "options": null, "default": null },
+        { "name": "pattern_count",        "type": "int",    "widget_type": null, "options": null, "default": null }
+    ],
+    "python_code": "import json\n\nasync def execute(self, inputs):\n    environment    = str(inputs.get('environment') or self.parameters.get('environment', '') or '')\n    include_failed = bool(inputs.get('include_failed') if inputs.get('include_failed') is not None else self.parameters.get('include_failed', True))\n\n    try:\n        from src.runtime.studio.cross_project_learning import get_cross_project_learning\n        from src.runtime.studio.studio_knowledge import get_studio_knowledge_db\n\n        sk = get_studio_knowledge_db()\n        records = sk.get_studio_successes(environment=environment or None, limit=200)\n        if include_failed:\n            records += sk.get_studio_failures(environment=environment or None, limit=200)\n        records += sk.get_studio_patterns(environment=environment or None, limit=200)\n\n        learner = get_cross_project_learning()\n        report = learner.build_learning_report(records)\n\n        self.log_info(f'[CrossProjectLearning] Analyzed {len(records)} records. Best: {report.get(\"best_workflow\")!r}')\n        return {\n            'learning_report_json': json.dumps(report, sort_keys=True),\n            'best_workflow':        report.get('best_workflow') or '',\n            'best_lighting':        report.get('best_lighting') or '',\n            'best_camera':          report.get('best_camera') or '',\n            'best_atmosphere':      report.get('best_atmosphere') or '',\n            'pattern_count':        len(report.get('successful_patterns', [])),\n            'exec_out':             True,\n        }\n    except Exception as e:\n        self.log_error(f'[CrossProjectLearning] {e}')\n        return {\n            'learning_report_json': json.dumps({'error': str(e)}),\n            'best_workflow': '', 'best_lighting': '',\n            'best_camera': '', 'best_atmosphere': '',\n            'pattern_count': 0, 'exec_out': True,\n        }\n\ndef register_node():\n    from src.nodes.base import BaseNode\n    class Hou_Mcp_Cross_Project_Learning(BaseNode):\n        name = 'hou_mcp_cross_project_learning'\n        async def execute(self, inputs):\n            return await execute(self, inputs)\n    return Hou_Mcp_Cross_Project_Learning"
+}

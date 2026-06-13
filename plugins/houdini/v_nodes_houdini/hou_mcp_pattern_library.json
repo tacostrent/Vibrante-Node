@@ -1,0 +1,21 @@
+{
+    "node_id": "hou_mcp_pattern_library",
+    "name": "Houdini MCP: Pattern Library",
+    "description": "Search and rank production patterns. Returns ranked scene, lighting, camera, and atmosphere patterns for a given scene type. Patterns are sorted by production success rate. No bridge calls, no mutations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini_icon.png",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_type",    "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "pattern_type",  "type": "string", "widget_type": "text", "options": null, "default": ""},
+        {"name": "tags_json",     "type": "string", "widget_type": "text", "options": null, "default": "[]"},
+        {"name": "limit",         "type": "int",    "widget_type": "int",  "options": null, "default": 10}
+    ],
+    "outputs": [
+        {"name": "patterns",       "type": "list"},
+        {"name": "top_pattern",    "type": "any"},
+        {"name": "pattern_count",  "type": "int"},
+        {"name": "patterns_json",  "type": "string"}
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.pattern_library import get_pattern_library\n\n\nclass HouMCPPatternLibraryNode(BaseNode):\n    name = \"hou_mcp_pattern_library\"\n    category = \"Houdini\"\n\n    def __init__(self):\n        super().__init__()\n        self.icon_path = \"icons/houdini_icon.png\"\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_type\",   \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"pattern_type\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_input(\"tags_json\",    \"string\", widget_type=\"text\", default=\"[]\")\n        self.add_input(\"limit\",        \"int\",    widget_type=\"int\",  default=10)\n        self.add_output(\"patterns\",      \"list\")\n        self.add_output(\"top_pattern\",   \"any\")\n        self.add_output(\"pattern_count\", \"int\")\n        self.add_output(\"patterns_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        scene_type   = (inputs.get(\"scene_type\") or \"\").strip() or None\n        pattern_type = (inputs.get(\"pattern_type\") or \"\").strip() or None\n        raw_tags     = (inputs.get(\"tags_json\") or \"[]\").strip() or \"[]\"\n        limit        = int(inputs.get(\"limit\") or 10)\n\n        try:\n            tags = json.loads(raw_tags) if isinstance(raw_tags, str) else raw_tags\n            if not isinstance(tags, list):\n                tags = []\n        except json.JSONDecodeError:\n            tags = []\n\n        lib = get_pattern_library()\n        try:\n            patterns = lib.search_patterns(\n                scene_type=scene_type,\n                pattern_type=pattern_type,\n                tags=tags if tags else None,\n            )[:limit]\n        except Exception as exc:\n            self.log_error(f\"Pattern search failed: {exc}\")\n            patterns = []\n\n        top_pattern = patterns[0] if patterns else {}\n        self.log_info(f\"Pattern search: scene_type={scene_type}, found={len(patterns)}\")\n\n        return {\n            \"patterns\":      patterns,\n            \"top_pattern\":   top_pattern,\n            \"pattern_count\": len(patterns),\n            \"patterns_json\": json.dumps(patterns, indent=2, default=str),\n            \"exec_out\":      True,\n        }\n\n\ndef register_node():\n    return HouMCPPatternLibraryNode\n"
+}

@@ -1,0 +1,25 @@
+{
+    "node_id": "hou_mcp_spatial_metadata",
+    "name": "hou_mcp_spatial_metadata",
+    "description": "Extract or build SpatialMetadata for an asset: bounding box (x/y/z), footprint area, placement radius, world scale, unit system, placement type, anchor_capable, walkable_obstacle. No file I/O — uses metadata fields and category/placement-type dimension tables.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini.svg",
+    "use_exec": true,
+    "inputs": [
+        {"name": "asset_json",    "type": "string", "widget_type": "text",  "options": null, "default": "{}"},
+        {"name": "world_scale",   "type": "float",  "widget_type": "float", "options": null, "default": 1.0},
+        {"name": "placement_type","type": "string", "widget_type": "text",  "options": null, "default": ""},
+        {"name": "exec_in",       "type": "any",    "widget_type": null,    "options": null, "default": null}
+    ],
+    "outputs": [
+        {"name": "spatial_metadata_json", "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "bbox_x",                "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "bbox_y",                "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "bbox_z",                "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "placement_radius",      "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "footprint_area",        "type": "float",  "widget_type": null, "options": null, "default": null},
+        {"name": "placement_type_out",    "type": "string", "widget_type": null, "options": null, "default": null},
+        {"name": "exec_out",              "type": "any",    "widget_type": null, "options": null, "default": null}
+    ],
+    "python_code": "from src.nodes.base import BaseNode\nfrom src.runtime.assets.assembly.bounding_box_extractor import get_bbox_extractor\nimport json\n\nclass Hou_Mcp_Spatial_Metadata(BaseNode):\n    name = \"hou_mcp_spatial_metadata\"\n\n    def __init__(self):\n        super().__init__()\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"asset_json\",     \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_input(\"world_scale\",    \"float\",  widget_type=\"float\", default=1.0)\n        self.add_input(\"placement_type\", \"string\", widget_type=\"text\", default=\"\")\n        self.add_output(\"spatial_metadata_json\", \"string\")\n        self.add_output(\"bbox_x\",             \"float\")\n        self.add_output(\"bbox_y\",             \"float\")\n        self.add_output(\"bbox_z\",             \"float\")\n        self.add_output(\"placement_radius\",   \"float\")\n        self.add_output(\"footprint_area\",     \"float\")\n        self.add_output(\"placement_type_out\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        asset_json    = str(inputs.get(\"asset_json\", \"{}\") or \"{}\")\n        world_scale   = float(inputs.get(\"world_scale\") or 1.0)\n        placement_type_override = str(inputs.get(\"placement_type\") or \"\")\n\n        try:\n            asset = json.loads(asset_json) if asset_json.strip() else {}\n        except Exception as exc:\n            self.log_error(f\"Failed to parse asset_json: {exc}\")\n            return {\"spatial_metadata_json\": \"{}\", \"bbox_x\": 1.0, \"bbox_y\": 1.0, \"bbox_z\": 1.0, \"placement_radius\": 0.5, \"footprint_area\": 1.0, \"placement_type_out\": \"unknown\", \"exec_out\": True}\n\n        if placement_type_override:\n            asset[\"placement_type\"] = placement_type_override\n\n        try:\n            meta = get_bbox_extractor().build_spatial_metadata(asset, world_scale=world_scale)\n            self.log_info(f\"SpatialMetadata: {meta.asset_id} bbox={meta.bbox_x:.2f}x{meta.bbox_y:.2f}x{meta.bbox_z:.2f} type={meta.placement_type}\")\n            return {\n                \"spatial_metadata_json\": json.dumps(meta.to_dict(), sort_keys=True, default=str),\n                \"bbox_x\":             meta.bbox_x,\n                \"bbox_y\":             meta.bbox_y,\n                \"bbox_z\":             meta.bbox_z,\n                \"placement_radius\":   meta.placement_radius,\n                \"footprint_area\":     meta.footprint_area,\n                \"placement_type_out\": meta.placement_type,\n                \"exec_out\": True,\n            }\n        except Exception as exc:\n            self.log_error(f\"Spatial metadata extraction failed: {exc}\")\n            return {\"spatial_metadata_json\": \"{}\", \"bbox_x\": 1.0, \"bbox_y\": 1.0, \"bbox_z\": 1.0, \"placement_radius\": 0.5, \"footprint_area\": 1.0, \"placement_type_out\": \"unknown\", \"exec_out\": True}\n\ndef register_node():\n    return Hou_Mcp_Spatial_Metadata\n"
+}

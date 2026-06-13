@@ -1,0 +1,22 @@
+{
+    "node_id": "hou_mcp_scene_recommendation",
+    "name": "Houdini MCP: Scene Recommendation",
+    "description": "Generates production-proven scene configuration recommendations for a given scene type. Combines production memory, pattern library, and asset knowledge graph to recommend lighting, camera, atmosphere, patterns, and assets. Recommendations are ranked by production success history. No bridge calls, no mutations.",
+    "category": "Houdini",
+    "icon_path": "icons/houdini_icon.png",
+    "use_exec": true,
+    "inputs": [
+        {"name": "scene_type",    "type": "string", "widget_type": "text", "options": null, "default": "industrial_hangar"},
+        {"name": "context_json",  "type": "string", "widget_type": "text", "options": null, "default": "{}"}
+    ],
+    "outputs": [
+        {"name": "lighting_style",    "type": "string"},
+        {"name": "camera_mode",       "type": "string"},
+        {"name": "atmosphere_type",   "type": "string"},
+        {"name": "template_id",       "type": "string"},
+        {"name": "recommended_assets","type": "list"},
+        {"name": "overall_confidence","type": "float"},
+        {"name": "recommendations_json", "type": "string"}
+    ],
+    "python_code": "import json\nfrom src.nodes.base import BaseNode\nfrom src.runtime.scene_recommendation_engine import get_scene_recommendation_engine\n\n\nclass HouMCPSceneRecommendationNode(BaseNode):\n    name = \"hou_mcp_scene_recommendation\"\n    category = \"Houdini\"\n\n    def __init__(self):\n        super().__init__()\n        self.icon_path = \"icons/houdini_icon.png\"\n        # [AUTO-GENERATED-PORTS-START]\n        self.add_input(\"scene_type\",   \"string\", widget_type=\"text\", default=\"industrial_hangar\")\n        self.add_input(\"context_json\", \"string\", widget_type=\"text\", default=\"{}\")\n        self.add_output(\"lighting_style\",       \"string\")\n        self.add_output(\"camera_mode\",          \"string\")\n        self.add_output(\"atmosphere_type\",      \"string\")\n        self.add_output(\"template_id\",          \"string\")\n        self.add_output(\"recommended_assets\",   \"list\")\n        self.add_output(\"overall_confidence\",   \"float\")\n        self.add_output(\"recommendations_json\", \"string\")\n        # [AUTO-GENERATED-PORTS-END]\n\n    async def execute(self, inputs):\n        scene_type   = (inputs.get(\"scene_type\") or \"industrial_hangar\").strip()\n        raw_context  = (inputs.get(\"context_json\") or \"{}\").strip() or \"{}\"\n\n        try:\n            context = json.loads(raw_context) if isinstance(raw_context, str) else raw_context\n            if not isinstance(context, dict):\n                context = {}\n        except json.JSONDecodeError:\n            context = {}\n\n        engine = get_scene_recommendation_engine()\n        try:\n            recs = engine.build_scene_recommendations(scene_type, context)\n        except Exception as exc:\n            self.log_error(f\"Scene recommendation failed: {exc}\")\n            return {\n                \"lighting_style\": \"\", \"camera_mode\": \"\", \"atmosphere_type\": \"\",\n                \"template_id\": \"\", \"recommended_assets\": [], \"overall_confidence\": 0.0,\n                \"recommendations_json\": json.dumps({\"error\": str(exc)}),\n                \"exec_out\": True,\n            }\n\n        lighting_style  = recs[\"lighting\"][\"recommended_style\"]\n        camera_mode     = recs[\"camera\"][\"recommended_mode\"]\n        atmosphere_type = recs[\"atmosphere\"][\"recommended_type\"]\n        confidence      = float(recs[\"overall_confidence\"])\n\n        self.log_info(\n            f\"Scene recommendations for '{scene_type}': \"\n            f\"lighting={lighting_style}, camera={camera_mode}, \"\n            f\"atmosphere={atmosphere_type}, confidence={confidence:.2f}\"\n        )\n\n        return {\n            \"lighting_style\":       lighting_style,\n            \"camera_mode\":          camera_mode,\n            \"atmosphere_type\":      atmosphere_type,\n            \"template_id\":          recs[\"template_id\"],\n            \"recommended_assets\":   recs[\"assets\"],\n            \"overall_confidence\":   confidence,\n            \"recommendations_json\": json.dumps(recs, indent=2, default=str),\n            \"exec_out\":             True,\n        }\n\n\ndef register_node():\n    return HouMCPSceneRecommendationNode\n"
+}

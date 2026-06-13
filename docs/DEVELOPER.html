@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Developer Documentation — Vibrante-Node v2.4.0</title>
+<title>Developer Documentation — Vibrante-Node v2.5.0</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -49,7 +49,8 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="DOCUMENTATION.html">Technical Feature List</a>
   <hr style="border-color:#313244;margin:10px 18px">
   <h2 style="margin-top:8px">Release Notes</h2>
-  <a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
+  <a class="nav-release" href="RELEASE_v2.5.0.html">Release Notes v2.5.0</a>
+<a class="nav-release" href="RELEASE_v2.4.0.html">Release Notes v2.4.0</a>
 <a class="nav-release" href="RELEASE_v2.3.0.html">Release Notes v2.3.0</a>
 <a class="nav-release" href="RELEASE_v2.2.1.html">Release Notes v2.2.1</a>
 <a class="nav-release" href="RELEASE_v2.2.0.html">Release Notes v2.2.0</a>
@@ -78,58 +79,66 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <a href="#contents" style="padding-left:18px">Contents</a>
 <a href="#1-architecture-layers" style="padding-left:18px">1. Architecture Layers</a>
 <a href="#key-files" style="padding-left:32px">Key Files</a>
-<a href="#2-execution-engine-networkexecutor" style="padding-left:18px">2. Execution Engine — NetworkExecutor</a>
+<a href="#2-runtime-layer-ai-orchestration-tiers-16" style="padding-left:18px">2. Runtime Layer — AI Orchestration (Tiers 1–6)</a>
+<a href="#design-rules-non-negotiable" style="padding-left:32px">Design Rules (Non-Negotiable)</a>
+<a href="#tier-summary" style="padding-left:32px">Tier Summary</a>
+<a href="#mcp-transport-architecture-tier-6" style="padding-left:32px">MCP Transport Architecture (Tier 6)</a>
+<a href="#forbidden-tool-surface" style="padding-left:32px">Forbidden Tool Surface</a>
+<a href="#execution-safety-invariants" style="padding-left:32px">Execution Safety Invariants</a>
+<a href="#adding-a-new-mcp-tool" style="padding-left:32px">Adding a New MCP Tool</a>
+<a href="#scene-cache-invalidation-rule" style="padding-left:32px">Scene Cache Invalidation Rule</a>
+<a href="#3-execution-engine-networkexecutor" style="padding-left:18px">3. Execution Engine — NetworkExecutor</a>
 <a href="#startup-sequence" style="padding-left:32px">Startup Sequence</a>
 <a href="#node-instantiation" style="padding-left:32px">Node Instantiation</a>
 <a href="#signals-emitted-by-the-engine" style="padding-left:32px">Signals Emitted by the Engine</a>
-<a href="#3-event-loop-integration" style="padding-left:18px">3. Event Loop Integration</a>
-<a href="#4-data-flow-and-propagation" style="padding-left:18px">4. Data Flow and Propagation</a>
+<a href="#4-event-loop-integration" style="padding-left:18px">4. Event Loop Integration</a>
+<a href="#5-data-flow-and-propagation" style="padding-left:18px">5. Data Flow and Propagation</a>
 <a href="#wire-model" style="padding-left:32px">Wire Model</a>
 <a href="#output-propagation" style="padding-left:32px">Output Propagation</a>
 <a href="#reactive-propagation-outside-execution" style="padding-left:32px">Reactive Propagation (Outside Execution)</a>
-<a href="#5-execution-ordering" style="padding-left:18px">5. Execution Ordering</a>
+<a href="#6-execution-ordering" style="padding-left:18px">6. Execution Ordering</a>
 <a href="#entry-node-detection" style="padding-left:32px">Entry Node Detection</a>
 <a href="#data-pull-recursion" style="padding-left:32px">Data-Pull Recursion</a>
 <a href="#topological-sort-data-flow-only" style="padding-left:32px">Topological Sort (Data-Flow Only)</a>
-<a href="#6-loop-execution" style="padding-left:18px">6. Loop Execution</a>
+<a href="#7-loop-execution" style="padding-left:18px">7. Loop Execution</a>
 <a href="#for-loop" style="padding-left:32px">For Loop</a>
 <a href="#while-loop" style="padding-left:32px">While Loop</a>
 <a href="#break" style="padding-left:32px">Break</a>
-<a href="#7-groupnode-sub-executor" style="padding-left:18px">7. GroupNode Sub-Executor</a>
+<a href="#8-groupnode-sub-executor" style="padding-left:18px">8. GroupNode Sub-Executor</a>
 <a href="#subgraph-tab-editing" style="padding-left:32px">Subgraph Tab Editing</a>
-<a href="#8-bypass-and-init-first-handling" style="padding-left:18px">8. Bypass and Init-First Handling</a>
+<a href="#9-bypass-and-init-first-handling" style="padding-left:18px">9. Bypass and Init-First Handling</a>
 <a href="#bypass" style="padding-left:32px">Bypass</a>
 <a href="#init-first-init_priority" style="padding-left:32px">Init-First (init_priority)</a>
-<a href="#9-error-propagation-and-cancellation" style="padding-left:18px">9. Error Propagation and Cancellation</a>
+<a href="#10-error-propagation-and-cancellation" style="padding-left:18px">10. Error Propagation and Cancellation</a>
 <a href="#unhandled-exceptions" style="padding-left:32px">Unhandled Exceptions</a>
 <a href="#cancellation" style="padding-left:32px">Cancellation</a>
-<a href="#10-node-registry-system" style="padding-left:18px">10. Node Registry System</a>
+<a href="#11-node-registry-system" style="padding-left:18px">11. Node Registry System</a>
 <a href="#loading" style="padding-left:32px">Loading</a>
 <a href="#compilation" style="padding-left:32px">Compilation</a>
 <a href="#hot-reload" style="padding-left:32px">Hot Reload</a>
-<a href="#11-serialization-system" style="padding-left:18px">11. Serialization System</a>
+<a href="#12-serialization-system" style="padding-left:18px">12. Serialization System</a>
 <a href="#workflowmodel" style="padding-left:32px">WorkflowModel</a>
 <a href="#nodeinstancemodel" style="padding-left:32px">NodeInstanceModel</a>
 <a href="#connectionmodel" style="padding-left:32px">ConnectionModel</a>
 <a href="#save-and-load" style="padding-left:32px">Save and Load</a>
-<a href="#12-qt-frontend-architecture" style="padding-left:18px">12. Qt Frontend Architecture</a>
+<a href="#13-qt-frontend-architecture" style="padding-left:18px">13. Qt Frontend Architecture</a>
 <a href="#qgraphicsscene-nodescene" style="padding-left:32px">QGraphicsScene — NodeScene</a>
 <a href="#nodeview-qgraphicsview" style="padding-left:32px">NodeView — QGraphicsView</a>
 <a href="#history-and-undoredo" style="padding-left:32px">History and Undo/Redo</a>
-<a href="#13-thread-safety-mainthreaddispatcher" style="padding-left:18px">13. Thread Safety — MainThreadDispatcher</a>
-<a href="#14-environment-system-envmanager" style="padding-left:18px">14. Environment System — EnvManager</a>
+<a href="#14-thread-safety-mainthreaddispatcher" style="padding-left:18px">14. Thread Safety — MainThreadDispatcher</a>
+<a href="#15-environment-system-envmanager" style="padding-left:18px">15. Environment System — EnvManager</a>
 <a href="#configuration-keys-persisted-in-vibrante_node_configjson" style="padding-left:32px">Configuration Keys (persisted in ~/.vibrante_node_config.json)</a>
 <a href="#merge-semantics" style="padding-left:32px">Merge Semantics</a>
 <a href="#thread-safety" style="padding-left:32px">Thread Safety</a>
 <a href="#subprocess-helper" style="padding-left:32px">Subprocess Helper</a>
 <a href="#reinitialize" style="padding-left:32px">Reinitialize</a>
 <a href="#import-export" style="padding-left:32px">Import / Export</a>
-<a href="#15-plugin-architecture-houdini" style="padding-left:18px">15. Plugin Architecture — Houdini</a>
+<a href="#16-plugin-architecture-houdini" style="padding-left:18px">16. Plugin Architecture — Houdini</a>
 <a href="#plugin-layout" style="padding-left:32px">Plugin Layout</a>
 <a href="#launch-sequence" style="padding-left:32px">Launch Sequence</a>
 <a href="#json-rpc-server-vibrante_hou_serverpy" style="padding-left:32px">JSON-RPC Server (vibrante_hou_server.py)</a>
 <a href="#houbridge-client-srcutilshou_bridgepy" style="padding-left:32px">HouBridge Client (src/utils/hou_bridge.py)</a>
-<a href="#16-performance-considerations" style="padding-left:18px">16. Performance Considerations</a>
+<a href="#17-performance-considerations" style="padding-left:18px">17. Performance Considerations</a>
 <a href="#cpu-bound-work" style="padding-left:32px">CPU-Bound Work</a>
 <a href="#io-bound-work" style="padding-left:32px">I/O-Bound Work</a>
 <a href="#large-graphs" style="padding-left:32px">Large Graphs</a>
@@ -139,45 +148,52 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <main class="content">
 <h1 id="vibrante-node-developer-guide">Vibrante-Node — Developer Guide</h1>
 <p><strong>Version:</strong> v2.4.0 | <a href="USER_GUIDE.md">User Guide</a> | <a href="NODE_BUILDER_API.md">Node Builder API</a> | <a href="AUTOMATION_API.md">Automation API</a> | <a href="DOCUMENTATION.md">Technical Reference</a></p>
-<p>This guide describes the internal architecture of Vibrante-Node: the execution engine, node registry, serialization system, Qt threading model, environment management, and plugin architecture. It is written for contributors, pipeline TDs, and developers who need to understand what happens between the user pressing Run and the last node completing.</p>
+<p>This guide describes the internal architecture of Vibrante-Node: the execution engine, node registry, serialization system, Qt threading model, runtime layer, environment management, and plugin architecture. It is written for contributors, pipeline TDs, and developers who need to understand what happens between a user pressing Run (or an automation script triggering execution) and the last node completing.</p>
 <hr />
 <h2 id="contents">Contents</h2>
 <ol>
 <li><a href="#1-architecture-layers">Architecture Layers</a></li>
-<li><a href="#2-execution-engine">Execution Engine — NetworkExecutor</a></li>
-<li><a href="#3-event-loop-integration">Event Loop Integration</a></li>
-<li><a href="#4-data-flow-and-propagation">Data Flow and Propagation</a></li>
-<li><a href="#5-execution-ordering">Execution Ordering</a></li>
-<li><a href="#6-loop-execution">Loop Execution</a></li>
-<li><a href="#7-groupnode-sub-executor">GroupNode Sub-Executor</a></li>
-<li><a href="#8-bypass-and-init-first-handling">Bypass and Init-First Handling</a></li>
-<li><a href="#9-error-propagation-and-cancellation">Error Propagation and Cancellation</a></li>
-<li><a href="#10-node-registry-system">Node Registry System</a></li>
-<li><a href="#11-serialization-system">Serialization System</a></li>
-<li><a href="#12-qt-frontend-architecture">Qt Frontend Architecture</a></li>
-<li><a href="#13-thread-safety">Thread Safety — MainThreadDispatcher</a></li>
-<li><a href="#14-environment-system">Environment System — EnvManager</a></li>
-<li><a href="#15-plugin-architecture">Plugin Architecture — Houdini</a></li>
-<li><a href="#16-performance-considerations">Performance Considerations</a></li>
+<li><a href="#2-runtime-layer">Runtime Layer — AI Orchestration (Tiers 1–6)</a></li>
+<li><a href="#3-execution-engine">Execution Engine — NetworkExecutor</a></li>
+<li><a href="#4-event-loop-integration">Event Loop Integration</a></li>
+<li><a href="#5-data-flow-and-propagation">Data Flow and Propagation</a></li>
+<li><a href="#6-execution-ordering">Execution Ordering</a></li>
+<li><a href="#7-loop-execution">Loop Execution</a></li>
+<li><a href="#8-groupnode-sub-executor">GroupNode Sub-Executor</a></li>
+<li><a href="#9-bypass-and-init-first-handling">Bypass and Init-First Handling</a></li>
+<li><a href="#10-error-propagation-and-cancellation">Error Propagation and Cancellation</a></li>
+<li><a href="#11-node-registry-system">Node Registry System</a></li>
+<li><a href="#12-serialization-system">Serialization System</a></li>
+<li><a href="#13-qt-frontend-architecture">Qt Frontend Architecture</a></li>
+<li><a href="#14-thread-safety">Thread Safety — MainThreadDispatcher</a></li>
+<li><a href="#15-environment-system">Environment System — EnvManager</a></li>
+<li><a href="#16-plugin-architecture">Plugin Architecture — Houdini</a></li>
+<li><a href="#17-performance-considerations">Performance Considerations</a></li>
 </ol>
 <hr />
 <h2 id="1-architecture-layers">1. Architecture Layers</h2>
-<p>Vibrante-Node is organized into four layers. Dependencies flow top-to-bottom; no lower layer imports from a higher one.</p>
-<pre><code>┌─────────────────────────────────────────────────────┐
-│  UI Layer  (src/ui/)                                 │
-│  Qt canvas, panels, dialogs, node widgets, toolbars  │
-├─────────────────────────────────────────────────────┤
-│  Core Layer  (src/core/)                             │
-│  Execution engine, graph manager, node registry      │
-├─────────────────────────────────────────────────────┤
-│  Nodes Layer  (src/nodes/)                           │
-│  BaseNode, builtins, JSON-compiled dynamic nodes     │
-├─────────────────────────────────────────────────────┤
-│  Utils Layer  (src/utils/)                           │
-│  HouBridge, EnvManager, PrismCore, qt_compat,        │
-│  async runtime, config manager                       │
-└─────────────────────────────────────────────────────┘
+<p>Vibrante-Node is organized into four required layers plus one optional extension. Dependencies flow top-to-bottom — no lower layer imports from a higher one. The Runtime Extensions are optional and additive: they call into Core and Utils but are not imported by them.</p>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│  UI Layer  (src/ui/)                                     │
+│  Qt canvas, panels, dialogs, node widgets, toolbars      │
+│  — not imported in headless/MCP server mode              │
+├─────────────────────────────────────────────────────────┤
+│  Core Layer  (src/core/)                                 │
+│  Execution engine, graph manager, node registry          │
+├─────────────────────────────────────────────────────────┤
+│  Nodes Layer  (src/nodes/)                               │
+│  BaseNode, builtins, JSON-compiled dynamic nodes         │
+├─────────────────────────────────────────────────────────┤
+│  Utils Layer  (src/utils/)                               │
+│  HouBridge, EnvManager, PrismCore, qt_compat,            │
+│  async runtime, config manager                           │
+├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
+│  Runtime Extensions  (src/runtime/)  ← optional          │
+│  MCP server, AI planning, transaction system,            │
+│  validation, analytics  (Tiers 1–6, 40+ modules)        │
+└─────────────────────────────────────────────────────────┘
 </code></pre>
+<p>The Runtime Extensions are an optional addition in v2.4.0 — <code>scripts/run_vibrante_mcp.py</code> starts the full runtime without importing Qt.</p>
 <h3 id="key-files">Key Files</h3>
 <table>
 <thead>
@@ -187,6 +203,62 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><code>scripts/run_vibrante_mcp.py</code></td>
+<td>MCP server entry point (headless mode)</td>
+</tr>
+<tr>
+<td><code>src/runtime/mcp_transport.py</code></td>
+<td>MCP stdio server — list/call tool handlers</td>
+</tr>
+<tr>
+<td><code>src/runtime/mcp_tool_registry.py</code></td>
+<td>12 semantic MCP tools, <code>register_all_tools()</code></td>
+</tr>
+<tr>
+<td><code>src/runtime/semantic_execution.py</code></td>
+<td><code>SemanticExecutor</code> — intent → ops → transaction</td>
+</tr>
+<tr>
+<td><code>src/runtime/ai_planner.py</code></td>
+<td><code>AIPlanner</code> — NL → structured execution plan</td>
+</tr>
+<tr>
+<td><code>src/runtime/intent_parser.py</code></td>
+<td><code>IntentParser</code> — keyword → intent with LLM enhancement</td>
+</tr>
+<tr>
+<td><code>src/runtime/transaction_manager.py</code></td>
+<td><code>TransactionManager</code> — begin/record/commit/rollback</td>
+</tr>
+<tr>
+<td><code>src/runtime/houdini_runtime.py</code></td>
+<td><code>scene_context()</code>, <code>build_node_chain()</code>, rollback handlers</td>
+</tr>
+<tr>
+<td><code>src/runtime/validation_engine.py</code></td>
+<td><code>ValidationEngine</code> — pre-execution structural validation</td>
+</tr>
+<tr>
+<td><code>src/runtime/runtime_constraints.py</code></td>
+<td><code>RuntimeConstraints</code> — protected paths, forbidden ops</td>
+</tr>
+<tr>
+<td><code>src/runtime/scene_cache.py</code></td>
+<td><code>SceneCache</code> — TTL cache + dirty tracking</td>
+</tr>
+<tr>
+<td><code>src/runtime/runtime_identity.py</code></td>
+<td>Constants: tool names, execution rules, identity</td>
+</tr>
+<tr>
+<td><code>src/runtime/runtime_bootstrap.py</code></td>
+<td>Singleton warm-up; structured bootstrap data</td>
+</tr>
+<tr>
+<td><code>src/runtime/mcp_session.py</code></td>
+<td><code>SessionManager</code> — per-connection session lifecycle</td>
+</tr>
 <tr>
 <td><code>src/core/engine.py</code></td>
 <td><code>NetworkExecutor</code> — the async execution engine</td>
@@ -246,7 +318,117 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </tbody>
 </table>
 <hr />
-<h2 id="2-execution-engine-networkexecutor">2. Execution Engine — NetworkExecutor</h2>
+<h2 id="2-runtime-layer-ai-orchestration-tiers-16">2. Runtime Layer — AI Orchestration (Tiers 1–6)</h2>
+<p>The <code>src/runtime/</code> module is the orchestration seam between AI/graph nodes and the Houdini bridge. It operates fully independently of the Qt UI and can be started headlessly via <code>scripts/run_vibrante_mcp.py</code>.</p>
+<h3 id="design-rules-non-negotiable">Design Rules (Non-Negotiable)</h3>
+<ol>
+<li><strong>MCP is transport only.</strong> The MCP server receives tool calls and routes them through the runtime; it never delegates scene understanding or planning to an LLM directly.</li>
+<li><strong>No arbitrary Python execution.</strong> AI-facing nodes and tools never accept a <code>code</code>/<code>python</code>/<code>script</code> argument. All execution is structured, validated, deterministic.</li>
+<li><strong>Validation before mutation.</strong> Every op list is shape-checked by <code>ValidationEngine</code> and policy-gated by <code>RuntimeConstraints</code> before any bridge interaction.</li>
+<li><strong>Transaction boundary.</strong> All mutations route through <code>TransactionManager.begin_transaction</code> → <code>execute_operation</code> → <code>commit_transaction</code> / <code>rollback_transaction</code>.</li>
+<li><strong>Context first.</strong> <code>scene_context()</code> provides the structured snapshot that AI agents read before acting.</li>
+</ol>
+<h3 id="tier-summary">Tier Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Modules</th>
+<th>What it adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>mcp_runtime</code>, <code>houdini_runtime</code>, <code>scene_cache</code></td>
+<td>MCP client sessions, scene context, node chain builder</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>transaction_manager</code>, <code>scene_cache</code> (dirty)</td>
+<td>Transaction lifecycle, rollback, dirty tracking, graph diff</td>
+</tr>
+<tr>
+<td>2.5</td>
+<td><code>dependency_graph</code>, <code>validation_engine</code>, <code>audit_store</code>, <code>execution_scheduler</code></td>
+<td>Dependency tracking, pre-execution validation, audit log, serialized execution queue</td>
+</tr>
+<tr>
+<td>2.75</td>
+<td><code>capability_registry</code>, <code>resource_estimator</code>, <code>runtime_constraints</code>, <code>workflow_templates</code>, <code>semantic_registry</code>, <code>semantic_execution</code></td>
+<td>Semantic op registry, constraint policies, deterministic workflow templates, full semantic executor</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>llm_provider</code>, <code>intent_parser</code>, <code>contextual_reasoning</code>, <code>ai_planner</code>, <code>plan_validator</code>, <code>approval_pipeline</code>, <code>planning_memory</code></td>
+<td>Controlled AI planning pipeline with approval gate</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>agent_runtime</code>, <code>distributed_runtime</code>, <code>multi_dcc_runtime</code>, <code>knowledge_graph</code>, <code>workflow_federation</code>, <code>runtime_federation_api</code></td>
+<td>Supervised agents, distributed workers, multi-DCC routing, federated workflows</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>workflow_optimizer</code>, <code>runtime_analytics</code>, <code>predictive_execution</code>, <code>recommendation_engine</code>, <code>execution_quality</code>, <code>studio_knowledge</code></td>
+<td>Advisory analytics — no execution authority</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>runtime_identity</code>, <code>runtime_bootstrap</code>, <code>runtime_prompt_context</code>, <code>mcp_session</code>, <code>mcp_tool_registry</code>, <code>mcp_transport</code></td>
+<td>Full MCP server: 12 semantic tools, stdio transport, session management</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mcp-transport-architecture-tier-6">MCP Transport Architecture (Tier 6)</h3>
+<pre><code>External AI client (Claude Desktop / Codex CLI / Cursor)
+    ↓  stdin/stdout (MCP stdio protocol)
+MCPTransport._run_async()
+    ├── app.list_tools()  → MCPToolRegistry.list_tools()
+    └── app.call_tool()   → MCPToolRegistry.dispatch_tool(name, args)
+                                    ↓
+                          tool handler function
+                                    ↓
+                          SemanticExecutor / TransactionManager / houdini_runtime
+                                    ↓
+                          returns TextContent(type=&quot;text&quot;, text=json.dumps(result))
+</code></pre>
+<p>The MCP SDK is imported lazily on first <code>run_stdio()</code> call (<code>_require_mcp_server()</code>). Importing <code>mcp_transport</code> at startup costs nothing.</p>
+<p><code>dispatch_tool</code> never raises — all exceptions are caught and returned as <code>{"ok": False, "error": str(exc)}</code>. The transport process never crashes due to a tool failure.</p>
+<h3 id="forbidden-tool-surface">Forbidden Tool Surface</h3>
+<p>The <code>mcp_tool_registry</code> must never register these names (test-enforced in <code>test_mcp_tool_registry.py</code>):</p>
+<pre><code class="language-python">FORBIDDEN_TOOLS = {
+    &quot;create_node&quot;, &quot;set_parm&quot;, &quot;set_parms&quot;, &quot;run_python&quot;,
+    &quot;run_code&quot;, &quot;delete_node&quot;, &quot;raw_houdini_execute&quot;,
+    &quot;connect_nodes&quot;, &quot;cook_node&quot;,
+}
+</code></pre>
+<h3 id="execution-safety-invariants">Execution Safety Invariants</h3>
+<p>All PRs touching <code>src/runtime/</code> must verify:</p>
+<ol>
+<li><code>AgentRuntime.submit_proposal()</code> returns a plan; it never calls <code>execute_operation</code> directly.</li>
+<li><code>DistributedRuntime._execute_local()</code> calls <code>RuntimeConstraints.validate_transaction()</code> and <code>ValidationEngine.validate_operations()</code> before any bridge interaction.</li>
+<li><code>execute_workflow_transaction</code> tool handler: plans with <code>ok=False</code> are rejected; plans with <code>requires_approval=True</code> return <code>pending_approval</code> unless <code>approver</code> is supplied.</li>
+<li>No Tier 5 module calls <code>get_bridge()</code>, <code>houdini_runtime</code>, <code>TransactionManager</code>, or <code>ExecutionScheduler.enqueue()</code>.</li>
+<li>Built-in MCP server tools cannot be deregistered (<code>deregister_tool()</code> raises <code>ValueError</code> for built-ins).</li>
+</ol>
+<h3 id="adding-a-new-mcp-tool">Adding a New MCP Tool</h3>
+<ol>
+<li>Write an <code>async</code> handler function. It must return a <code>dict</code> (or any JSON-serializable value); exceptions are caught by <code>dispatch_tool</code>.</li>
+<li>Create a <code>ToolDefinition(name, description, inputSchema, handler, category)</code>.</li>
+<li>Call <code>registry.register_tool(defn)</code> inside <code>register_all_tools()</code> in <code>mcp_tool_registry.py</code>.</li>
+<li>Add the name to <code>MCP_TOOL_NAMES</code> in <code>runtime_identity.py</code>.</li>
+<li>Add the name to <code>EXPECTED_TOOLS</code> in <code>tests/unit/test_mcp_tool_registry.py</code>.</li>
+<li>Check that the name is not in <code>FORBIDDEN_TOOLS</code>.</li>
+</ol>
+<h3 id="scene-cache-invalidation-rule">Scene Cache Invalidation Rule</h3>
+<p>Any function in <code>houdini_runtime.py</code> or a rollback handler that mutates Houdini state <strong>must</strong> call:</p>
+<pre><code class="language-python">from src.runtime.scene_cache import get_scene_cache
+get_scene_cache().invalidate(&quot;scene_context::&quot;)
+</code></pre>
+<p>before returning. <code>build_node_chain</code> and all rollback handlers in <code>_ROLLBACK_HANDLERS</code> already follow this pattern — copy it when adding new mutating operations.</p>
+<hr />
+<h2 id="3-execution-engine-networkexecutor">3. Execution Engine — NetworkExecutor</h2>
 <p><code>NetworkExecutor</code> (<code>src/core/engine.py</code>) is the central execution engine. It is a <code>QObject</code> (not a <code>QThread</code>) and runs entirely on the Qt main thread.</p>
 <h3 id="startup-sequence">Startup Sequence</h3>
 <p>When the user presses F5 (or calls <code>app.execute_pipeline()</code>):</p>
@@ -320,7 +502,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </table>
 <p><code>MainWindow</code> connects to these signals to update the Log Panel, update node border colors, and invoke <code>scene.update_edge_value()</code> for the Live Wire Inspector.</p>
 <hr />
-<h2 id="3-event-loop-integration">3. Event Loop Integration</h2>
+<h2 id="4-event-loop-integration">4. Event Loop Integration</h2>
 <p>Qt and asyncio each require ownership of the thread's event loop. Vibrante-Node bridges them with <code>_EventLoopRunner</code>, a zero-delay <code>QTimer</code> that drives the asyncio loop from inside Qt's event loop.</p>
 <pre><code>QTimer(interval=0) ──► _EventLoopRunner._step()
                               │
@@ -333,7 +515,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 3. Returns control to Qt's event loop, keeping the UI responsive.</p>
 <p>This scheme interleaves Qt events and asyncio tasks with zero blocking. The practical consequence: every <code>await</code> in a node's <code>execute()</code> yields control to both Qt and other asyncio tasks.</p>
 <hr />
-<h2 id="4-data-flow-and-propagation">4. Data Flow and Propagation</h2>
+<h2 id="5-data-flow-and-propagation">5. Data Flow and Propagation</h2>
 <h3 id="wire-model">Wire Model</h3>
 <p>Each connection in the workflow maps an output port on one node to an input port on another. The engine maintains a <code>node_results</code> dict (<code>dict[instance_id, dict[port_name, value]]</code>) that accumulates outputs as each node completes.</p>
 <h3 id="output-propagation">Output Propagation</h3>
@@ -349,7 +531,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <p>During parameter changes (user typing in a widget), <code>NodeWidget._update_param()</code> calls <code>_propagate_all_outputs()</code>. This scans all outgoing wires on every output port and pushes the current values downstream — updating widget displays in real time without a full execution run.</p>
 <p><strong>Critical:</strong> <code>_propagate_all_outputs()</code> must run on the Qt main thread because it calls <code>widget.setText()</code> and similar methods. It is dispatched via <code>_MainThreadDispatcher</code> (see <a href="#13-thread-safety">Section 13</a>).</p>
 <hr />
-<h2 id="5-execution-ordering">5. Execution Ordering</h2>
+<h2 id="6-execution-ordering">6. Execution Ordering</h2>
 <h3 id="entry-node-detection">Entry Node Detection</h3>
 <p>Entry nodes are nodes with no incoming <code>exec_in</code> wire. The engine starts execution from all entry nodes as concurrent asyncio tasks. For a simple single-chain workflow, this is one node; for a forked workflow, it may be several.</p>
 <p>Data-only nodes (no exec pins) are never entry nodes in exec-flow mode. They are reached only by the data-pull mechanism.</p>
@@ -367,7 +549,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <h3 id="topological-sort-data-flow-only">Topological Sort (Data-Flow Only)</h3>
 <p>When a workflow contains only data-only nodes (no exec pins anywhere), <code>GraphManager.topological_sort()</code> determines execution order using <code>toposort</code>. The engine executes nodes in dependency order, layer by layer.</p>
 <hr />
-<h2 id="6-loop-execution">6. Loop Execution</h2>
+<h2 id="7-loop-execution">7. Loop Execution</h2>
 <h3 id="for-loop">For Loop</h3>
 <p><code>for_loop</code> builds the complete index list <code>[0, 1, ..., N-1]</code> inside a single <code>execute()</code> call, returns it via the <code>indices</code> output port, and fires <code>exec_out</code> once. <code>loop_body</code> then drives per-item iteration.</p>
 <p>The <code>loop_body</code> node iterates the list in its own <code>execute()</code>, calling <code>_run_from_node()</code> on its downstream chain once per item. The removal of <code>_exec_lock</code> (done in v1.0.5) makes this re-entrant execution safe — the engine can enter <code>_run_from_node()</code> recursively from within an active <code>execute()</code> coroutine.</p>
@@ -376,7 +558,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <h3 id="break">Break</h3>
 <p>The <code>loop_break</code> node checks a boolean condition and, if <code>True</code>, sets an internal flag that causes <code>loop_body</code> to stop iteration after the current item.</p>
 <hr />
-<h2 id="7-groupnode-sub-executor">7. GroupNode Sub-Executor</h2>
+<h2 id="8-groupnode-sub-executor">8. GroupNode Sub-Executor</h2>
 <p><code>GroupNode</code> (defined in <code>src/nodes/builtins/group_node.py</code>) stores a full <code>WorkflowModel</code> in its <code>parameters["__workflow__"]</code>. When the engine executes a GroupNode:</p>
 <ol>
 <li>A nested <code>NetworkExecutor</code> is created for the inner <code>WorkflowModel</code>.</li>
@@ -391,7 +573,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <h3 id="subgraph-tab-editing">Subgraph Tab Editing</h3>
 <p><code>MainWindow._open_subgraph_tab()</code> creates a new tab for the inner workflow. A <code>_sync_callback</code> closure is attached to the inner <code>NodeScene</code> via <code>scene._sync_callback</code>. This closure is called by <code>push_history()</code>, <code>undo()</code>, and <code>redo()</code> on the inner scene — it serializes the inner scene state and writes it back to <code>group_widget.node_definition.parameters["__workflow__"]</code>, and pushes a history entry on the parent scene.</p>
 <hr />
-<h2 id="8-bypass-and-init-first-handling">8. Bypass and Init-First Handling</h2>
+<h2 id="9-bypass-and-init-first-handling">9. Bypass and Init-First Handling</h2>
 <h3 id="bypass">Bypass</h3>
 <p><code>NetworkExecutor._run_single_node_impl()</code> checks <code>node.bypassed</code> before calling <code>execute()</code>:</p>
 <ul>
@@ -405,7 +587,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <p><strong>Pass 2:</strong> Create and connect all remaining nodes.</p>
 <p>This guarantees that authentication nodes and server-connect nodes are fully instantiated and wired before any downstream node that depends on them via <code>on_plug_sync</code> is created.</p>
 <hr />
-<h2 id="9-error-propagation-and-cancellation">9. Error Propagation and Cancellation</h2>
+<h2 id="10-error-propagation-and-cancellation">10. Error Propagation and Cancellation</h2>
 <h3 id="unhandled-exceptions">Unhandled Exceptions</h3>
 <p>If <code>execute()</code> raises any unhandled exception:</p>
 <ol>
@@ -426,7 +608,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 </code></pre>
 <p>The <code>asyncio.Task.cancel()</code> API is also used for immediate cancellation of nodes that are <code>await</code>-ing I/O.</p>
 <hr />
-<h2 id="10-node-registry-system">10. Node Registry System</h2>
+<h2 id="11-node-registry-system">11. Node Registry System</h2>
 <h3 id="loading">Loading</h3>
 <p><code>NodeRegistry.load_all_with_extras(bundled_nodes_dir)</code> is the primary load path. It:</p>
 <ol>
@@ -462,7 +644,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 4. Re-applies parameters where the port still exists and type is compatible.<br />
 5. Removes wires to deleted ports.</p>
 <hr />
-<h2 id="11-serialization-system">11. Serialization System</h2>
+<h2 id="12-serialization-system">12. Serialization System</h2>
 <h3 id="workflowmodel">WorkflowModel</h3>
 <pre><code class="language-python">class WorkflowModel(BaseModel):
     nodes:        list[NodeInstanceModel]   = []
@@ -502,7 +684,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 6. Restores <code>_undoing</code> to original value.<br />
 7. If a <code>_sync_callback</code> is attached (subgraph tab), calls it.</p>
 <hr />
-<h2 id="12-qt-frontend-architecture">12. Qt Frontend Architecture</h2>
+<h2 id="13-qt-frontend-architecture">13. Qt Frontend Architecture</h2>
 <h3 id="qgraphicsscene-nodescene">QGraphicsScene — NodeScene</h3>
 <p><code>NodeScene</code> manages all canvas items:</p>
 <ul>
@@ -525,7 +707,7 @@ blockquote { border-left: 4px solid #6c7086; padding-left: 16px; color: #a6adc8;
 <p><code>NodeScene</code> maintains a <code>_history</code> list of serialized <code>WorkflowModel</code> snapshots. <code>push_history()</code> appends a snapshot (unless <code>_undoing</code> is True). <code>undo()</code> / <code>redo()</code> index into <code>_history</code>, call <code>from_workflow_model()</code> with <code>_undoing = True</code> to suppress recursive history pushes.</p>
 <p>Dirty state: <code>push_history()</code> sets <code>_dirty = True</code> and emits <code>dirty_changed(True)</code> on the first change after a save (clean → dirty transition). <code>mark_clean()</code> resets to clean.</p>
 <hr />
-<h2 id="13-thread-safety-mainthreaddispatcher">13. Thread Safety — MainThreadDispatcher</h2>
+<h2 id="14-thread-safety-mainthreaddispatcher">14. Thread Safety — MainThreadDispatcher</h2>
 <p>The asyncio execution engine and Qt UI both run on the same OS thread (the Qt main thread). However, <code>asyncio</code> coroutines can be interleaved with each other and with Qt slots. This creates one specific hazard:</p>
 <p><strong><code>_propagate_all_outputs()</code> in <code>NodeWidget</code></strong> accesses <code>scene().edges</code> and calls widget methods (<code>w.setText()</code>, <code>w.setValue()</code>). If called from inside the asyncio execution path (e.g., from <code>on_parameter_changed</code> triggered by engine output propagation), it runs "inside" an asyncio coroutine on the main thread. Qt widget method calls are safe on the main thread, but they must not preempt other Qt operations mid-frame.</p>
 <p><strong>Solution:</strong> <code>_MainThreadDispatcher</code> is a module-level <code>QObject</code> with a <code>pyqtSignal(object)</code> connected with <code>Qt.QueuedConnection</code>. Emitting this signal from any context queues a deferred call to the slot, which runs at the next Qt event loop iteration — after the current asyncio step completes.</p>
@@ -539,7 +721,7 @@ _main_dispatcher.post(self._propagate_all_outputs)
 # This queues the call for the next Qt event loop iteration
 </code></pre>
 <hr />
-<h2 id="14-environment-system-envmanager">14. Environment System — EnvManager</h2>
+<h2 id="15-environment-system-envmanager">15. Environment System — EnvManager</h2>
 <p><code>EnvManager</code> (<code>src/utils/env_manager.py</code>) is a singleton that manages all environment configuration. It is initialized once at startup via <code>env_manager.initialize()</code> in <code>src/main.py</code>.</p>
 <h3 id="configuration-keys-persisted-in-vibrante_node_configjson">Configuration Keys (persisted in <code>~/.vibrante_node_config.json</code>)</h3>
 <table>
@@ -593,7 +775,7 @@ env_manager.import_settings(data)
 # Persists all four groups. Unknown keys are silently ignored.
 </code></pre>
 <hr />
-<h2 id="15-plugin-architecture-houdini">15. Plugin Architecture — Houdini</h2>
+<h2 id="16-plugin-architecture-houdini">16. Plugin Architecture — Houdini</h2>
 <p>The Houdini integration consists of two sides: code running inside Houdini and the Vibrante-Node subprocess.</p>
 <h3 id="plugin-layout">Plugin Layout</h3>
 <pre><code>plugins/houdini/
@@ -637,7 +819,7 @@ env_manager.import_settings(data)
 <li>Auto-reconnect on <code>BrokenPipeError</code> / <code>ConnectionResetError</code>.</li>
 </ul>
 <hr />
-<h2 id="16-performance-considerations">16. Performance Considerations</h2>
+<h2 id="17-performance-considerations">17. Performance Considerations</h2>
 <h3 id="cpu-bound-work">CPU-Bound Work</h3>
 <p>The asyncio engine runs on the main thread. CPU-bound operations in <code>execute()</code> will block the event loop and freeze the UI. Offload them to a thread pool:</p>
 <pre><code class="language-python">import asyncio
@@ -672,8 +854,10 @@ async def execute(self, inputs):
 <p><strong>See also:</strong></p>
 <ul>
 <li><a href="NODE_BUILDER_API.md">Node Builder API</a> — <code>BaseNode</code> contract, port system, lifecycle hooks</li>
-<li><a href="AUTOMATION_API.md">Automation API</a> — <code>NodeRegistry</code> hot-reload, scene manipulation from scripts</li>
-<li><a href="DOCUMENTATION.md">Technical Reference</a> — complete signal catalogue, model schemas, API signatures</li>
+<li><a href="AUTOMATION_API.md">Automation API</a> — <code>NodeRegistry</code> hot-reload, scene manipulation from scripts, MCP runtime API</li>
+<li><a href="DOCUMENTATION.md">Technical Reference</a> — complete signal catalogue, model schemas, MCP tool reference</li>
+<li><code>src/runtime/</code> — Runtime Layer source (40+ modules, Tiers 1–6)</li>
+<li><code>scripts/run_vibrante_mcp.py</code> — MCP server entry point</li>
 <li><code>src/core/engine.py</code> — <code>NetworkExecutor</code> source</li>
 <li><code>src/core/registry.py</code> — <code>NodeRegistry</code> source</li>
 <li><code>src/core/models.py</code> — Pydantic models source</li>
