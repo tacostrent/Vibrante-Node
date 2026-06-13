@@ -442,8 +442,8 @@ td code { font-size: .85em; }
   <div class="content-inner">
     <nav class="breadcrumb"><a href="index.html">Docs</a><span class="breadcrumb-sep">›</span><span>Frontend Architecture</span></nav>
     <div class="val-badge val-badge-ok" title="Verified against source code">&#10003; Verified</div>
-<h1 id="07-frontend-architecture">07 — Frontend Architecture</h1>
-<p><strong>Vibrante-Node v2.4.0 — Technical Reference</strong></p>
+<p>﻿# 07 — Frontend Architecture</p>
+<p><strong>Vibrante-Node v2.5.0 — Technical Reference</strong></p>
 <p>This document describes the Qt5 widget hierarchy, rendering pipeline, event model, history system, and all supporting UI subsystems. It targets contributors who need to understand the canvas, add new UI panels, create custom graphics items, or modify how nodes and edges are drawn.</p>
 <blockquote>
 <p><strong>Architecture note:</strong> The UI Layer described in this document is the primary interface for Vibrante-Node users. The execution engine (<code>src/core/engine.py</code>) and Runtime Layer (<code>src/runtime/</code>) are designed to be fully decoupled from Qt — they can additionally be used headlessly from <code>scripts/run_vibrante_mcp.py</code> for advanced automation without a display server. The frontend and backend are decoupled at the <code>NetworkExecutor</code> boundary: the executor calls node <code>execute()</code> coroutines; the UI listens to its Qt signals. Nothing in <code>src/runtime/</code> or <code>src/core/engine.py</code> imports from <code>src/ui/</code>.</p>

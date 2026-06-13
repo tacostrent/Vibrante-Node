@@ -1,6 +1,6 @@
-# 07 — Frontend Architecture
+﻿# 07 — Frontend Architecture
 
-**Vibrante-Node v2.4.0 — Technical Reference**
+**Vibrante-Node v2.5.0 — Technical Reference**
 
 This document describes the Qt5 widget hierarchy, rendering pipeline, event model, history system, and all supporting UI subsystems. It targets contributors who need to understand the canvas, add new UI panels, create custom graphics items, or modify how nodes and edges are drawn.
 

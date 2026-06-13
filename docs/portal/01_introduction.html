@@ -441,8 +441,8 @@ td code { font-size: .85em; }
 <main class="content">
   <div class="content-inner">
     <nav class="breadcrumb"><a href="index.html">Docs</a><span class="breadcrumb-sep">›</span><span>Introduction</span></nav>
-    <div class="val-badge val-badge-ok" title="Verified against source code">&#10003; Verified</div>
-<h1 id="vibrante-node-v240-introduction">Vibrante-Node v2.4.0 — Introduction</h1>
+    <div class="val-badge val-badge-warn" title="2 warning(s) — review recommended">&#9888; 2 warnings</div>
+<p>﻿# Vibrante-Node v2.5.0 — Introduction</p>
 <p><strong>Vibrante-Node</strong> is a Python node-based visual framework for building modular systems through connected nodes and data flows. It provides an intuitive graph interface where complex logic can be constructed visually by linking nodes together.</p>
 <p>The platform focuses on flexibility, extensibility, and developer productivity — making it suitable for building visual pipelines, automation workflows, and data-processing graphs across any domain. Node-based systems allow complex operations to be organized as interconnected components rather than traditional linear code structures, improving clarity and scalability in large workflows.</p>
 <p><strong>Vibrante-Node supports multiple interaction patterns:</strong></p>
@@ -651,7 +651,7 @@ td code { font-size: .85em; }
 </tr>
 </tbody>
 </table>
-<h3 id="advanced-runtime-extensions-optional-v240">Advanced Runtime Extensions <em>(optional — v2.4.0)</em></h3>
+<h3 id="advanced-runtime-extensions-optional-v240">Advanced Runtime Extensions <em>(optional — v2.4.0+)</em></h3>
 <p>Available when <code>mcp&gt;=1.0.0</code> is installed. Headless — no Qt or display server required.</p>
 <table>
 <thead>
@@ -664,7 +664,7 @@ td code { font-size: .85em; }
 <tbody>
 <tr>
 <td><strong>MCP Server</strong></td>
-<td>12 tools for Claude Desktop, Codex CLI, and Cursor: scene inspection, planning, validation, and execution</td>
+<td>14 tools for Claude Desktop, Codex CLI, and Cursor: scene inspection, planning, validation, scene building, and execution</td>
 <td><code>scripts/run_vibrante_mcp.py</code></td>
 </tr>
 <tr>
@@ -674,7 +674,7 @@ td code { font-size: .85em; }
 </tr>
 <tr>
 <td><strong>Houdini AI Nodes</strong></td>
-<td>23 nodes: scene context, node chain builder, transaction, graph diff, AI plan/preview/execute/review</td>
+<td>200+ nodes across 18 intelligence tiers: semantic scene intent, asset intelligence, spatial layout, environment construction, lighting, lookdev, and reality validation</td>
 <td><code>hou_mcp_*</code> nodes</td>
 </tr>
 <tr>
@@ -843,6 +843,11 @@ td code { font-size: .85em; }
 <td>2026-05-26</td>
 <td>26 new nodes (3 generic MCP client + 23 Houdini AI). Runtime extensions layer (Tiers 1–6): MCP server, AI planning pipeline, transaction system, distributed execution, analytics. Node ID cleanup. Subprocess crash log. Bug fixes: build_node_chain ordering, review_execution scoring, preview_execution ImportError.</td>
 </tr>
+<tr>
+<td><strong>v2.5.0</strong></td>
+<td>2026-06-13</td>
+<td>200+ new Houdini AI nodes across 18 intelligence tiers. Semantic scene intent extraction (55 environments). Asset intelligence (catalog, vector search, suitability ranking). Spatial layout engine (clusters, surface placement, wall attachment). Environment construction (shell, structural classification). Lighting &amp; lookdev intelligence. Reality validation (geometry-wins, support rules, floating object detection). 14 MCP tools (added <code>build_scene_from_assets</code>, <code>review_execution</code>). 1,700+ unit tests.</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -962,6 +967,11 @@ td code { font-size: .85em; }
 </thead>
 <tbody>
 <tr>
+<td>v2.5.0</td>
+<td>Minor</td>
+<td><a href="../RELEASE_v2.5.0.md">RELEASE_v2.5.0.md</a></td>
+</tr>
+<tr>
 <td>v2.4.0</td>
 <td>Minor</td>
 <td><a href="../RELEASE_v2.4.0.md">RELEASE_v2.4.0.md</a></td>
@@ -969,32 +979,32 @@ td code { font-size: .85em; }
 <tr>
 <td>v2.3.0</td>
 <td>Minor</td>
-<td><a href="../RELEASE_v2.3.0.md">RELEASE_v2.3.0.md</a></td>
+<td><a href="../releases/RELEASE_v2.3.0.md">releases/RELEASE_v2.3.0.md</a></td>
 </tr>
 <tr>
 <td>v2.2.1</td>
 <td>Patch</td>
-<td><a href="../RELEASE_v2.2.1.md">RELEASE_v2.2.1.md</a></td>
+<td><a href="../releases/RELEASE_v2.2.1.md">releases/RELEASE_v2.2.1.md</a></td>
 </tr>
 <tr>
 <td>v2.2.0</td>
 <td>Minor</td>
-<td><a href="../RELEASE_v2.2.0.md">RELEASE_v2.2.0.md</a></td>
+<td><a href="../releases/RELEASE_v2.2.0.md">releases/RELEASE_v2.2.0.md</a></td>
 </tr>
 <tr>
 <td>v2.1.1</td>
 <td>Patch</td>
-<td><a href="../RELEASE_v2.1.1.md">RELEASE_v2.1.1.md</a></td>
+<td><a href="../releases/RELEASE_v2.1.1.md">releases/RELEASE_v2.1.1.md</a></td>
 </tr>
 <tr>
 <td>v2.1.0</td>
 <td>Minor</td>
-<td><a href="../RELEASE_v2.1.0.md">RELEASE_v2.1.0.md</a></td>
+<td><a href="../releases/RELEASE_v2.1.0.md">releases/RELEASE_v2.1.0.md</a></td>
 </tr>
 <tr>
 <td>v2.0.0</td>
 <td>Major</td>
-<td><a href="../RELEASE_v2.0.0.md">RELEASE_v2.0.0.md</a></td>
+<td><a href="../releases/RELEASE_v2.0.0.md">releases/RELEASE_v2.0.0.md</a></td>
 </tr>
 <tr>
 <td>Earlier</td>
@@ -1004,7 +1014,7 @@ td code { font-size: .85em; }
 </tbody>
 </table>
 <hr />
-<p><em>Vibrante-Node v2.4.0 — Released 2026-05-26</em></p>
+<p><em>Vibrante-Node v2.5.0 — Released 2026-06-13</em></p>
     <nav class="page-nav">
       
       <a class="page-nav-link next" href="02_getting_started.html"><span class="page-nav-label">Next</span><span class="page-nav-title">Getting Started</span></a>
@@ -1027,7 +1037,7 @@ td code { font-size: .85em; }
 <a class="toc-link toc-h3" href="#python-developers">Python Developers</a>
 <a class="toc-link toc-h3" href="#ai-developers-and-ml-engineers">AI Developers and ML Engineers</a>
 <a class="toc-link toc-h2" href="#feature-overview">Feature Overview</a>
-<a class="toc-link toc-h3" href="#advanced-runtime-extensions-optional-v240">Advanced Runtime Extensions (optional — v2.4.0)</a>
+<a class="toc-link toc-h3" href="#advanced-runtime-extensions-optional-v240">Advanced Runtime Extensions (optional — v2.4.0+)</a>
 <a class="toc-link toc-h2" href="#why-visual-node-graphs">Why Visual Node Graphs</a>
 <a class="toc-link toc-h3" href="#the-problem-with-plain-scripts">The Problem with Plain Scripts</a>
 <a class="toc-link toc-h3" href="#specific-benefits">Specific Benefits</a>

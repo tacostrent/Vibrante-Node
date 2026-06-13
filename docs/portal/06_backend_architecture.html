@@ -442,8 +442,8 @@ td code { font-size: .85em; }
   <div class="content-inner">
     <nav class="breadcrumb"><a href="index.html">Docs</a><span class="breadcrumb-sep">›</span><span>Backend Architecture</span></nav>
     <div class="val-badge val-badge-warn" title="4 warning(s) — review recommended">&#9888; 4 warnings</div>
-<h1 id="06-backend-architecture">06 — Backend Architecture</h1>
-<p><strong>Vibrante-Node v2.4.0 — Technical Reference</strong></p>
+<p>﻿# 06 — Backend Architecture</p>
+<p><strong>Vibrante-Node v2.5.0 — Technical Reference</strong></p>
 <p>This document describes the execution engine, graph model, node registry, and all supporting subsystems that make up the Vibrante-Node backend. It is written for contributors, plugin authors, and advanced users who need to understand what happens between the moment the user clicks <strong>Run</strong> and the moment the last node finishes.</p>
 <hr />
 <h2 id="table-of-contents">Table of Contents</h2>
@@ -1149,7 +1149,7 @@ External AI → MCP stdio transport → Runtime Layer → HouBridge → Houdini
 <tr>
 <td><code>mcp_tool_registry.py</code></td>
 <td>6</td>
-<td>All 12 semantic tool handlers</td>
+<td>All 14 semantic tool handlers</td>
 </tr>
 <tr>
 <td><code>mcp_transport.py</code></td>
@@ -1172,7 +1172,7 @@ External AI → MCP stdio transport → Runtime Layer → HouBridge → Houdini
 <pre><code class="language-bash">pip install &quot;mcp&gt;=1.0.0&quot;
 python scripts/run_vibrante_mcp.py
 </code></pre>
-<p>The server blocks on stdio until the client disconnects. All 12 semantic tools are available. Houdini-dependent tools connect to the live bridge automatically when port 18811 is reachable.</p>
+<p>The server blocks on stdio until the client disconnects. All 14 semantic tools are available. Houdini-dependent tools connect to the live bridge automatically when port 18811 is reachable.</p>
     <nav class="page-nav">
       <a class="page-nav-link prev" href="05_node_development.html"><span class="page-nav-label">Previous</span><span class="page-nav-title">Node Development Guide</span></a>
       <a class="page-nav-link next" href="07_frontend_architecture.html"><span class="page-nav-label">Next</span><span class="page-nav-title">Frontend Architecture</span></a>

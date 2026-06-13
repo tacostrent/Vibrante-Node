@@ -586,7 +586,7 @@ def make_page(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Vibrante-Node v2.4.0 — {title}">
+<meta name="description" content="Vibrante-Node v2.5.0 — {title}">
 <title>{title} — Vibrante-Node Docs</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
 <style>{PORTAL_CSS}</style>
@@ -597,7 +597,7 @@ def make_page(
 <!-- ── Header ─────────────────────────────────────────────────────────── -->
 <header class="header">
   <a class="header-logo" href="{base_path}index.html">Vibrante-Node</a>
-  <span class="header-version">v2.4.0</span>
+  <span class="header-version">v2.5.0</span>
   <div class="header-spacer"></div>
   <div class="search-wrap">
     <span class="search-icon">&#128269;</span>
@@ -675,7 +675,7 @@ def make_index(groups, pages, base_path=""):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vibrante-Node v2.4.0 — Documentation</title>
+<title>Vibrante-Node v2.5.0 — Documentation</title>
 <style>{PORTAL_CSS}
 body {{ grid-template-columns: 0 1fr 0; }}
 .sidebar, .toc {{ display:none; }}
@@ -686,7 +686,7 @@ body {{ grid-template-columns: 0 1fr 0; }}
 <body>
 <header class="header">
   <a class="header-logo" href="index.html">Vibrante-Node</a>
-  <span class="header-version">v2.4.0</span>
+  <span class="header-version">v2.5.0</span>
   <div class="header-spacer"></div>
   <div class="search-wrap">
     <span class="search-icon">&#128269;</span>
@@ -700,7 +700,7 @@ body {{ grid-template-columns: 0 1fr 0; }}
     <div class="hero">
       <h1>Vibrante-Node</h1>
       <p class="tagline">Node-Based Visual Automation Platform</p>
-      <span class="version-badge">v2.4.0 Documentation</span>
+      <span class="version-badge">v2.5.0 Documentation</span>
     </div>
     {cards_by_group}
   </div>

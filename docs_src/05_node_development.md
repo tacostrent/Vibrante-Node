@@ -1,4 +1,4 @@
-# Node Development Guide — Vibrante-Node v2.4.0
+﻿# Node Development Guide — Vibrante-Node v2.5.0
 
 This guide walks through everything you need to know to build custom nodes for
 Vibrante-Node, from the simplest string transformer to a fully-async HTTP client

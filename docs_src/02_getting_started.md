@@ -1,4 +1,4 @@
-# Vibrante-Node v2.4.0 — Getting Started
+﻿# Vibrante-Node v2.5.0 — Getting Started
 
 This guide takes you from a fresh machine to running your first workflow. It covers installation, the project layout, a complete first-workflow tutorial, and a detailed explanation of what happens when you press F5.
 
@@ -282,7 +282,7 @@ When Vibrante-Node starts for the first time, the main window is divided into fo
 |           |                                     |                |
 +-----------+-------------------------------------+----------------+
 |  Log Panel                                                       |
-|  [info]  Welcome to Vibrante-Node v2.4.0                        |
+|  [info]  Welcome to Vibrante-Node v2.5.0                        |
 +------------------------------------------------------------------+
 ```
 
@@ -666,4 +666,4 @@ Once connected, follow this sequence:
 
 ---
 
-*Vibrante-Node v2.4.0 — Released 2026-05-26*
+*Vibrante-Node v2.5.0 — Released 2026-06-13*

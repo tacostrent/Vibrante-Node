@@ -1,7 +1,7 @@
 {
-  "total_findings": 7,
+  "total_findings": 9,
   "errors": 0,
-  "warnings": 7,
+  "warnings": 9,
   "example_summary": {
     "ok": 323,
     "integration": 35,
@@ -10,12 +10,32 @@
     "skip": 111
   },
   "per_page": {
+    "07_frontend_architecture.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "06_backend_architecture.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 4
+    },
+    "01_introduction.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 2
+    },
     "02_getting_started.md": {
       "ok": true,
       "errors": 0,
       "warnings": 3
     },
-    "14_custom_nodes_api.md": {
+    "10_contribution_guide.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "13_general_purpose_automation.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -30,7 +50,12 @@
       "errors": 0,
       "warnings": 0
     },
-    "04_workflow_tutorials.md": {
+    "05_node_development.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
+    "03_user_guide.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
@@ -40,48 +65,37 @@
       "errors": 0,
       "warnings": 0
     },
+    "14_custom_nodes_api.md": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 0
+    },
     "08_api_reference.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
     },
-    "01_introduction.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "06_backend_architecture.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 4
-    },
-    "03_user_guide.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "10_contribution_guide.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "07_frontend_architecture.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "05_node_development.md": {
-      "ok": true,
-      "errors": 0,
-      "warnings": 0
-    },
-    "13_general_purpose_automation.md": {
+    "04_workflow_tutorials.md": {
       "ok": true,
       "errors": 0,
       "warnings": 0
     }
   },
   "findings": [
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `build_scene_from_assets` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "01_introduction.md",
+      "line": 272
+    },
+    {
+      "severity": "warning",
+      "category": "node",
+      "message": "Node `review_execution` mentioned in docs but not found in nodes/ or builtins.",
+      "file": "01_introduction.md",
+      "line": 272
+    },
     {
       "severity": "warning",
       "category": "node",
