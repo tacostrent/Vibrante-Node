@@ -5,8 +5,8 @@
 # Language/codepage 040904B0 = US English / Unicode
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 4, 0, 0),
-    prodvers=(2, 4, 0, 0),
+    filevers=(2, 5, 0, 0),
+    prodvers=(2, 5, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -22,12 +22,12 @@ VSVersionInfo(
           [
             StringStruct(u'CompanyName',      u'Vibrante-Node'),
             StringStruct(u'FileDescription',  u'Vibrante-Node Pipeline Editor'),
-            StringStruct(u'FileVersion',      u'2.4.0.0'),
+            StringStruct(u'FileVersion',      u'2.5.0.0'),
             StringStruct(u'InternalName',     u'Vibrante-Node'),
             StringStruct(u'LegalCopyright',   u'Copyright (C) 2024-2026 Mahmoud Kamal (KamalTD)'),
             StringStruct(u'OriginalFilename', u'Vibrante-Node.exe'),
             StringStruct(u'ProductName',      u'Vibrante-Node'),
-            StringStruct(u'ProductVersion',   u'2.4.0.0'),
+            StringStruct(u'ProductVersion',   u'2.5.0.0'),
             StringStruct(u'Comments',         u'https://vibrante-node.com'),
           ]
         )
