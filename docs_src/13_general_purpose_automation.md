@@ -1,4 +1,4 @@
-# General-Purpose Automation with Vibrante-Node
+﻿# General-Purpose Automation with Vibrante-Node
 
 Vibrante-Node is often introduced through its VFX integrations — Houdini, Maya, Prism. But those integrations are optional plugins that extend a general-purpose automation engine. At its core, Vibrante-Node is a visual, async, node-based Python execution framework that can orchestrate any automation task: file processing, API orchestration, data transformation, AI pipelines, database operations, DevOps workflows, and more.
 

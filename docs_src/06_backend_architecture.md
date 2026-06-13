@@ -1,6 +1,6 @@
-# 06 — Backend Architecture
+﻿# 06 — Backend Architecture
 
-**Vibrante-Node v2.4.0 — Technical Reference**
+**Vibrante-Node v2.5.0 — Technical Reference**
 
 This document describes the execution engine, graph model, node registry, and all supporting subsystems that make up the Vibrante-Node backend. It is written for contributors, plugin authors, and advanced users who need to understand what happens between the moment the user clicks **Run** and the moment the last node finishes.
 
@@ -753,7 +753,7 @@ Both paths use the same `houdini_runtime`, `transaction_manager`, `validation_en
 | `semantic_execution.py` | 2.75 | `SemanticRegistry → Constraints → ValidationEngine → Transaction` |
 | `ai_planner.py` | 3 | Intent + context → validated execution plan |
 | `approval_pipeline.py` | 3 | Synchronous human-approval state machine |
-| `mcp_tool_registry.py` | 6 | All 12 semantic tool handlers |
+| `mcp_tool_registry.py` | 6 | All 14 semantic tool handlers |
 | `mcp_transport.py` | 6 | MCP stdio server (uses `mcp` SDK) |
 
 ### Execution safety invariants
@@ -774,4 +774,4 @@ pip install "mcp>=1.0.0"
 python scripts/run_vibrante_mcp.py
 ```
 
-The server blocks on stdio until the client disconnects. All 12 semantic tools are available. Houdini-dependent tools connect to the live bridge automatically when port 18811 is reachable.
+The server blocks on stdio until the client disconnects. All 14 semantic tools are available. Houdini-dependent tools connect to the live bridge automatically when port 18811 is reachable.

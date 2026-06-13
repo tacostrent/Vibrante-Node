@@ -1,4 +1,4 @@
-# Contribution Guide
+﻿# Contribution Guide
 
 This guide covers everything you need to contribute to Vibrante-Node — from setting up your environment to submitting a pull request. Read it fully before opening your first PR.
 

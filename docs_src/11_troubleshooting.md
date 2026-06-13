@@ -1,6 +1,6 @@
-# Troubleshooting Guide
+﻿# Troubleshooting Guide
 
-This guide covers the most common problems users and developers encounter with Vibrante-Node v2.4.0, organized by symptom. For each issue you will find: what causes it, how to diagnose it, and how to fix it.
+This guide covers the most common problems users and developers encounter with Vibrante-Node v2.5.0, organized by symptom. For each issue you will find: what causes it, how to diagnose it, and how to fix it.
 
 ---
 

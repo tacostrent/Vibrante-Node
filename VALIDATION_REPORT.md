@@ -1,8 +1,8 @@
 # Documentation Validation Report
 
 **Errors:** 0  
-**Warnings:** 7  
-**Total findings:** 7
+**Warnings:** 9  
+**Total findings:** 9
 
 ## Code Example Summary
 
@@ -203,6 +203,11 @@ while_loop
 ```
 
 ## Findings by File
+
+### `01_introduction.md`
+
+- 🟡 **[node]** line 272: Node `build_scene_from_assets` mentioned in docs but not found in nodes/ or builtins.
+- 🟡 **[node]** line 272: Node `review_execution` mentioned in docs but not found in nodes/ or builtins.
 
 ### `02_getting_started.md`
 

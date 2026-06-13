@@ -1,4 +1,4 @@
-# Vibrante-Node v2.4.0 — Introduction
+﻿# Vibrante-Node v2.5.0 — Introduction
 
 **Vibrante-Node** is a Python node-based visual framework for building modular systems through connected nodes and data flows. It provides an intuitive graph interface where complex logic can be constructed visually by linking nodes together.
 
@@ -119,15 +119,15 @@ Developers who want Claude, Codex CLI, Cursor, or another MCP-compatible AI to b
 | **Dark / Light Theme** | Toggle between Dracula dark and One-Light themes | Window > Theme |
 | **Gemini AI Integration** | Chat with Google Gemini AI from within the app | Window menu |
 
-### Advanced Runtime Extensions *(optional — v2.4.0)*
+### Advanced Runtime Extensions *(optional — v2.4.0+)*
 
 Available when `mcp>=1.0.0` is installed. Headless — no Qt or display server required.
 
 | Feature | Description | Entry Point |
 |---|---|---|
-| **MCP Server** | 12 tools for Claude Desktop, Codex CLI, and Cursor: scene inspection, planning, validation, and execution | `scripts/run_vibrante_mcp.py` |
+| **MCP Server** | 14 tools for Claude Desktop, Codex CLI, and Cursor: scene inspection, planning, validation, scene building, and execution | `scripts/run_vibrante_mcp.py` |
 | **Generic MCP Client Nodes** | Connect any MCP server from inside a workflow | `mcp_server_init`, `mcp_list_tools`, `mcp_call_tool` |
-| **Houdini AI Nodes** | 23 nodes: scene context, node chain builder, transaction, graph diff, AI plan/preview/execute/review | `hou_mcp_*` nodes |
+| **Houdini AI Nodes** | 200+ nodes across 18 intelligence tiers: semantic scene intent, asset intelligence, spatial layout, environment construction, lighting, lookdev, and reality validation | `hou_mcp_*` nodes |
 | **Transaction System** | Validated, recorded, reversible mutations with optional rollback | `hou_mcp_transaction` |
 | **AI Planning Pipeline** | Natural-language prompt → validated plan → approval gate → execution | `hou_mcp_ai_*` nodes |
 
@@ -269,6 +269,7 @@ Vibrante-Node has a layered architecture. The visual canvas drives the execution
 | **v2.2.1** | 2026-05-15 | Patch: About dialog crash fix (`QTextEdit` → `QTextBrowser`). LICENSE file now bundled in exe (`_internal/`). |
 | **v2.3.0** | 2026-05-18 | HTTP Request node (bundled). Authenticode signing tools. Node Builder exec-port corruption fix. Node Builder default-value round-trip fix. Icon-path field isolation fix. Load-node/load-workflow cross-detection. Canvas drag trail fix. http_request UI freeze fix (run_in_executor). Linux packaging (pip, AppImage, .deb). |
 | **v2.4.0** | 2026-05-26 | 26 new nodes (3 generic MCP client + 23 Houdini AI). Runtime extensions layer (Tiers 1–6): MCP server, AI planning pipeline, transaction system, distributed execution, analytics. Node ID cleanup. Subprocess crash log. Bug fixes: build_node_chain ordering, review_execution scoring, preview_execution ImportError. |
+| **v2.5.0** | 2026-06-13 | 200+ new Houdini AI nodes across 18 intelligence tiers. Semantic scene intent extraction (55 environments). Asset intelligence (catalog, vector search, suitability ranking). Spatial layout engine (clusters, surface placement, wall attachment). Environment construction (shell, structural classification). Lighting & lookdev intelligence. Reality validation (geometry-wins, support rules, floating object detection). 14 MCP tools (added `build_scene_from_assets`, `review_execution`). 1,700+ unit tests. |
 
 ---
 
@@ -307,15 +308,16 @@ Vibrante-Node has a layered architecture. The visual canvas drives the execution
 
 | Version | Type | File |
 |---|---|---|
+| v2.5.0 | Minor | [RELEASE_v2.5.0.md](../RELEASE_v2.5.0.md) |
 | v2.4.0 | Minor | [RELEASE_v2.4.0.md](../RELEASE_v2.4.0.md) |
-| v2.3.0 | Minor | [RELEASE_v2.3.0.md](../RELEASE_v2.3.0.md) |
-| v2.2.1 | Patch | [RELEASE_v2.2.1.md](../RELEASE_v2.2.1.md) |
-| v2.2.0 | Minor | [RELEASE_v2.2.0.md](../RELEASE_v2.2.0.md) |
-| v2.1.1 | Patch | [RELEASE_v2.1.1.md](../RELEASE_v2.1.1.md) |
-| v2.1.0 | Minor | [RELEASE_v2.1.0.md](../RELEASE_v2.1.0.md) |
-| v2.0.0 | Major | [RELEASE_v2.0.0.md](../RELEASE_v2.0.0.md) |
+| v2.3.0 | Minor | [releases/RELEASE_v2.3.0.md](../releases/RELEASE_v2.3.0.md) |
+| v2.2.1 | Patch | [releases/RELEASE_v2.2.1.md](../releases/RELEASE_v2.2.1.md) |
+| v2.2.0 | Minor | [releases/RELEASE_v2.2.0.md](../releases/RELEASE_v2.2.0.md) |
+| v2.1.1 | Patch | [releases/RELEASE_v2.1.1.md](../releases/RELEASE_v2.1.1.md) |
+| v2.1.0 | Minor | [releases/RELEASE_v2.1.0.md](../releases/RELEASE_v2.1.0.md) |
+| v2.0.0 | Major | [releases/RELEASE_v2.0.0.md](../releases/RELEASE_v2.0.0.md) |
 | Earlier | — | [releases/](../releases/) |
 
 ---
 
-*Vibrante-Node v2.4.0 — Released 2026-05-26*
+*Vibrante-Node v2.5.0 — Released 2026-06-13*

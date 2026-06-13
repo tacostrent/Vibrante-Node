@@ -1,4 +1,4 @@
-# Examples Library
+﻿# Examples Library
 
 This chapter provides ten complete, copy-paste-ready node examples. Each example includes the full JSON node definition, the Python code, and a usage guide. All examples follow the node authoring conventions described in the Contribution Guide.
 
