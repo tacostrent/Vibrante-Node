@@ -13,6 +13,7 @@ class NetworkExecutor(QObject):
     node_finished = pyqtSignal(UUID, str) # node_id, status ('success' or 'failed')
     node_error = pyqtSignal(UUID, str)    # node_id, error_message
     node_output = pyqtSignal(UUID, dict)  # node_id, output_data
+    subgraph_node_output = pyqtSignal(object, UUID, dict)
     node_log = pyqtSignal(UUID, str, str) # node_id, message, level
     execution_finished = pyqtSignal(bool) # success
 
@@ -172,6 +173,13 @@ class NetworkExecutor(QObject):
                                     await self._execute_flow(conn.to_node)
                 return handler
             instance._on_output = create_output_handler(node_id)
+            def create_subgraph_output_handler(group_nid):
+                def handler(group_path, child_nid, results):
+                    full_path = [group_nid] + list(group_path)
+                    self.subgraph_node_output.emit(full_path, child_nid, results)
+                return handler
+            
+            instance._on_subgraph_output = create_subgraph_output_handler(node_id)
 
         # 2. PRISM BOOTSTRAP
         # If any prism_core_init node exists, initialise PrismCore before the

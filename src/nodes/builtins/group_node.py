@@ -151,6 +151,16 @@ class GroupNode(BaseNode):
         sub_executor = NetworkExecutor(gm)
         sub_executor.node_error.connect(_capture_error)
         sub_executor.node_log.connect(_forward_log)
+        def _forward_child_output(nid, results):
+            if self._on_subgraph_output:
+                self._on_subgraph_output([], nid, results)
+
+        def _forward_nested_output(group_path, nid, results):
+            if self._on_subgraph_output:
+                self._on_subgraph_output(group_path, nid, results)
+
+        sub_executor.node_output.connect(_forward_child_output)
+        sub_executor.subgraph_node_output.connect(_forward_nested_output)
         try:
             await sub_executor.run()
         finally:

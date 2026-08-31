@@ -1853,6 +1853,9 @@ class MainWindow(QMainWindow):
         self.current_executor.node_finished.connect(self._on_node_finished)
         self.current_executor.node_error.connect(self._on_node_error)
         self.current_executor.node_output.connect(self._on_node_output)
+        self.current_executor.subgraph_node_output.connect(
+            self._on_subgraph_node_output
+        )
         self.current_executor.node_log.connect(self._on_node_log)
         self.current_executor.execution_finished.connect(self._on_execution_finished)
 
@@ -1902,6 +1905,41 @@ class MainWindow(QMainWindow):
         name = widget.node_definition.name if widget else "Unknown"
         res_str = ", ".join([f"{k}: {v}" for k, v in results.items()])
         self.log_panel.log(f"Node '{name}' output -> {res_str}", "success")
+        
+    def _on_subgraph_node_output(self, group_path, node_instance_id, results):
+        """Route nested runtime values to the matching open subgraph canvas."""
+
+        target_path = [str(x) for x in group_path]
+
+        for i in range(self.tabs.count()):
+            view = self.tabs.widget(i)
+            scene = view.scene() if view else None
+            if not scene:
+                continue
+
+            scene_path = getattr(scene, "_group_path", None)
+            if scene_path is None:
+                continue
+
+            if [str(x) for x in scene_path] != target_path:
+                continue
+
+            widget = next(
+                (
+                    n for n in scene.nodes
+                    if str(n.instance_id) == str(node_instance_id)
+                ),
+                None,
+            )
+
+            if not widget:
+                continue
+
+            for name, value in results.items():
+                widget.set_parameter(name, value, propagate=False)
+                scene.update_edge_value(widget, name, value)
+
+            break
 
     def _on_node_log(self, node_instance_id, message, level):
         widget = self._find_node_widget(node_instance_id)
@@ -1974,10 +2012,15 @@ class MainWindow(QMainWindow):
         group_name = group_widget.node_definition.parameters.get("__name__", "Group")
         view = self.add_new_workflow(f"[{group_name}]")
         view.scene().from_workflow_model(workflow_model)
-
-        # Sync every subgraph change back to the group node's __workflow__ so
-        # nodes/connections added inside the subgraph tab are persisted.
+        
+        # Give this subgraph tab its hierarchical runtime address.
         parent_scene = group_widget.scene()
+        parent_path = getattr(parent_scene, "_group_path", [])
+        group_path = list(parent_path) + [group_widget.instance_id]
+        view.scene()._group_path = group_path
+
+        parent_scene = group_widget.scene()
+
         def _sync_back(workflow_dict):
             from src.core.models import WorkflowModel
 

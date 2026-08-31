@@ -26,6 +26,7 @@ class BaseNode(ABC):
         self._on_log = None # Hook for engine to capture logs
         self._pending_logs: List[tuple] = [] # Buffer for log calls made before _on_log is set
         self._on_output = None # Hook for engine to capture intermediate outputs
+        self._on_subgraph_output = None
         self._check_stopped = None # Hook for engine to check cancellation
         self._on_ports_changed = None # Hook for UI to rebuild ports
         self._is_port_connected = None # Hook for UI to check connections
