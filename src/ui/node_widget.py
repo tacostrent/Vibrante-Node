@@ -623,7 +623,12 @@ class NodeWidget(QGraphicsItem):
         if w is not None:
             w.blockSignals(True)
             if isinstance(w, QLineEdit):
-                w.setText(str(target_value) if target_value is not None else "")
+                if isinstance(target_value, float):
+                    display_value = f"{target_value:.6g}"
+                else:
+                    display_value = str(target_value) if target_value is not None else ""
+
+                w.setText(display_value)
             elif isinstance(w, (QSpinBox, QDoubleSpinBox, QSlider)):
                 if target_value is not None:
                     try:

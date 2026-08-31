@@ -1,0 +1,147 @@
+{
+    "nodes": [
+        {
+            "instance_id": "3b5c2aa3-3671-48e7-a312-14abb9692039",
+            "node_id": "add_integers",
+            "position": [
+                -249.75000000000003,
+                -243.75000000000003
+            ],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": null,
+                "a": 6,
+                "b": 8,
+                "result": 0
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "c0bef516-215a-431d-8005-133689939ec5",
+            "node_id": "add_integers",
+            "position": [
+                174.37500000000003,
+                -196.37499999999997
+            ],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": null,
+                "a": 0,
+                "b": 0,
+                "result": 0
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "494b43b8-68ce-4c9c-a3aa-fc59feb40f54",
+            "node_id": "group_in",
+            "position": [
+                -531.75,
+                -220.0625
+            ],
+            "parameters": {
+                "port_name": "a",
+                "value": null
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "77d34e01-240f-4cef-afdb-63d5e78f17ed",
+            "node_id": "group_in",
+            "position": [
+                -531.75,
+                -47.0625
+            ],
+            "parameters": {
+                "port_name": "b",
+                "value": null
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "1bb9a91e-0aa7-430c-abd6-f2fe4dc3ae31",
+            "node_id": "group_out",
+            "position": [
+                513.1250000000001,
+                -240.06250000000003
+            ],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": null,
+                "port_name": "result",
+                "value": 0
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "7bf33090-bd50-4162-bb3a-7e1f24b49a7d",
+            "node_id": "group_in",
+            "position": [
+                -153.75,
+                77.5
+            ],
+            "parameters": {
+                "port_name": "c",
+                "value": null
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        }
+    ],
+    "connections": [
+        {
+            "id": "11247a81-a211-40eb-9ef3-65de01362aaa",
+            "from_node": "3b5c2aa3-3671-48e7-a312-14abb9692039",
+            "from_port": "result",
+            "to_node": "c0bef516-215a-431d-8005-133689939ec5",
+            "to_port": "a",
+            "is_exec": false
+        },
+        {
+            "id": "09f703b3-9f14-4152-a568-21329aa9c4cd",
+            "from_node": "494b43b8-68ce-4c9c-a3aa-fc59feb40f54",
+            "from_port": "value",
+            "to_node": "3b5c2aa3-3671-48e7-a312-14abb9692039",
+            "to_port": "a",
+            "is_exec": false
+        },
+        {
+            "id": "580d8aac-8233-49df-b27b-9b1ca5a6e283",
+            "from_node": "77d34e01-240f-4cef-afdb-63d5e78f17ed",
+            "from_port": "value",
+            "to_node": "3b5c2aa3-3671-48e7-a312-14abb9692039",
+            "to_port": "b",
+            "is_exec": false
+        },
+        {
+            "id": "211ab07f-0eb1-4c10-9e66-11fe1e5b7aca",
+            "from_node": "c0bef516-215a-431d-8005-133689939ec5",
+            "from_port": "result",
+            "to_node": "1bb9a91e-0aa7-430c-abd6-f2fe4dc3ae31",
+            "to_port": "value",
+            "is_exec": false
+        },
+        {
+            "id": "673c456a-1c05-4b10-969f-ee0130c92c53",
+            "from_node": "7bf33090-bd50-4162-bb3a-7e1f24b49a7d",
+            "from_port": "value",
+            "to_node": "c0bef516-215a-431d-8005-133689939ec5",
+            "to_port": "b",
+            "is_exec": false
+        }
+    ],
+    "sticky_notes": [],
+    "backdrops": [],
+    "metadata": {}
+}

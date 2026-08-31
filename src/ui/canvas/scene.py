@@ -1105,13 +1105,27 @@ class NodeScene(QGraphicsScene):
         return None
 
     def update_edge_value(self, node_widget, port_name, value):
-        """Push a live execution value to every edge leaving node_widget's port_name."""
+        """Push a live execution value to edges and destination canvas widgets."""
         for edge in self.edges:
             if (edge.from_port is not None
                     and edge.to_port is not None
                     and edge.from_port.parentItem() is node_widget
                     and edge.from_port.port_definition.name == port_name):
+
+                # Update the live value shown on the wire.
                 edge.set_live_value(value)
+
+                # Mirror data values into the destination widget.
+                # Execution pins should not become normal parameters.
+                if edge.to_port.port_definition.data_type != "exec":
+                    target_widget = edge.to_port.parentItem()
+                    target_port_name = edge.to_port.port_definition.name
+
+                    target_widget.set_parameter(
+                        target_port_name,
+                        value,
+                        propagate=False,
+                    )
 
     def clear_edge_values(self):
         """Clear all live value tooltips from every edge (call at execution start)."""

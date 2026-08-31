@@ -1,0 +1,733 @@
+{
+    "nodes": [
+        {
+            "instance_id": "9374b740-32f4-436c-8b67-78fb2762b09a",
+            "node_id": "variable_node",
+            "position": [
+                -595.3750000000001,
+                -420.81250000000006
+            ],
+            "parameters": {
+                "exec_in": null,
+                "type": "int",
+                "value": "4",
+                "exec_out": true,
+                "out": 4
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "fb3c7f9c-e5a9-4cca-83a5-56fed235c702",
+            "node_id": "variable_node",
+            "position": [
+                -838.4374999999999,
+                -201.87500000000003
+            ],
+            "parameters": {
+                "exec_in": null,
+                "type": "int",
+                "value": "3",
+                "exec_out": null,
+                "out": 3
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "707a5e4d-cece-4b36-9aea-369cfff91144",
+            "node_id": "group_node",
+            "position": [
+                -243.81249999999991,
+                -340.09374999999983
+            ],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "exec_fail": false,
+                "__workflow__": {
+                    "nodes": [
+                        {
+                            "instance_id": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                            "node_id": "add_integers",
+                            "position": [
+                                -342.49999999999994,
+                                -348.93749999999983
+                            ],
+                            "parameters": {
+                                "exec_in": null,
+                                "exec_out": true,
+                                "a": 4,
+                                "b": 3,
+                                "result": 7
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        },
+                        {
+                            "instance_id": "7d17c31a-dfb7-4302-93f5-67724ea2d0a4",
+                            "node_id": "add_integers",
+                            "position": [
+                                -37.62499999999994,
+                                -348.7499999999999
+                            ],
+                            "parameters": {
+                                "exec_in": null,
+                                "exec_out": true,
+                                "a": 7,
+                                "b": -3,
+                                "result": 7
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        },
+                        {
+                            "instance_id": "39e756a6-edc7-4347-adf3-2bfcf97a0380",
+                            "node_id": "group_in",
+                            "position": [
+                                -738.5,
+                                -355.8437499999999
+                            ],
+                            "parameters": {
+                                "port_name": "a",
+                                "value": null
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        },
+                        {
+                            "instance_id": "6f8b28bd-b64f-4ac4-b9af-31731b16e28e",
+                            "node_id": "group_in",
+                            "position": [
+                                -743.5,
+                                -185.8437499999999
+                            ],
+                            "parameters": {
+                                "port_name": "b",
+                                "value": null
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        },
+                        {
+                            "instance_id": "494ae6b4-b18a-4086-b88c-ed9da4f586a2",
+                            "node_id": "group_out",
+                            "position": [
+                                256.375,
+                                -362.8437499999999
+                            ],
+                            "parameters": {
+                                "exec_in": null,
+                                "exec_out": null,
+                                "port_name": "nest1a",
+                                "value": 7
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        },
+                        {
+                            "instance_id": "d0b0f658-d141-4fca-a126-e349390bc337",
+                            "node_id": "group_node",
+                            "position": [
+                                -253.0,
+                                -74.0
+                            ],
+                            "parameters": {
+                                "exec_in": null,
+                                "exec_out": null,
+                                "exec_fail": null,
+                                "__workflow__": {
+                                    "nodes": [
+                                        {
+                                            "instance_id": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                            "node_id": "add_integers",
+                                            "position": [
+                                                -232.49999999999994,
+                                                -380.9374999999998
+                                            ],
+                                            "parameters": {
+                                                "exec_in": null,
+                                                "exec_out": true,
+                                                "a": null,
+                                                "b": null,
+                                                "result": 7
+                                            },
+                                            "state": "idle",
+                                            "bypassed": false,
+                                            "init_priority": 0
+                                        },
+                                        {
+                                            "instance_id": "39e756a6-edc7-4347-adf3-2bfcf97a0380",
+                                            "node_id": "group_in",
+                                            "position": [
+                                                -633.5,
+                                                -361.8437499999999
+                                            ],
+                                            "parameters": {
+                                                "port_name": "aa",
+                                                "value": null
+                                            },
+                                            "state": "idle",
+                                            "bypassed": false,
+                                            "init_priority": 0
+                                        },
+                                        {
+                                            "instance_id": "6f8b28bd-b64f-4ac4-b9af-31731b16e28e",
+                                            "node_id": "group_in",
+                                            "position": [
+                                                -639.5,
+                                                -177.8437499999999
+                                            ],
+                                            "parameters": {
+                                                "port_name": "ab",
+                                                "value": null
+                                            },
+                                            "state": "idle",
+                                            "bypassed": false,
+                                            "init_priority": 0
+                                        },
+                                        {
+                                            "instance_id": "494ae6b4-b18a-4086-b88c-ed9da4f586a2",
+                                            "node_id": "group_out",
+                                            "position": [
+                                                395.375,
+                                                -244.8437499999999
+                                            ],
+                                            "parameters": {
+                                                "exec_in": null,
+                                                "exec_out": null,
+                                                "port_name": "nest2",
+                                                "value": 7
+                                            },
+                                            "state": "idle",
+                                            "bypassed": false,
+                                            "init_priority": 0
+                                        },
+                                        {
+                                            "instance_id": "b4bf7ffc-d588-4dfb-928c-94a11112ab90",
+                                            "node_id": "group_node",
+                                            "position": [
+                                                48.0,
+                                                -168.0
+                                            ],
+                                            "parameters": {
+                                                "exec_in": null,
+                                                "exec_out": null,
+                                                "exec_fail": null,
+                                                "__workflow__": {
+                                                    "nodes": [
+                                                        {
+                                                            "instance_id": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                                            "node_id": "add_integers",
+                                                            "position": [
+                                                                -218.49999999999994,
+                                                                -356.9374999999998
+                                                            ],
+                                                            "parameters": {
+                                                                "exec_in": null,
+                                                                "exec_out": true,
+                                                                "a": null,
+                                                                "b": null,
+                                                                "result": 7
+                                                            },
+                                                            "state": "idle",
+                                                            "bypassed": false,
+                                                            "init_priority": 0
+                                                        },
+                                                        {
+                                                            "instance_id": "39e756a6-edc7-4347-adf3-2bfcf97a0380",
+                                                            "node_id": "group_in",
+                                                            "position": [
+                                                                -633.5,
+                                                                -361.8437499999999
+                                                            ],
+                                                            "parameters": {
+                                                                "port_name": "aaa",
+                                                                "value": null
+                                                            },
+                                                            "state": "idle",
+                                                            "bypassed": false,
+                                                            "init_priority": 0
+                                                        },
+                                                        {
+                                                            "instance_id": "6f8b28bd-b64f-4ac4-b9af-31731b16e28e",
+                                                            "node_id": "group_in",
+                                                            "position": [
+                                                                -639.5,
+                                                                -177.8437499999999
+                                                            ],
+                                                            "parameters": {
+                                                                "port_name": "aab",
+                                                                "value": null
+                                                            },
+                                                            "state": "idle",
+                                                            "bypassed": false,
+                                                            "init_priority": 0
+                                                        },
+                                                        {
+                                                            "instance_id": "494ae6b4-b18a-4086-b88c-ed9da4f586a2",
+                                                            "node_id": "group_out",
+                                                            "position": [
+                                                                139.37500000000006,
+                                                                -368.8437499999999
+                                                            ],
+                                                            "parameters": {
+                                                                "exec_in": null,
+                                                                "exec_out": null,
+                                                                "port_name": "nest3",
+                                                                "value": 7
+                                                            },
+                                                            "state": "idle",
+                                                            "bypassed": false,
+                                                            "init_priority": 0
+                                                        },
+                                                        {
+                                                            "instance_id": "a454a80f-c3c2-4b6d-ab61-e73d87c52350",
+                                                            "node_id": "group_in",
+                                                            "position": [
+                                                                -636.0,
+                                                                -7.0
+                                                            ],
+                                                            "parameters": {
+                                                                "port_name": "aac",
+                                                                "value": null
+                                                            },
+                                                            "state": "idle",
+                                                            "bypassed": false,
+                                                            "init_priority": 0
+                                                        },
+                                                        {
+                                                            "instance_id": "d74fc239-d0ad-4f7c-8afb-6a7db31afc8d",
+                                                            "node_id": "console_print",
+                                                            "position": [
+                                                                -191.0,
+                                                                -27.0
+                                                            ],
+                                                            "parameters": {
+                                                                "exec_in": null,
+                                                                "exec_out": null,
+                                                                "data": null,
+                                                                "out": null
+                                                            },
+                                                            "state": "idle",
+                                                            "bypassed": false,
+                                                            "init_priority": 0
+                                                        }
+                                                    ],
+                                                    "connections": [
+                                                        {
+                                                            "id": "fb73a216-d010-4342-ab9d-afe4dbfe330b",
+                                                            "from_node": "39e756a6-edc7-4347-adf3-2bfcf97a0380",
+                                                            "from_port": "value",
+                                                            "to_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                                            "to_port": "a",
+                                                            "is_exec": false
+                                                        },
+                                                        {
+                                                            "id": "21c8a7df-ee86-45bb-9e5f-4f9d8979e14a",
+                                                            "from_node": "6f8b28bd-b64f-4ac4-b9af-31731b16e28e",
+                                                            "from_port": "value",
+                                                            "to_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                                            "to_port": "b",
+                                                            "is_exec": false
+                                                        },
+                                                        {
+                                                            "id": "e7c33ce3-cdff-48af-9557-9315916c1b5d",
+                                                            "from_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                                            "from_port": "result",
+                                                            "to_node": "494ae6b4-b18a-4086-b88c-ed9da4f586a2",
+                                                            "to_port": "value",
+                                                            "is_exec": false
+                                                        },
+                                                        {
+                                                            "id": "81a0c0a4-1c64-4cab-9984-a848a51e4e50",
+                                                            "from_node": "a454a80f-c3c2-4b6d-ab61-e73d87c52350",
+                                                            "from_port": "value",
+                                                            "to_node": "d74fc239-d0ad-4f7c-8afb-6a7db31afc8d",
+                                                            "to_port": "data",
+                                                            "is_exec": false
+                                                        }
+                                                    ],
+                                                    "sticky_notes": [],
+                                                    "backdrops": [],
+                                                    "metadata": {}
+                                                },
+                                                "__port_defs__": [
+                                                    {
+                                                        "name": "aaa",
+                                                        "type": "any",
+                                                        "is_input": true
+                                                    },
+                                                    {
+                                                        "name": "aab",
+                                                        "type": "any",
+                                                        "is_input": true
+                                                    },
+                                                    {
+                                                        "name": "nest3",
+                                                        "type": "any",
+                                                        "is_input": false
+                                                    },
+                                                    {
+                                                        "name": "aac",
+                                                        "type": "any",
+                                                        "is_input": true
+                                                    }
+                                                ],
+                                                "__name__": "Group",
+                                                "a": 4,
+                                                "b": 3,
+                                                "aaa": 7,
+                                                "aab": null,
+                                                "nest3": null,
+                                                "aac": null
+                                            },
+                                            "state": "idle",
+                                            "bypassed": false,
+                                            "init_priority": 0
+                                        },
+                                        {
+                                            "instance_id": "15543596-c42f-4821-a750-9cbcd9501007",
+                                            "node_id": "group_in",
+                                            "position": [
+                                                -590.0,
+                                                -5.0
+                                            ],
+                                            "parameters": {
+                                                "port_name": "aac",
+                                                "value": null
+                                            },
+                                            "state": "idle",
+                                            "bypassed": false,
+                                            "init_priority": 0
+                                        }
+                                    ],
+                                    "connections": [
+                                        {
+                                            "id": "c9cb30a8-1684-4a46-8702-1e1fd41e79af",
+                                            "from_node": "39e756a6-edc7-4347-adf3-2bfcf97a0380",
+                                            "from_port": "value",
+                                            "to_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                            "to_port": "a",
+                                            "is_exec": false
+                                        },
+                                        {
+                                            "id": "76d3a187-ea36-410b-9dc4-d77a05f902d3",
+                                            "from_node": "6f8b28bd-b64f-4ac4-b9af-31731b16e28e",
+                                            "from_port": "value",
+                                            "to_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                            "to_port": "b",
+                                            "is_exec": false
+                                        },
+                                        {
+                                            "id": "ef73ca45-9abf-4044-a528-61eefcfa23c9",
+                                            "from_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                                            "from_port": "result",
+                                            "to_node": "b4bf7ffc-d588-4dfb-928c-94a11112ab90",
+                                            "to_port": "aaa",
+                                            "is_exec": false
+                                        },
+                                        {
+                                            "id": "2cdf61bd-7918-4e15-ade2-0f34533eb1e1",
+                                            "from_node": "b4bf7ffc-d588-4dfb-928c-94a11112ab90",
+                                            "from_port": "nest3",
+                                            "to_node": "494ae6b4-b18a-4086-b88c-ed9da4f586a2",
+                                            "to_port": "value",
+                                            "is_exec": false
+                                        },
+                                        {
+                                            "id": "33caf5fd-b31c-430c-9e1e-feea5a09a3e0",
+                                            "from_node": "6f8b28bd-b64f-4ac4-b9af-31731b16e28e",
+                                            "from_port": "value",
+                                            "to_node": "b4bf7ffc-d588-4dfb-928c-94a11112ab90",
+                                            "to_port": "aab",
+                                            "is_exec": false
+                                        },
+                                        {
+                                            "id": "f1885a1d-a22e-4346-9b64-f1a8b9b42581",
+                                            "from_node": "15543596-c42f-4821-a750-9cbcd9501007",
+                                            "from_port": "value",
+                                            "to_node": "b4bf7ffc-d588-4dfb-928c-94a11112ab90",
+                                            "to_port": "aac",
+                                            "is_exec": false
+                                        }
+                                    ],
+                                    "sticky_notes": [],
+                                    "backdrops": [],
+                                    "metadata": {}
+                                },
+                                "__port_defs__": [
+                                    {
+                                        "name": "aa",
+                                        "type": "any",
+                                        "is_input": true
+                                    },
+                                    {
+                                        "name": "ab",
+                                        "type": "any",
+                                        "is_input": true
+                                    },
+                                    {
+                                        "name": "nest2",
+                                        "type": "any",
+                                        "is_input": false
+                                    },
+                                    {
+                                        "name": "aac",
+                                        "type": "any",
+                                        "is_input": true
+                                    }
+                                ],
+                                "__name__": "Group",
+                                "a": 4,
+                                "b": 3,
+                                "aa": null,
+                                "ab": null,
+                                "nest2": null,
+                                "aac": null
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        },
+                        {
+                            "instance_id": "bb57284b-be23-4586-b610-a5c67c18bdd4",
+                            "node_id": "group_out",
+                            "position": [
+                                264.0,
+                                -102.0
+                            ],
+                            "parameters": {
+                                "exec_in": null,
+                                "exec_out": null,
+                                "port_name": "nest1b",
+                                "value": 7
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        },
+                        {
+                            "instance_id": "6a230725-322a-485b-af7e-d985a5ed2e65",
+                            "node_id": "group_in",
+                            "position": [
+                                -728.1249999999999,
+                                26.562500000000007
+                            ],
+                            "parameters": {
+                                "port_name": "aac",
+                                "value": null
+                            },
+                            "state": "idle",
+                            "bypassed": false,
+                            "init_priority": 0
+                        }
+                    ],
+                    "connections": [
+                        {
+                            "id": "5e0c91c1-a83a-4de8-988a-8d7ea12e898c",
+                            "from_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                            "from_port": "result",
+                            "to_node": "7d17c31a-dfb7-4302-93f5-67724ea2d0a4",
+                            "to_port": "a",
+                            "is_exec": false
+                        },
+                        {
+                            "id": "064d7682-b03e-422d-a76e-80255794b5a4",
+                            "from_node": "39e756a6-edc7-4347-adf3-2bfcf97a0380",
+                            "from_port": "value",
+                            "to_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                            "to_port": "a",
+                            "is_exec": false
+                        },
+                        {
+                            "id": "990f1c2e-4728-497b-8a7e-0ed4e2d4cdea",
+                            "from_node": "6f8b28bd-b64f-4ac4-b9af-31731b16e28e",
+                            "from_port": "value",
+                            "to_node": "80e88b9b-b5aa-44b9-a10b-176e7dffb0bc",
+                            "to_port": "b",
+                            "is_exec": false
+                        },
+                        {
+                            "id": "2f932317-d06d-47b0-9ccb-c56f0dd5c784",
+                            "from_node": "7d17c31a-dfb7-4302-93f5-67724ea2d0a4",
+                            "from_port": "result",
+                            "to_node": "494ae6b4-b18a-4086-b88c-ed9da4f586a2",
+                            "to_port": "value",
+                            "is_exec": false
+                        },
+                        {
+                            "id": "24e710a2-a6fc-43d7-9db4-d54ef7399ee6",
+                            "from_node": "d0b0f658-d141-4fca-a126-e349390bc337",
+                            "from_port": "nest2",
+                            "to_node": "bb57284b-be23-4586-b610-a5c67c18bdd4",
+                            "to_port": "value",
+                            "is_exec": false
+                        },
+                        {
+                            "id": "60ace99b-53d6-409d-853f-8fe1092e6353",
+                            "from_node": "39e756a6-edc7-4347-adf3-2bfcf97a0380",
+                            "from_port": "value",
+                            "to_node": "d0b0f658-d141-4fca-a126-e349390bc337",
+                            "to_port": "aa",
+                            "is_exec": false
+                        },
+                        {
+                            "id": "4f0ba535-36e5-4005-bbc5-39b4c1f230f1",
+                            "from_node": "6a230725-322a-485b-af7e-d985a5ed2e65",
+                            "from_port": "value",
+                            "to_node": "d0b0f658-d141-4fca-a126-e349390bc337",
+                            "to_port": "aac",
+                            "is_exec": false
+                        }
+                    ],
+                    "sticky_notes": [],
+                    "backdrops": [],
+                    "metadata": {}
+                },
+                "__port_defs__": [
+                    {
+                        "name": "a",
+                        "type": "any",
+                        "is_input": true
+                    },
+                    {
+                        "name": "b",
+                        "type": "any",
+                        "is_input": true
+                    },
+                    {
+                        "name": "nest1a",
+                        "type": "any",
+                        "is_input": false
+                    },
+                    {
+                        "name": "nest1b",
+                        "type": "any",
+                        "is_input": false
+                    },
+                    {
+                        "name": "aac",
+                        "type": "any",
+                        "is_input": true
+                    }
+                ],
+                "__name__": "Group",
+                "a": 4,
+                "b": 3,
+                "result": null,
+                "nest1": null,
+                "nest1a": 4,
+                "nest1b": 4,
+                "aac": "3.14"
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "8b53f7a9-de60-48f3-9e40-fbc7688f785a",
+            "node_id": "console_print",
+            "position": [
+                185.0,
+                -366.24999999999994
+            ],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": true,
+                "data": 4,
+                "out": "4"
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "c0065ac1-9e9c-4fd6-bbc8-c0cdc7dc25a9",
+            "node_id": "console_print",
+            "position": [
+                186.25,
+                -169.99999999999997
+            ],
+            "parameters": {
+                "exec_in": null,
+                "exec_out": null,
+                "data": 4,
+                "out": 4
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        },
+        {
+            "instance_id": "c919e6b8-1d39-4108-87b4-a086655fe2aa",
+            "node_id": "variable_node",
+            "position": [
+                -582.4999999999998,
+                -118.74999999999996
+            ],
+            "parameters": {
+                "exec_in": null,
+                "type": "int",
+                "value": "3.14",
+                "exec_out": null,
+                "out": "3.14"
+            },
+            "state": "idle",
+            "bypassed": false,
+            "init_priority": 0
+        }
+    ],
+    "connections": [
+        {
+            "id": "b58fd7b7-9cf7-482a-9417-f54c1bcdc320",
+            "from_node": "9374b740-32f4-436c-8b67-78fb2762b09a",
+            "from_port": "out",
+            "to_node": "707a5e4d-cece-4b36-9aea-369cfff91144",
+            "to_port": "a",
+            "is_exec": false
+        },
+        {
+            "id": "f397387e-1aa7-4f02-9504-0cede4820b35",
+            "from_node": "fb3c7f9c-e5a9-4cca-83a5-56fed235c702",
+            "from_port": "out",
+            "to_node": "707a5e4d-cece-4b36-9aea-369cfff91144",
+            "to_port": "b",
+            "is_exec": false
+        },
+        {
+            "id": "369b23a8-44ff-4043-b04f-27083845744f",
+            "from_node": "707a5e4d-cece-4b36-9aea-369cfff91144",
+            "from_port": "nest1a",
+            "to_node": "8b53f7a9-de60-48f3-9e40-fbc7688f785a",
+            "to_port": "data",
+            "is_exec": false
+        },
+        {
+            "id": "6f364df2-5083-41fa-8de2-b739f4f90a17",
+            "from_node": "707a5e4d-cece-4b36-9aea-369cfff91144",
+            "from_port": "nest1b",
+            "to_node": "c0065ac1-9e9c-4fd6-bbc8-c0cdc7dc25a9",
+            "to_port": "data",
+            "is_exec": false
+        },
+        {
+            "id": "b06c91b8-e52f-4d77-b196-a5cf457286d0",
+            "from_node": "c919e6b8-1d39-4108-87b4-a086655fe2aa",
+            "from_port": "out",
+            "to_node": "707a5e4d-cece-4b36-9aea-369cfff91144",
+            "to_port": "aac",
+            "is_exec": false
+        }
+    ],
+    "sticky_notes": [],
+    "backdrops": [],
+    "metadata": {}
+}

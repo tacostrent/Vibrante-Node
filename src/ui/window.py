@@ -1979,13 +1979,97 @@ class MainWindow(QMainWindow):
         # nodes/connections added inside the subgraph tab are persisted.
         parent_scene = group_widget.scene()
         def _sync_back(workflow_dict):
-            # push_history() uses model_dump() which yields UUID objects.
-            # _serializable_params() calls json.dumps() and silently drops keys
-            # that aren't serializable, so we must convert to JSON-safe strings
-            # (mode='json') — the same format group_selection() uses.
             from src.core.models import WorkflowModel
-            json_dict = WorkflowModel.model_validate(workflow_dict).model_dump(mode='json')
+
+            workflow_model = WorkflowModel.model_validate(workflow_dict)
+            json_dict = workflow_model.model_dump(mode='json')
+
+            # --------------------------------------------------------------
+            # 1. Save the updated internal workflow.
+            # --------------------------------------------------------------
             group_widget.node_definition.parameters["__workflow__"] = json_dict
+
+            # --------------------------------------------------------------
+            # 2. Build a fresh external interface from group_in/group_out
+            #    boundary nodes inside the subgraph.
+            # --------------------------------------------------------------
+            new_port_defs = []
+            seen_inputs = set()
+            seen_outputs = set()
+
+            for node_model in workflow_model.nodes:
+                port_name = node_model.parameters.get("port_name", "")
+                if not port_name:
+                    continue
+
+                port_name = str(port_name).strip()
+                if not port_name:
+                    continue
+
+                if node_model.node_id == "group_in":
+                    if port_name not in seen_inputs:
+                        new_port_defs.append({
+                            "name": port_name,
+                            "type": "any",
+                            "is_input": True,
+                        })
+                        seen_inputs.add(port_name)
+
+                elif node_model.node_id == "group_out":
+                    if port_name not in seen_outputs:
+                        new_port_defs.append({
+                            "name": port_name,
+                            "type": "any",
+                            "is_input": False,
+                        })
+                        seen_outputs.add(port_name)
+
+            # --------------------------------------------------------------
+            # 3. Remove the OLD dynamic ports from the GroupNode definition.
+            #    Leave the fixed execution ports alone.
+            # --------------------------------------------------------------
+            old_port_defs = group_widget.node_definition.parameters.get(
+                "__port_defs__", []
+            )
+
+            fixed_ports = {"exec_in", "exec_out", "exec_fail"}
+
+            for pd in old_port_defs:
+                name = pd.get("name", "")
+
+                if not name or name in fixed_ports:
+                    continue
+
+                if pd.get("is_input", True):
+                    group_widget.node_definition.inputs.pop(name, None)
+                else:
+                    group_widget.node_definition.outputs.pop(name, None)
+
+            # --------------------------------------------------------------
+            # 4. Store the NEW interface and recreate the dynamic Port objects.
+            # --------------------------------------------------------------
+            group_widget.node_definition.parameters["__port_defs__"] = new_port_defs
+
+            for pd in new_port_defs:
+                name = pd["name"]
+                data_type = pd.get("type", "any")
+
+                if pd["is_input"]:
+                    group_widget.node_definition.add_input(name, data_type)
+                else:
+                    group_widget.node_definition.add_output(name, data_type)
+
+            # --------------------------------------------------------------
+            # 5. Rebuild the visible parent node.
+            #    rebuild_ports() preserves existing wires by port name.
+            # --------------------------------------------------------------
+            group_widget.rebuild_ports()
+
+            # --------------------------------------------------------------
+            # 6. Snapshot the PARENT graph.
+            #    If this parent is itself a subgraph, push_history() invokes
+            #    its _sync_callback, allowing the change to propagate upward.
+            # --------------------------------------------------------------
             if parent_scene:
                 parent_scene.push_history()
         view.scene()._sync_callback = _sync_back
